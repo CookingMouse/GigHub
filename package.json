@@ -1,0 +1,29 @@
+{
+  "name": "gighub",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run build --workspace @gighub/shared && concurrently -n web,api -c cyan,green \"npm run dev:web\" \"npm run dev:api\"",
+    "dev:web": "dotenv -e .env -- npm run dev --workspace @gighub/web",
+    "dev:api": "dotenv -e .env -- npm run dev --workspace @gighub/api",
+    "build": "npm run build --workspace @gighub/shared && npm run build --workspace @gighub/api && npm run build --workspace @gighub/web",
+    "lint": "npm run lint --workspace @gighub/shared && npm run lint --workspace @gighub/api && npm run lint --workspace @gighub/web",
+    "test": "npm run build --workspace @gighub/shared && dotenv -e .env -- npm run test --workspace @gighub/api && npm run test --workspace @gighub/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "dotenv -e .env -- npm run db:generate --workspace @gighub/api",
+    "db:migrate": "dotenv -e .env -- npm run db:migrate --workspace @gighub/api",
+    "db:seed": "dotenv -e .env -- npm run db:seed --workspace @gighub/api",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "dotenv-cli": "^8.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3"
+  }
+}
