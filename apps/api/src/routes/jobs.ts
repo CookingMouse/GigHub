@@ -1,13 +1,20 @@
 import { Router } from "express";
-import { upsertJobDraftSchema } from "@gighub/shared";
+import {
+  assignFreelancerSchema,
+  milestonePlanSchema,
+  upsertJobDraftSchema
+} from "@gighub/shared";
 import { asyncHandler } from "../lib/async-handler";
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
 import {
+  assignFreelancerToJob,
+  createMockEscrowIntent,
   createCompanyJob,
   getCompanyJob,
   listCompanyJobs,
   publishCompanyJob,
+  replaceJobMilestones,
   updateCompanyJob,
   validateCompanyJob
 } from "../services/job-service";
@@ -76,6 +83,51 @@ jobsRouter.post(
   "/:jobId/validate",
   asyncHandler(async (request, response) => {
     const job = await validateCompanyJob(request.auth!.userId, readJobId(request.params.jobId));
+
+    response.json({
+      data: {
+        job
+      }
+    });
+  })
+);
+
+jobsRouter.post(
+  "/:jobId/assign",
+  asyncHandler(async (request, response) => {
+    const input = assignFreelancerSchema.parse(request.body);
+    const job = await assignFreelancerToJob(
+      request.auth!.userId,
+      readJobId(request.params.jobId),
+      input.freelancerId
+    );
+
+    response.json({
+      data: {
+        job
+      }
+    });
+  })
+);
+
+jobsRouter.post(
+  "/:jobId/escrow/intent",
+  asyncHandler(async (request, response) => {
+    const intent = await createMockEscrowIntent(request.auth!.userId, readJobId(request.params.jobId));
+
+    response.json({
+      data: {
+        intent
+      }
+    });
+  })
+);
+
+jobsRouter.put(
+  "/:jobId/milestones",
+  asyncHandler(async (request, response) => {
+    const input = milestonePlanSchema.parse(request.body);
+    const job = await replaceJobMilestones(request.auth!.userId, readJobId(request.params.jobId), input);
 
     response.json({
       data: {

@@ -5,8 +5,10 @@ import { randomUUID } from "crypto";
 import { env } from "./lib/env";
 import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
+import { freelancersRouter } from "./routes/freelancers";
 import { healthRouter } from "./routes/health";
 import { jobsRouter } from "./routes/jobs";
+import { paymentWebhooksRouter } from "./routes/payment-webhooks";
 import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
 
@@ -30,7 +32,9 @@ app.use(express.json());
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/freelancers", freelancersRouter);
 app.use("/api/v1/jobs", jobsRouter);
+app.use("/api/v1/webhooks/payments", paymentWebhooksRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

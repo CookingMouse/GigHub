@@ -2,8 +2,12 @@
 
 import type {
   ApiErrorResponse,
+  AssignFreelancerInput,
+  FreelancerDirectoryRecord,
   JobRecord,
   LoginInput,
+  MilestonePlanInput,
+  MockPaymentIntentRecord,
   PublicUser,
   RegisterInput,
   UpsertJobDraftInput
@@ -115,6 +119,20 @@ export const jobsApi = {
       method: "PATCH",
       json: input
     }),
+  assign: (jobId: string, input: AssignFreelancerInput) =>
+    requestJson<{ job: JobRecord }>(`/jobs/${jobId}/assign`, {
+      method: "POST",
+      json: input
+    }),
+  createEscrowIntent: (jobId: string) =>
+    requestJson<{ intent: MockPaymentIntentRecord }>(`/jobs/${jobId}/escrow/intent`, {
+      method: "POST"
+    }),
+  saveMilestones: (jobId: string, input: MilestonePlanInput) =>
+    requestJson<{ job: JobRecord }>(`/jobs/${jobId}/milestones`, {
+      method: "PUT",
+      json: input
+    }),
   validate: (jobId: string) =>
     requestJson<{ job: JobRecord }>(`/jobs/${jobId}/validate`, {
       method: "POST"
@@ -122,5 +140,28 @@ export const jobsApi = {
   publish: (jobId: string) =>
     requestJson<{ job: JobRecord }>(`/jobs/${jobId}/publish`, {
       method: "POST"
+    })
+};
+
+export const freelancersApi = {
+  list: () =>
+    requestJson<{ freelancers: FreelancerDirectoryRecord[] }>("/freelancers", {
+      method: "GET"
+    })
+};
+
+export const paymentsApi = {
+  simulateSuccess: (intentId: string, eventId: string) =>
+    requestJson<{
+      accepted: boolean;
+      duplicate: boolean;
+      job: JobRecord;
+    }>("/webhooks/payments/mock", {
+      method: "POST",
+      json: {
+        eventId,
+        intentId,
+        type: "payment.succeeded"
+      }
     })
 };
