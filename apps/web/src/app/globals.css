@@ -157,7 +157,7 @@ p {
   text-transform: uppercase;
 }
 
-.field input {
+.field input,
 .field textarea,
 .field-select {
   width: 100%;
@@ -261,6 +261,12 @@ p {
   gap: 18px;
 }
 
+.transaction-stack,
+.directory-grid {
+  display: grid;
+  gap: 18px;
+}
+
 .list-card-header,
 .panel-heading-row {
   display: flex;
@@ -344,6 +350,25 @@ p {
 
 .feedback-list li + li {
   margin-top: 8px;
+}
+
+.directory-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 18px;
+}
+
+.directory-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 18px;
+}
+
+.directory-card h3 {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 @media (max-width: 640px) {

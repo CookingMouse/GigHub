@@ -12,11 +12,31 @@ export const jobStatuses = [
   "DISPUTED",
   "CANCELLED"
 ] as const;
+export const escrowStatuses = [
+  "UNFUNDED",
+  "FUNDED",
+  "PARTIALLY_RELEASED",
+  "FULLY_RELEASED",
+  "REFUNDED",
+  "HELD"
+] as const;
+export const milestoneStatuses = [
+  "PENDING",
+  "IN_PROGRESS",
+  "SUBMITTED",
+  "UNDER_REVIEW",
+  "APPROVED",
+  "RELEASED",
+  "DISPUTED",
+  "REVISION_REQUESTED"
+] as const;
 export const jobValidationThreshold = 70;
 
 export type AppRole = (typeof appRoles)[number];
 export type RegistrationRole = (typeof registrationRoles)[number];
 export type JobStatus = (typeof jobStatuses)[number];
+export type EscrowStatus = (typeof escrowStatuses)[number];
+export type MilestoneStatus = (typeof milestoneStatuses)[number];
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -58,11 +78,54 @@ export const upsertJobDraftSchema = z.object({
   brief: jobBriefSchema
 });
 
+export const assignFreelancerSchema = z.object({
+  freelancerId: z.string().trim().min(1).max(191)
+});
+
+export const milestonePlanItemSchema = z.object({
+  sequence: z.coerce.number().int().min(1).max(5),
+  title: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(1000).optional().default(""),
+  amount: z.coerce.number().positive().max(10_000_000),
+  dueAt: z.string().trim().max(50).optional().default("")
+});
+
+export const milestonePlanSchema = z
+  .object({
+    milestones: z.array(milestonePlanItemSchema).min(1).max(5)
+  })
+  .superRefine((value, context) => {
+    const seenSequences = new Set<number>();
+
+    value.milestones.forEach((milestone, index) => {
+      if (seenSequences.has(milestone.sequence)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Milestone sequence numbers must be unique.",
+          path: ["milestones", index, "sequence"]
+        });
+        return;
+      }
+
+      seenSequences.add(milestone.sequence);
+    });
+  });
+
+export const mockPaymentWebhookSchema = z.object({
+  eventId: z.string().trim().min(1).max(191),
+  intentId: z.string().trim().min(1).max(191),
+  type: z.literal("payment.succeeded")
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type JobTimeline = z.infer<typeof jobTimelineSchema>;
 export type JobBriefInput = z.infer<typeof jobBriefSchema>;
 export type UpsertJobDraftInput = z.infer<typeof upsertJobDraftSchema>;
+export type AssignFreelancerInput = z.infer<typeof assignFreelancerSchema>;
+export type MilestonePlanInput = z.infer<typeof milestonePlanSchema>;
+export type MilestonePlanItemInput = z.infer<typeof milestonePlanItemSchema>;
+export type MockPaymentWebhookInput = z.infer<typeof mockPaymentWebhookSchema>;
 
 export type PublicUser = {
   id: string;
@@ -92,6 +155,46 @@ export type JobBriefRecord = {
   validation: JobValidationState;
 };
 
+export type FreelancerDirectoryRecord = {
+  id: string;
+  name: string;
+  displayName: string;
+  portfolioUrl: string | null;
+  skills: string[];
+  hourlyRate: number | null;
+  ratingAverage: number | null;
+};
+
+export type EscrowRecord = {
+  status: EscrowStatus;
+  fundedAmount: number;
+  releasedAmount: number;
+  provider: string | null;
+  providerReference: string | null;
+  fundedAt: string | null;
+  releasedAt: string | null;
+};
+
+export type MilestoneRecord = {
+  id: string;
+  sequence: number;
+  title: string;
+  description: string;
+  amount: number;
+  status: MilestoneStatus;
+  dueAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MockPaymentIntentRecord = {
+  intentId: string;
+  amount: number;
+  currency: string;
+  provider: "mock";
+  status: "requires_confirmation" | "succeeded";
+};
+
 export type JobRecord = {
   id: string;
   title: string;
@@ -99,8 +202,12 @@ export type JobRecord = {
   milestoneCount: number;
   status: JobStatus;
   publishedAt: string | null;
+  assignedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  assignedFreelancer: FreelancerDirectoryRecord | null;
+  escrow: EscrowRecord | null;
+  milestones: MilestoneRecord[];
   brief: JobBriefRecord;
 };
 

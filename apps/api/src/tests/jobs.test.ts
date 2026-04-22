@@ -1,5 +1,5 @@
 import request from "supertest";
-import type { UpsertJobDraftInput } from "@gighub/shared";
+import type { MilestonePlanInput, UpsertJobDraftInput } from "@gighub/shared";
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
 import { app } from "../app";
@@ -81,14 +81,58 @@ const registerCompany = async (agent: Agent, email = "company@example.com") => {
   });
 };
 
-const registerFreelancer = async (agent: Agent) => {
+const registerFreelancer = async (
+  agent: Agent,
+  overrides: { email?: string; name?: string } = {}
+) => {
+  const email = overrides.email ?? "aina@example.com";
+  const name = overrides.name ?? "Aina Musa";
+
   await agent.post("/api/v1/auth/register").send({
-    name: "Aina Musa",
-    email: "aina@example.com",
+    name,
+    email,
     password: "StrongPass123",
     role: "freelancer"
   });
+
+  return prisma.user.findUniqueOrThrow({
+    where: {
+      email
+    },
+    include: {
+      freelancerProfile: true
+    }
+  });
 };
+
+const publishJob = async (company: Agent, payload: UpsertJobDraftInput = strongPayload()) => {
+  const createResponse = await company.post("/api/v1/jobs").send(payload);
+  const jobId = createResponse.body.data.job.id as string;
+
+  await company.post(`/api/v1/jobs/${jobId}/validate`);
+  await company.post(`/api/v1/jobs/${jobId}/publish`);
+
+  return jobId;
+};
+
+const twoMilestonePlan = (): MilestonePlanInput => ({
+  milestones: [
+    {
+      sequence: 1,
+      title: "Design direction and content structure",
+      description: "Initial design pass and content hierarchy for review.",
+      amount: 1600,
+      dueAt: "2026-05-02"
+    },
+    {
+      sequence: 2,
+      title: "Final delivery and handoff",
+      description: "Approved design file and implementation notes.",
+      amount: 1600,
+      dueAt: "2026-05-09"
+    }
+  ]
+});
 
 describe("job routes", () => {
   beforeAll(async () => {
@@ -101,9 +145,14 @@ describe("job routes", () => {
 
   beforeEach(async () => {
     const sessionKeys = await redis.keys("session:*");
+    const paymentEventKeys = await redis.keys("payment-event:*");
 
     if (sessionKeys.length > 0) {
       await redis.del(sessionKeys);
+    }
+
+    if (paymentEventKeys.length > 0) {
+      await redis.del(paymentEventKeys);
     }
 
     await clearData();
@@ -208,5 +257,158 @@ describe("job routes", () => {
 
     expect(publishResponse.status).toBe(409);
     expect(publishResponse.body.code).toBe("JOB_VALIDATION_FAILED");
+  });
+
+  it("lists freelancer profiles for company assignment", async () => {
+    const company = request.agent(app);
+    await registerCompany(company);
+
+    const freelancerA = request.agent(app);
+    const freelancerB = request.agent(app);
+
+    await registerFreelancer(freelancerA, {
+      email: "aina@example.com",
+      name: "Aina Musa"
+    });
+    await registerFreelancer(freelancerB, {
+      email: "hakim@example.com",
+      name: "Hakim Salleh"
+    });
+
+    await prisma.freelancerProfile.update({
+      where: {
+        userId: (
+          await prisma.user.findUniqueOrThrow({
+            where: {
+              email: "aina@example.com"
+            }
+          })
+        ).id
+      },
+      data: {
+        portfolioUrl: "https://portfolio.example.com/aina",
+        skills: ["UI Design", "Landing Pages"],
+        hourlyRate: "120.00",
+        ratingAverage: "4.80"
+      }
+    });
+
+    const response = await company.get("/api/v1/freelancers");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.freelancers).toHaveLength(2);
+    expect(response.body.data.freelancers[0]).toHaveProperty("displayName");
+  });
+
+  it("assigns a freelancer, creates a mock escrow intent, and funds the job idempotently", async () => {
+    const company = request.agent(app);
+    await registerCompany(company);
+
+    const freelancer = request.agent(app);
+    const freelancerUser = await registerFreelancer(freelancer);
+    const jobId = await publishJob(company);
+
+    const assignResponse = await company.post(`/api/v1/jobs/${jobId}/assign`).send({
+      freelancerId: freelancerUser.id
+    });
+
+    expect(assignResponse.status).toBe(200);
+    expect(assignResponse.body.data.job.status).toBe("ASSIGNED");
+    expect(assignResponse.body.data.job.assignedFreelancer.id).toBe(freelancerUser.id);
+
+    const intentResponse = await company.post(`/api/v1/jobs/${jobId}/escrow/intent`);
+
+    expect(intentResponse.status).toBe(200);
+    expect(intentResponse.body.data.intent.provider).toBe("mock");
+
+    const webhookPayload = {
+      eventId: "mock_evt_assign_flow",
+      intentId: intentResponse.body.data.intent.intentId as string,
+      type: "payment.succeeded"
+    };
+
+    const webhookResponse = await request(app)
+      .post("/api/v1/webhooks/payments/mock")
+      .send(webhookPayload);
+
+    expect(webhookResponse.status).toBe(200);
+    expect(webhookResponse.body.data.job.status).toBe("ESCROW_FUNDED");
+    expect(webhookResponse.body.data.job.escrow.status).toBe("FUNDED");
+
+    const duplicateResponse = await request(app)
+      .post("/api/v1/webhooks/payments/mock")
+      .send(webhookPayload);
+
+    expect(duplicateResponse.status).toBe(200);
+    expect(duplicateResponse.body.data.duplicate).toBe(true);
+    expect(duplicateResponse.body.data.job.status).toBe("ESCROW_FUNDED");
+  });
+
+  it("blocks escrow intent creation before a freelancer is assigned", async () => {
+    const company = request.agent(app);
+    await registerCompany(company);
+    const jobId = await publishJob(company);
+
+    const response = await company.post(`/api/v1/jobs/${jobId}/escrow/intent`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe("ESCROW_INTENT_UNAVAILABLE");
+  });
+
+  it("saves milestones only after funded escrow and flips the job to in progress", async () => {
+    const company = request.agent(app);
+    await registerCompany(company);
+
+    const freelancer = request.agent(app);
+    const freelancerUser = await registerFreelancer(freelancer);
+    const jobId = await publishJob(company);
+
+    await company.post(`/api/v1/jobs/${jobId}/assign`).send({
+      freelancerId: freelancerUser.id
+    });
+
+    const intentResponse = await company.post(`/api/v1/jobs/${jobId}/escrow/intent`);
+
+    await request(app).post("/api/v1/webhooks/payments/mock").send({
+      eventId: "mock_evt_milestones",
+      intentId: intentResponse.body.data.intent.intentId,
+      type: "payment.succeeded"
+    });
+
+    const saveResponse = await company.put(`/api/v1/jobs/${jobId}/milestones`).send(twoMilestonePlan());
+
+    expect(saveResponse.status).toBe(200);
+    expect(saveResponse.body.data.job.status).toBe("IN_PROGRESS");
+    expect(saveResponse.body.data.job.milestones).toHaveLength(2);
+    expect(saveResponse.body.data.job.milestones[0].sequence).toBe(1);
+  });
+
+  it("rejects milestone plans whose totals do not match the funded budget", async () => {
+    const company = request.agent(app);
+    await registerCompany(company);
+
+    const freelancer = request.agent(app);
+    const freelancerUser = await registerFreelancer(freelancer);
+    const jobId = await publishJob(company);
+
+    await company.post(`/api/v1/jobs/${jobId}/assign`).send({
+      freelancerId: freelancerUser.id
+    });
+
+    const intentResponse = await company.post(`/api/v1/jobs/${jobId}/escrow/intent`);
+
+    await request(app).post("/api/v1/webhooks/payments/mock").send({
+      eventId: "mock_evt_bad_total",
+      intentId: intentResponse.body.data.intent.intentId,
+      type: "payment.succeeded"
+    });
+
+    const invalidPlan = twoMilestonePlan();
+    invalidPlan.milestones[1].amount = 1200;
+
+    const response = await company.put(`/api/v1/jobs/${jobId}/milestones`).send(invalidPlan);
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("MILESTONE_TOTAL_MISMATCH");
   });
 });
