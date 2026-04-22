@@ -17,10 +17,7 @@ const toPublicUser = (user: NonNullable<UserWithProfile>): PublicUser => ({
   id: user.id,
   email: user.email,
   role: user.role,
-  name:
-    user.role === "company"
-      ? user.companyProfile?.companyName ?? user.email
-      : user.freelancerProfile?.displayName ?? user.email
+  name: user.name
 });
 
 const issueSession = async (user: NonNullable<UserWithProfile>) => {
@@ -70,6 +67,7 @@ export const registerUser = async (input: RegisterInput) => {
   const user = await prisma.user.create({
     data: {
       email: input.email.toLowerCase(),
+      name: input.name,
       passwordHash,
       role: input.role,
       freelancerProfile:
@@ -153,4 +151,3 @@ export const getCurrentUser = async (userId: string) => {
 
   return toPublicUser(user);
 };
-

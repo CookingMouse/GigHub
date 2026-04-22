@@ -13,6 +13,7 @@ const seedAdmin = async () => {
   await prisma.user.create({
     data: {
       email: adminEmail.toLowerCase(),
+      name: "GigHub Admin",
       passwordHash,
       role: "admin"
     }

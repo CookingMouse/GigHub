@@ -12,11 +12,13 @@ const main = async () => {
   await prisma.user.upsert({
     where: { email: adminEmail.toLowerCase() },
     update: {
+      name: "GigHub Admin",
       passwordHash,
       role: "admin"
     },
     create: {
       email: adminEmail.toLowerCase(),
+      name: "GigHub Admin",
       passwordHash,
       role: "admin"
     }
@@ -32,4 +34,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-
