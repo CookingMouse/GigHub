@@ -6,6 +6,7 @@ import { env } from "./lib/env";
 import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { healthRouter } from "./routes/health";
+import { jobsRouter } from "./routes/jobs";
 import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
 
@@ -29,7 +30,7 @@ app.use(express.json());
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/jobs", jobsRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
-

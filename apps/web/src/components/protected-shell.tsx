@@ -2,20 +2,13 @@
 
 import type { AppRole, PublicUser } from "@gighub/shared";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React from "react";
-import { useEffect, useState } from "react";
-import { ApiRequestError, authApi } from "@/lib/api";
+import { useProtectedUser } from "@/hooks/use-protected-user";
 import { LogoutButton } from "./logout-button";
 
 type ProtectedShellProps = {
   mode: "dashboard" | "admin";
 };
-
-type ViewState =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ready"; user: PublicUser };
 
 const accessRedirect = (user: PublicUser | null, requiredRole?: AppRole) => {
   if (!user) {
@@ -30,72 +23,7 @@ const accessRedirect = (user: PublicUser | null, requiredRole?: AppRole) => {
 };
 
 export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
-  const router = useRouter();
-  const [state, setState] = useState<ViewState>({ status: "loading" });
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadUser = async () => {
-      try {
-        const me = await authApi.me();
-
-        if (!isMounted) {
-          return;
-        }
-
-        const redirectTarget = accessRedirect(me.user, mode === "admin" ? "admin" : undefined);
-
-        if (redirectTarget) {
-          router.replace(redirectTarget);
-          return;
-        }
-
-        setState({
-          status: "ready",
-          user: me.user
-        });
-      } catch (error) {
-        if (error instanceof ApiRequestError && error.status === 401) {
-          try {
-            await authApi.refresh();
-            const me = await authApi.me();
-
-            if (!isMounted) {
-              return;
-            }
-
-            const redirectTarget = accessRedirect(me.user, mode === "admin" ? "admin" : undefined);
-
-            if (redirectTarget) {
-              router.replace(redirectTarget);
-              return;
-            }
-
-            setState({
-              status: "ready",
-              user: me.user
-            });
-            return;
-          } catch {
-            router.replace("/login");
-            return;
-          }
-        }
-
-        setState({
-          status: "error",
-          message: "Unable to load the current session."
-        });
-      }
-    };
-
-    void loadUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [mode, router]);
+  const state = useProtectedUser(mode === "admin" ? "admin" : undefined);
 
   if (state.status === "loading") {
     return (
@@ -133,8 +61,8 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
   const summary =
     mode === "admin"
       ? "RBAC is active. Only seeded admin accounts can reach this route."
-      : user.role === "company"
-        ? "This placeholder will later hold company hiring and milestone workflows."
+        : user.role === "company"
+          ? "Build and validate structured briefs before publishing them to the marketplace."
         : isAdmin
           ? "This placeholder confirms admin accounts can also pass the standard dashboard guard."
           : "This placeholder will later hold job applications, milestones, and earnings history.";
@@ -164,6 +92,17 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
       </div>
 
       <p className="muted">{summary}</p>
+
+      {user.role === "company" && mode === "dashboard" ? (
+        <div className="action-row">
+          <Link className="button-primary" href="/jobs/new">
+            Create job draft
+          </Link>
+          <Link className="button-secondary" href="/jobs">
+            View job board
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 };

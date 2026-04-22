@@ -132,6 +132,7 @@ model Job {
   freelancerId String?
   title        String
   budget       Decimal         @db.Decimal(12, 2)
+  milestoneCount Int           @default(1)
   status       JobStatus       @default(DRAFT)
   publishedAt  DateTime?
   assignedAt   DateTime?
@@ -164,6 +165,7 @@ model JobBrief {
   glmValidationSummary   String?
   glmGaps                Json?
   glmClarifyingQuestions Json?
+  lastValidatedAt        DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
   job                    Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)

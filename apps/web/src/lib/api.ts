@@ -1,6 +1,13 @@
 "use client";
 
-import type { ApiErrorResponse, LoginInput, PublicUser, RegisterInput } from "@gighub/shared";
+import type {
+  ApiErrorResponse,
+  JobRecord,
+  LoginInput,
+  PublicUser,
+  RegisterInput,
+  UpsertJobDraftInput
+} from "@gighub/shared";
 import { webConfig } from "./config";
 
 export class ApiRequestError extends Error {
@@ -74,3 +81,46 @@ export const authApi = {
     })
 };
 
+export const restoreSessionUser = async () => {
+  try {
+    const session = await authApi.me();
+    return session.user;
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 401) {
+      await authApi.refresh();
+      const session = await authApi.me();
+      return session.user;
+    }
+
+    throw error;
+  }
+};
+
+export const jobsApi = {
+  list: () =>
+    requestJson<{ jobs: JobRecord[] }>("/jobs", {
+      method: "GET"
+    }),
+  get: (jobId: string) =>
+    requestJson<{ job: JobRecord }>(`/jobs/${jobId}`, {
+      method: "GET"
+    }),
+  create: (input: UpsertJobDraftInput) =>
+    requestJson<{ job: JobRecord }>("/jobs", {
+      method: "POST",
+      json: input
+    }),
+  update: (jobId: string, input: UpsertJobDraftInput) =>
+    requestJson<{ job: JobRecord }>(`/jobs/${jobId}`, {
+      method: "PATCH",
+      json: input
+    }),
+  validate: (jobId: string) =>
+    requestJson<{ job: JobRecord }>(`/jobs/${jobId}/validate`, {
+      method: "POST"
+    }),
+  publish: (jobId: string) =>
+    requestJson<{ job: JobRecord }>(`/jobs/${jobId}/publish`, {
+      method: "POST"
+    })
+};
