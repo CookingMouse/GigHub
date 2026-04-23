@@ -13,7 +13,7 @@ import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { extractFileMetadata } from "./file-metadata-service";
 import { removeStoredSubmissionFile, storeSubmissionFile } from "./file-storage-service";
-import { mockGLMProvider } from "./mock-glm-service";
+import { selectedGLMProvider } from "./glm-provider";
 
 const freelancerJobInclude = {
   company: {
@@ -343,7 +343,7 @@ export const createFreelancerSubmission = async (
     fileBuffer: file.buffer,
     format: metadata.format
   });
-  const scoring = mockGLMProvider.scoreMilestone({
+  const scoring = await selectedGLMProvider.scoreMilestone({
     briefOverview: milestone.job.brief?.overview ?? "",
     deliverables: normalizeStringArray(milestone.job.brief?.deliverables),
     acceptanceCriteria: normalizeStringArray(milestone.job.brief?.acceptanceCriteria),

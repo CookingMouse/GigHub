@@ -19,11 +19,8 @@ import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { redis } from "../lib/redis";
-import {
-  deterministicBriefValidationProvider,
-  type BriefValidationProvider
-} from "./brief-validation-service";
-import { mockGLMProvider } from "./mock-glm-service";
+import type { BriefValidationProvider } from "./brief-validation-service";
+import { selectedBriefValidationProvider, selectedGLMProvider } from "./glm-provider";
 import { mockPaymentProvider } from "./mock-payment-service";
 import { releaseMilestoneEscrow } from "./release-service";
 
@@ -382,7 +379,7 @@ const persistBriefValidation = async (
   input: UpsertJobDraftInput,
   validationProvider: BriefValidationProvider
 ) => {
-  const result = validationProvider.validate(input);
+  const result = await validationProvider.validate(input);
   const updated = await prisma.$transaction(async (tx) => {
     await tx.job.update({
       where: { id: job.id },
@@ -551,7 +548,7 @@ export const updateCompanyJob = async (companyId: string, jobId: string, input: 
 export const validateCompanyJob = async (
   companyId: string,
   jobId: string,
-  validationProvider: BriefValidationProvider = deterministicBriefValidationProvider
+  validationProvider: BriefValidationProvider = selectedBriefValidationProvider
 ) => {
   const job = await findCompanyJobOrThrow(companyId, jobId);
 
@@ -1101,7 +1098,7 @@ export const rejectCompanyMilestone = async (
     }
   });
   const milestoneDecision = latestMilestoneDecision(milestone);
-  const disputeAnalysis = mockGLMProvider.analyzeDispute({
+  const disputeAnalysis = await selectedGLMProvider.analyzeDispute({
     rejectionReason,
     milestoneScore: milestoneDecision?.overallScore ?? null,
     milestonePassFail: milestoneDecision?.passFail ?? null,

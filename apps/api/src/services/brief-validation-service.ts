@@ -8,7 +8,7 @@ export type BriefValidationResult = {
 };
 
 export type BriefValidationProvider = {
-  validate(input: UpsertJobDraftInput): BriefValidationResult;
+  validate(input: UpsertJobDraftInput): BriefValidationResult | Promise<BriefValidationResult>;
 };
 
 const vaguePattern =

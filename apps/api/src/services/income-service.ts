@@ -9,7 +9,7 @@ import type {
 import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { getLocalStorageRoot } from "./file-storage-service";
-import { mockGLMProvider } from "./mock-glm-service";
+import { selectedGLMProvider } from "./glm-provider";
 
 const currency = "MYR";
 
@@ -262,7 +262,7 @@ export const generateFreelancerIncomeStatement = async (
   const categories = Array.from(
     new Set(milestones.map((milestone) => inferCategory(milestone.title, milestone.description)))
   );
-  const narrative = mockGLMProvider.generateIncomeNarrative({
+  const narrative = (await selectedGLMProvider.generateIncomeNarrative({
     totalEarned,
     totalJobs,
     totalMilestones: milestones.length,
@@ -271,7 +271,7 @@ export const generateFreelancerIncomeStatement = async (
     periodStart,
     periodEnd,
     topCategories: categories.slice(0, 3)
-  }).narrative;
+  })).narrative;
 
   const statement = await prisma.incomeStatement.create({
     data: {

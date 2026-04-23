@@ -27,8 +27,22 @@ const envSchema = z.object({
   FILE_RETENTION_HOURS: z.coerce.number().int().positive().default(72),
   REVIEW_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
   GLM_MODE: z.enum(["mock", "live"]).default("mock"),
+  GLM_API_KEY: z.string().optional().transform((value) => value?.trim() || undefined),
+  GLM_BASE_URL: z
+    .string()
+    .url()
+    .default("https://open.bigmodel.cn/api/paas/v4"),
+  GLM_MODEL: z.string().trim().min(1).default("glm-4"),
   PAYMENT_PROVIDER: z.string().trim().min(1).default("mock"),
   STORAGE_PROVIDER: z.string().trim().min(1).default("local")
+}).superRefine((value, context) => {
+  if (value.GLM_MODE === "live" && !value.GLM_API_KEY) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "GLM_API_KEY is required when GLM_MODE=live.",
+      path: ["GLM_API_KEY"]
+    });
+  }
 });
 
 export const env = envSchema.parse(process.env);
