@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
+import { access, mkdir, writeFile } from "fs/promises";
 import path from "path";
 import type {
   GenerateIncomeStatementInput,
@@ -16,12 +16,14 @@ const currency = "MYR";
 const escapePdfText = (value: string) =>
   value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 
-const buildSimplePdf = (title: string, lines: string[]) => {
-  const contentLines = [title, "", ...lines].slice(0, 34);
+const buildSimplePdf = (title: string, lines: Array<{ text: string; size?: number }>) => {
+  const contentLines = [{ text: title, size: 18 }, ...lines].slice(0, 44);
+  let y = 790;
   const textCommands = contentLines
-    .map((line, index) => {
-      const y = 760 - index * 18;
-      return `BT /F1 ${index === 0 ? 16 : 10} Tf 50 ${y} Td (${escapePdfText(line)}) Tj ET`;
+    .map((line) => {
+      const command = `BT /F1 ${line.size ?? 10} Tf 50 ${y} Td (${escapePdfText(line.text)}) Tj ET`;
+      y -= line.size && line.size >= 16 ? 24 : 16;
+      return command;
     })
     .join("\n");
   const objects = [
@@ -130,7 +132,53 @@ async function findStatementById(statementId: string) {
   });
 }
 
-const writeStatementPdf = async (statementId: string, lines: string[]) => {
+const statementDate = (value: Date) => value.toISOString().slice(0, 10);
+
+const formatAmount = (value: number) => `${currency} ${value.toFixed(2)}`;
+
+const buildStatementPdfLines = (
+  statementId: string,
+  verifyToken: string,
+  freelancerName: string,
+  freelancerEmail: string,
+  periodStart: Date,
+  periodEnd: Date,
+  totalEarned: number,
+  totalJobs: number,
+  totalMilestones: number,
+  avgMonthlyIncome: number,
+  narrative: string,
+  lineItems: IncomeStatementRecord["lineItems"]
+) => [
+  { text: "Formal Income Statement", size: 14 },
+  { text: "GigHub Freelancer Earnings Verification" },
+  { text: "" },
+  { text: `Statement ID: ${statementId}` },
+  { text: `Generated on: ${statementDate(new Date())}` },
+  { text: `Freelancer: ${freelancerName}` },
+  { text: `Email: ${freelancerEmail}` },
+  { text: `Covered period: ${statementDate(periodStart)} to ${statementDate(periodEnd)}` },
+  { text: "" },
+  { text: `Total earned: ${formatAmount(totalEarned)}`, size: 12 },
+  { text: `Total jobs completed in period: ${totalJobs}` },
+  { text: `Total released milestones: ${totalMilestones}` },
+  { text: `Average monthly income: ${formatAmount(avgMonthlyIncome)}` },
+  { text: "" },
+  { text: "Income narrative" },
+  { text: narrative },
+  { text: "" },
+  { text: "Released line items" },
+  ...lineItems.map((lineItem) => ({
+    text: `${statementDate(new Date(lineItem.releasedAt))} | ${lineItem.jobTitle} | ${
+      lineItem.companyName
+    } | ${formatAmount(lineItem.amount)}`
+  })),
+  { text: "" },
+  { text: `Verification token: ${verifyToken}` },
+  { text: "This statement reflects released escrow milestones recorded on GigHub." }
+];
+
+const writeStatementPdf = async (statementId: string, lines: Array<{ text: string; size?: number }>) => {
   const generatedAt = new Date();
   const storageKey = path
     .join(
@@ -145,7 +193,7 @@ const writeStatementPdf = async (statementId: string, lines: string[]) => {
   await mkdir(path.dirname(destination), {
     recursive: true
   });
-  await writeFile(destination, buildSimplePdf("GigHub Income Statement", lines));
+  await writeFile(destination, buildSimplePdf("GigHub Formal Income Statement", lines));
 
   return storageKey;
 };
@@ -272,6 +320,15 @@ export const generateFreelancerIncomeStatement = async (
     periodEnd,
     topCategories: categories.slice(0, 3)
   })).narrative;
+  const freelancer = await prisma.user.findUnique({
+    where: {
+      id: freelancerId
+    }
+  });
+
+  if (!freelancer) {
+    throw new HttpError(404, "FREELANCER_NOT_FOUND", "The freelancer account could not be found.");
+  }
 
   const statement = await prisma.incomeStatement.create({
     data: {
@@ -299,24 +356,31 @@ export const generateFreelancerIncomeStatement = async (
     include: statementInclude
   });
 
-  const pdfStorageKey = await writeStatementPdf(statement.id, [
-    `Statement ID: ${statement.id}`,
-    `Verification token: ${statement.verifyToken}`,
-    `Period: ${periodStart.toISOString().slice(0, 10)} to ${periodEnd.toISOString().slice(0, 10)}`,
-    `Total earned: ${currency} ${totalEarned.toFixed(2)}`,
-    `Total jobs: ${totalJobs}`,
-    `Total milestones: ${milestones.length}`,
-    `Average monthly income: ${currency} ${avgMonthlyIncome.toFixed(2)}`,
-    "",
-    narrative,
-    "",
-    ...statement.lineItems.map(
-      (lineItem) =>
-        `${lineItem.releasedAt.toISOString().slice(0, 10)} | ${lineItem.jobTitle} | ${
-          lineItem.companyName
-        } | ${currency} ${Number(lineItem.amount).toFixed(2)}`
+  const pdfStorageKey = await writeStatementPdf(
+    statement.id,
+    buildStatementPdfLines(
+      statement.id,
+      statement.verifyToken,
+      freelancer.name,
+      freelancer.email,
+      periodStart,
+      periodEnd,
+      totalEarned,
+      totalJobs,
+      milestones.length,
+      avgMonthlyIncome,
+      narrative,
+      statement.lineItems.map((lineItem) => ({
+        id: lineItem.id,
+        milestoneId: lineItem.milestoneId,
+        jobTitle: lineItem.jobTitle,
+        companyName: lineItem.companyName,
+        amount: Number(lineItem.amount),
+        releasedAt: lineItem.releasedAt.toISOString(),
+        category: lineItem.category ?? null
+      }))
     )
-  ]);
+  );
 
   const updatedStatement = await prisma.incomeStatement.update({
     where: {
@@ -362,4 +426,40 @@ export const verifyIncomeStatement = async (verifyToken: string) => {
   }
 
   return toStatementRecord(statement);
+};
+
+export const getFreelancerIncomeStatementPdf = async (freelancerId: string, statementId: string) => {
+  const statement = await prisma.incomeStatement.findFirst({
+    where: {
+      id: statementId,
+      freelancerId
+    }
+  });
+
+  if (!statement || !statement.pdfStorageKey) {
+    throw new HttpError(
+      404,
+      "INCOME_STATEMENT_NOT_FOUND",
+      "That income statement PDF could not be found."
+    );
+  }
+
+  const filePath = path.join(getLocalStorageRoot(), statement.pdfStorageKey);
+
+  try {
+    await access(filePath);
+  } catch {
+    throw new HttpError(
+      404,
+      "INCOME_STATEMENT_PDF_NOT_FOUND",
+      "That income statement PDF is not available."
+    );
+  }
+
+  return {
+    filePath,
+    fileName: `gighub-income-statement-${statementDate(statement.periodStart)}-${statementDate(
+      statement.periodEnd
+    )}.pdf`
+  };
 };

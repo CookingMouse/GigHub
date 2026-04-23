@@ -20,7 +20,7 @@ import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { redis } from "../lib/redis";
 import type { BriefValidationProvider } from "./brief-validation-service";
-import { selectedBriefValidationProvider, selectedGLMProvider } from "./glm-provider";
+import { selectedBriefValidationProvider } from "./glm-provider";
 import { mockPaymentProvider } from "./mock-payment-service";
 import { releaseMilestoneEscrow } from "./release-service";
 
@@ -1092,18 +1092,6 @@ export const rejectCompanyMilestone = async (
     );
   }
 
-  const clientDisputeHistoryCount = await prisma.dispute.count({
-    where: {
-      raisedById: companyId
-    }
-  });
-  const milestoneDecision = latestMilestoneDecision(milestone);
-  const disputeAnalysis = await selectedGLMProvider.analyzeDispute({
-    rejectionReason,
-    milestoneScore: milestoneDecision?.overallScore ?? null,
-    milestonePassFail: milestoneDecision?.passFail ?? null,
-    clientDisputeHistoryCount
-  });
   const reviewedAt = new Date();
 
   await prisma.$transaction(async (tx) => {
@@ -1119,24 +1107,12 @@ export const rejectCompanyMilestone = async (
       }
     });
 
-    const dispute = await tx.dispute.create({
+    await tx.dispute.create({
       data: {
         submissionId: submission.id,
         raisedById: companyId,
         rejectionReason,
         status: "OPEN"
-      }
-    });
-
-    await tx.gLMDecision.create({
-      data: {
-        jobId: job.id,
-        disputeId: dispute.id,
-        decisionType: "DISPUTE_ANALYSIS",
-        recommendation: disputeAnalysis.recommendation,
-        badFaithFlags: disputeAnalysis.badFaithFlags,
-        reasoning: disputeAnalysis.reasoning,
-        rawResponse: disputeAnalysis
       }
     });
 

@@ -6,7 +6,7 @@ import React from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { AdminDisputesPage } from "./admin-disputes-page";
 import { FreelancerDashboard } from "./freelancer-dashboard";
-import { LogoutButton } from "./logout-button";
+import { WorkspaceLayout } from "./workspace-layout";
 
 type ProtectedShellProps = {
   mode: "dashboard" | "admin";
@@ -78,15 +78,7 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
   }
 
   return (
-    <section className="shell-card">
-      <div className="shell-header">
-        <div>
-          <p className="eyebrow">GigHub</p>
-          <h1>{heading}</h1>
-        </div>
-        <LogoutButton />
-      </div>
-
+    <WorkspaceLayout subtitle={summary} title={heading} user={user}>
       <div className="status-grid">
         <article className="status-panel">
           <span className="panel-label">Signed in as</span>
@@ -101,8 +93,6 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
         </article>
       </div>
 
-      <p className="muted">{summary}</p>
-
       {user.role === "company" && mode === "dashboard" ? (
         <div className="action-row">
           <Link className="button-primary" href="/jobs/new">
@@ -113,7 +103,7 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
           </Link>
         </div>
       ) : null}
-    </section>
+    </WorkspaceLayout>
   );
 };
 

@@ -144,7 +144,7 @@ export const AdminDisputeDetailPage = ({ disputeId }: AdminDisputeDetailPageProp
           </div>
           <LogoutButton />
         </div>
-        <p className="muted">Pulling the submission, scoring, and moderation context.</p>
+        <p className="muted">Pulling the submission and moderation context.</p>
       </section>
     );
   }
@@ -244,64 +244,17 @@ export const AdminDisputeDetailPage = ({ disputeId }: AdminDisputeDetailPageProp
         </section>
 
         <section className="inline-panel">
-          <p className="eyebrow">Milestone scoring</p>
-          <h2>Mocked GLM milestone decision</h2>
-
+          <p className="eyebrow">Milestone</p>
+          <h2>Review timeline</h2>
           <div className="status-grid compact-grid">
-            <article className="status-panel">
-              <span className="panel-label">Score</span>
-              <strong>
-                {dispute.milestoneDecision?.overallScore !== null &&
-                dispute.milestoneDecision?.overallScore !== undefined
-                  ? `${dispute.milestoneDecision.overallScore}/100`
-                  : "Pending"}
-              </strong>
-              <p>{dispute.milestoneDecision?.passFail ?? "No scoring result found."}</p>
-            </article>
-
             <article className="status-panel">
               <span className="panel-label">Review due</span>
               <strong>{formatDate(dispute.milestone.reviewDueAt)}</strong>
               <p>Release paths stay locked to one protected service.</p>
             </article>
           </div>
-
-          {dispute.milestoneDecision?.reasoning ? (
-            <p className="muted">{dispute.milestoneDecision.reasoning}</p>
-          ) : null}
-
-          {dispute.milestoneDecision?.requirementScores.length ? (
-            <ul className="feedback-list">
-              {dispute.milestoneDecision.requirementScores.map((score) => (
-                <li key={`${score.requirement}-${score.score}`}>
-                  {score.requirement.replace(/_/g, " ")}: {score.score}/100
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </section>
       </div>
-
-      <section className="inline-panel">
-        <p className="eyebrow">Dispute analysis</p>
-        <h2>Mocked GLM arbitration output</h2>
-
-        <div className="status-grid compact-grid">
-          <article className="status-panel">
-            <span className="panel-label">Recommendation</span>
-            <strong>{dispute.disputeDecision?.recommendation ?? "Pending"}</strong>
-            <p>
-              {dispute.disputeDecision?.badFaithFlags.length
-                ? dispute.disputeDecision.badFaithFlags.join(", ")
-                : "No bad-faith flags raised."}
-            </p>
-          </article>
-        </div>
-
-        {dispute.disputeDecision?.reasoning ? (
-          <p className="muted">{dispute.disputeDecision.reasoning}</p>
-        ) : null}
-      </section>
 
       <section className="inline-panel">
         <p className="eyebrow">Moderator action</p>

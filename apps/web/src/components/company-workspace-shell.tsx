@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import React, { type ReactNode } from "react";
-import { LogoutButton } from "./logout-button";
+import { WorkspaceLayout } from "./workspace-layout";
 
 type CompanyWorkspaceShellProps = {
   title: string;
@@ -22,21 +21,11 @@ export const CompanyWorkspaceShell = ({
   companyEmail
 }: CompanyWorkspaceShellProps) => {
   return (
-    <section className="shell-card shell-card-wide">
-      <div className="shell-header">
-        <div>
-          <p className="eyebrow">GigHub Company</p>
-          <h1>{title}</h1>
-          <p className="muted">{description}</p>
-        </div>
-        <div className="header-action-group">
-          <Link className="button-secondary" href="/dashboard">
-            Dashboard
-          </Link>
-          <LogoutButton />
-        </div>
-      </div>
-
+    <WorkspaceLayout
+      title={title}
+      subtitle={description}
+      user={{ id: "company-shell", email: companyEmail, name: companyName, role: "company" }}
+    >
       <div className="status-grid">
         <article className="status-panel">
           <span className="panel-label">Company</span>
@@ -54,6 +43,6 @@ export const CompanyWorkspaceShell = ({
       {actions ? <div className="action-row">{actions}</div> : null}
 
       {children}
-    </section>
+    </WorkspaceLayout>
   );
 };

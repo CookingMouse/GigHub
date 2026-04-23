@@ -37,67 +37,20 @@ const DecisionSummary = ({
 }: {
   milestone: FreelancerMilestoneDetailRecord;
 }) => {
-  const decision = milestone.latestDecision;
   const dispute = milestone.activeDispute;
 
-  if (!decision && !dispute) {
+  if (!dispute && milestone.status !== "UNDER_REVIEW") {
     return null;
   }
 
   return (
     <section className="inline-panel">
-      <p className="eyebrow">Decision intelligence</p>
-      <h2>Latest GLM scoring and dispute state</h2>
-
-      {decision ? (
-        <>
-          <div className="status-grid compact-grid">
-            <article className="status-panel">
-              <span className="panel-label">Milestone scoring</span>
-              <strong>
-                {decision.overallScore !== null ? `${decision.overallScore}/100` : "Pending"}
-              </strong>
-              <p>{decision.passFail ?? "No pass/fail verdict recorded yet."}</p>
-            </article>
-
-            <article className="status-panel">
-              <span className="panel-label">Review deadline</span>
-              <strong>{formatDate(milestone.reviewDueAt)}</strong>
-              <p>
-                {milestone.status === "UNDER_REVIEW"
-                  ? "The company is inside the 72-hour review window."
-                  : milestone.status === "REVISION_REQUESTED"
-                    ? "The submission has been sent back for another revision."
-                    : "Review timing is not active for the current milestone state."}
-              </p>
-            </article>
-          </div>
-
-          {decision.reasoning ? <p className="muted">{decision.reasoning}</p> : null}
-
-          {decision.requirementScores.length > 0 ? (
-            <ul className="feedback-list">
-              {decision.requirementScores.map((score) => (
-                <li key={`${score.requirement}-${score.score}`}>
-                  {score.requirement.replace(/_/g, " ")}: {score.score}/100
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </>
-      ) : null}
-
-      {milestone.status === "REVISION_REQUESTED" ? (
-        <p className="callout-warning">
-          Mocked GLM did not clear this revision for company review. Update the deliverable and
-          resubmit while revisions remain.
-        </p>
-      ) : null}
+      <p className="eyebrow">Review status</p>
+      <h2>Company review and dispute state</h2>
 
       {milestone.status === "UNDER_REVIEW" ? (
         <p className="helper-copy">
-          This revision passed mocked GLM scoring and is waiting for company approval, rejection, or
-          auto-release.
+          Your submission is waiting for company approval, rejection, or auto-release.
         </p>
       ) : null}
 
@@ -105,11 +58,6 @@ const DecisionSummary = ({
         <div className="callout-warning">
           <strong>Dispute status: {dispute.status}</strong>
           <p>{dispute.rejectionReason}</p>
-          {dispute.latestDecision?.recommendation ? (
-            <p className="muted">
-              Mocked GLM recommendation: {dispute.latestDecision.recommendation}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </section>

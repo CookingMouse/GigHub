@@ -86,8 +86,7 @@ export const AdminDisputesPage = ({ user }: AdminDisputesPageProps) => {
       </div>
 
       <p className="muted">
-        Review company rejections, compare them against mocked GLM arbitration, and close the case
-        with either release or revision.
+        Review company rejections and close each case with either release or revision.
       </p>
 
       <div className="action-row">
@@ -135,16 +134,6 @@ export const AdminDisputesPage = ({ user }: AdminDisputesPageProps) => {
               <p>{dispute.rejectionReason}</p>
 
               <div className="status-grid compact-grid">
-                <article className="status-panel">
-                  <span className="panel-label">Mock GLM recommendation</span>
-                  <strong>{dispute.recommendation ?? "Pending"}</strong>
-                  <p>
-                    {dispute.badFaithFlags.length > 0
-                      ? dispute.badFaithFlags.join(", ")
-                      : "No bad-faith flags raised."}
-                  </p>
-                </article>
-
                 <article className="status-panel">
                   <span className="panel-label">Opened at</span>
                   <strong>{formatDate(dispute.openedAt)}</strong>

@@ -879,20 +879,19 @@ export const CompanyJobDetailPage = () => {
             <div className="panel-heading-row">
               <div>
                 <p className="eyebrow">Step 4</p>
-                <h2>Review milestone scoring and disputes</h2>
+                <h2>Review submissions and disputes</h2>
               </div>
             </div>
 
             <p className="muted">
-              GigHub only opens company review when mocked GLM passes a milestone. Partial or failed
-              scoring routes the work back for revision automatically.
+              Review submitted work, approve to release funds, or reject with a clear reason to open
+              a dispute.
             </p>
 
             {reviewError ? <p className="form-error">{reviewError}</p> : null}
 
             <div className="card-stack">
               {job.milestones.map((milestone) => {
-                const decision = milestone.latestDecision;
                 const submission = milestone.latestSubmission;
                 const dispute = milestone.activeDispute;
                 const autoReleaseDue =
@@ -924,13 +923,9 @@ export const CompanyJobDetailPage = () => {
                       </article>
 
                       <article className="status-panel">
-                        <span className="panel-label">GLM scoring</span>
-                        <strong>
-                          {decision?.overallScore !== null && decision?.overallScore !== undefined
-                            ? `${decision.overallScore}/100`
-                            : "Not scored yet"}
-                        </strong>
-                        <p>{decision?.passFail ?? "Waiting for the first submission"}</p>
+                        <span className="panel-label">Review state</span>
+                        <strong>{milestone.status}</strong>
+                        <p>{submission ? "Submission received" : "Waiting for the first submission"}</p>
                       </article>
 
                       <article className="status-panel">
@@ -940,17 +935,6 @@ export const CompanyJobDetailPage = () => {
                       </article>
                     </div>
 
-                    {decision?.reasoning ? <p className="muted">{decision.reasoning}</p> : null}
-
-                    {decision?.requirementScores.length ? (
-                      <ul className="feedback-list">
-                        {decision.requirementScores.map((requirement) => (
-                          <li key={`${milestone.id}-${requirement.requirement}`}>
-                            {requirement.requirement.replace(/_/g, " ")}: {requirement.score}/100
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
 
                     {milestone.status === "UNDER_REVIEW" ? (
                       <>
@@ -1000,21 +984,9 @@ export const CompanyJobDetailPage = () => {
                       </>
                     ) : null}
 
-                    {milestone.status === "REVISION_REQUESTED" ? (
-                      <p className="callout-warning">
-                        The submission did not pass mocked GLM scoring, so GigHub routed it back to
-                        the freelancer for revision before company review.
-                      </p>
-                    ) : null}
-
                     {milestone.status === "DISPUTED" && dispute ? (
                       <div className="callout-warning">
                         <strong>Dispute open.</strong> {dispute.rejectionReason}
-                        {dispute.latestDecision?.recommendation ? (
-                          <p className="muted">
-                            Mocked GLM recommendation: {dispute.latestDecision.recommendation}
-                          </p>
-                        ) : null}
                       </div>
                     ) : null}
 

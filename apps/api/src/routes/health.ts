@@ -38,3 +38,15 @@ healthRouter.get(
     });
   })
 );
+
+healthRouter.get("/routes", (_request, response) => {
+  response.json({
+    data: {
+      routes: {
+        requests: true,
+        profile: true,
+        inbox: true
+      }
+    }
+  });
+});

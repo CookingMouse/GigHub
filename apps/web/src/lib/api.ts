@@ -8,22 +8,40 @@ import type {
   AdminJobTraceRecord,
   ApiErrorResponse,
   AssignFreelancerInput,
+  CompanyJobApplicationRecord,
+  CompanyJobInvitationRecord,
+  CompanyProfileRecord,
+  ConversationMessageRecord,
+  ConversationThreadRecord,
+  CreateConversationMessageInput,
+  CreateConversationThreadInput,
+  CreateJobApplicationInput,
+  CreateJobInvitationInput,
   DemoReadinessRecord,
   FreelancerJobRecord,
   FreelancerDirectoryRecord,
   FreelancerMilestoneDetailRecord,
+  FreelancerProfileRecord,
   GenerateIncomeStatementInput,
   IncomeStatementRecord,
   IncomeSummaryRecord,
+  JobApplicationRecord,
+  JobAvailabilityRecord,
+  JobInvitationRecord,
   JobMatchRecord,
   JobRecord,
   LoginInput,
   MilestonePlanInput,
   MockPaymentIntentRecord,
+  NotificationRecord,
   PublicUser,
+  PublicCompanyProfileRecord,
   RejectMilestoneInput,
   RegisterInput,
+  RespondJobInvitationInput,
   ResolveDisputeInput,
+  UpdateCompanyProfileInput,
+  UpdateFreelancerProfileInput,
   UpsertJobDraftInput
 } from "@gighub/shared";
 import { webConfig } from "./config";
@@ -103,6 +121,32 @@ const requestFormData = async <T>(
   return (payload as { data: T }).data;
 };
 
+const requestBlob = async (path: string, init: RequestInit = {}) => {
+  const response = await fetch(`${webConfig.apiBaseUrl}/api/v1${path}`, {
+    ...init,
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => null)) as ApiErrorResponse | null;
+
+    throw new ApiRequestError(
+      errorPayload?.message ?? "The request failed.",
+      response.status,
+      errorPayload?.code
+    );
+  }
+
+  return {
+    blob: await response.blob(),
+    fileName:
+      response.headers
+        .get("content-disposition")
+        ?.match(/filename=\"?([^"]+)\"?/)?.[1]
+        ?.trim() ?? "download.pdf"
+  };
+};
+
 export const authApi = {
   register: (input: RegisterInput) =>
     requestJson<{ user: PublicUser }>("/auth/register", {
@@ -132,6 +176,129 @@ export const healthApi = {
   readiness: () =>
     requestJson<{ readiness: DemoReadinessRecord }>("/health/readiness", {
       method: "GET"
+    }),
+  routes: () =>
+    requestJson<{
+      routes: {
+        requests: boolean;
+        profile: boolean;
+        inbox: boolean;
+      };
+    }>("/health/routes", {
+      method: "GET"
+    })
+};
+
+export const requestsApi = {
+  listAvailability: () =>
+    requestJson<{ jobs: JobAvailabilityRecord[] }>("/requests/freelancer/availability", {
+      method: "GET"
+    }),
+  applyToJob: (jobId: string, input: CreateJobApplicationInput) =>
+    requestJson<{ success: boolean }>(`/requests/freelancer/jobs/${jobId}/apply`, {
+      method: "POST",
+      json: input
+    }),
+  listFreelancerRequests: () =>
+    requestJson<{ applications: JobApplicationRecord[]; invitations: JobInvitationRecord[] }>(
+      "/requests/freelancer/applications",
+      {
+        method: "GET"
+      }
+    ),
+  respondInvitation: (invitationId: string, input: RespondJobInvitationInput) =>
+    requestJson<{ success: boolean }>(
+      `/requests/freelancer/invitations/${invitationId}/respond`,
+      {
+        method: "POST",
+        json: input
+      }
+    ),
+  listCompanyRequests: () =>
+    requestJson<{
+      applications: CompanyJobApplicationRecord[];
+      invitations: CompanyJobInvitationRecord[];
+    }>("/requests/company/requests", {
+      method: "GET"
+    }),
+  resolveApplication: (applicationId: string, action: "accept" | "reject") =>
+    requestJson<{ success: boolean }>(`/requests/company/applications/${applicationId}/${action}`, {
+      method: "POST"
+    }),
+  inviteFreelancer: (jobId: string, input: CreateJobInvitationInput) =>
+    requestJson<{ success: boolean }>(`/requests/company/jobs/${jobId}/invitations`, {
+      method: "POST",
+      json: input
+    })
+};
+
+export const inboxApi = {
+  listThreads: () =>
+    requestJson<{ threads: ConversationThreadRecord[] }>("/inbox/threads", {
+      method: "GET"
+    }),
+  createThread: (input: CreateConversationThreadInput) =>
+    requestJson<{ threadId: string }>("/inbox/threads", {
+      method: "POST",
+      json: input
+    }),
+  listMessages: (threadId: string) =>
+    requestJson<{ messages: ConversationMessageRecord[] }>(`/inbox/threads/${threadId}/messages`, {
+      method: "GET"
+    }),
+  createMessage: (threadId: string, input: CreateConversationMessageInput) =>
+    requestJson<{ messageId: string }>(`/inbox/threads/${threadId}/messages`, {
+      method: "POST",
+      json: input
+    }),
+  markThreadRead: (threadId: string) =>
+    requestJson<{ success: boolean }>(`/inbox/threads/${threadId}/read`, {
+      method: "POST"
+    }),
+  listNotifications: () =>
+    requestJson<{ notifications: NotificationRecord[] }>("/inbox/notifications", {
+      method: "GET"
+    }),
+  markNotificationRead: (notificationId: string) =>
+    requestJson<{ success: boolean }>(`/inbox/notifications/${notificationId}/read`, {
+      method: "POST"
+    })
+};
+
+export const profileApi = {
+  getFreelancerProfile: () =>
+    requestJson<{ profile: FreelancerProfileRecord }>("/profile/freelancer", {
+      method: "GET"
+    }),
+  updateFreelancerProfile: (input: UpdateFreelancerProfileInput) =>
+    requestJson<{ profile: FreelancerProfileRecord }>("/profile/freelancer", {
+      method: "PATCH",
+      json: input
+    }),
+  uploadFreelancerResume: (file: File) => {
+    const formData = new FormData();
+    formData.set("file", file);
+
+    return requestFormData<{ profile: FreelancerProfileRecord }>(
+      "/profile/freelancer/resume",
+      formData,
+      {
+        method: "POST"
+      }
+    );
+  },
+  getCompanyProfile: () =>
+    requestJson<{ profile: CompanyProfileRecord }>("/profile/company", {
+      method: "GET"
+    }),
+  getPublicCompanyProfile: (companyId: string) =>
+    requestJson<{ company: PublicCompanyProfileRecord }>(`/profile/companies/${companyId}`, {
+      method: "GET"
+    }),
+  updateCompanyProfile: (input: UpdateCompanyProfileInput) =>
+    requestJson<{ profile: CompanyProfileRecord }>("/profile/company", {
+      method: "PATCH",
+      json: input
     })
 };
 
@@ -268,6 +435,10 @@ export const freelancerWorkspaceApi = {
     requestJson<{ statement: IncomeStatementRecord }>("/freelancer/income/statements", {
       method: "POST",
       json: input
+    }),
+  downloadIncomeStatementPdf: (statementId: string) =>
+    requestBlob(`/freelancer/income/statements/${statementId}/pdf`, {
+      method: "GET"
     }),
   listJobMatches: () =>
     requestJson<{ matches: JobMatchRecord[] }>("/freelancer/job-matches", {

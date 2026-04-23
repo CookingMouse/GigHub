@@ -9,8 +9,11 @@ import { freelancerRouter } from "./routes/freelancer";
 import { freelancersRouter } from "./routes/freelancers";
 import { healthRouter } from "./routes/health";
 import { incomeStatementsRouter } from "./routes/income-statements";
+import { inboxRouter } from "./routes/inbox";
 import { jobsRouter } from "./routes/jobs";
 import { paymentWebhooksRouter } from "./routes/payment-webhooks";
+import { profileRouter } from "./routes/profile";
+import { requestsRouter } from "./routes/requests";
 import { errorHandler } from "./middleware/error-handler";
 import { notFoundHandler } from "./middleware/not-found";
 
@@ -37,7 +40,10 @@ app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/freelancer", freelancerRouter);
 app.use("/api/v1/freelancers", freelancersRouter);
 app.use("/api/v1/income-statements", incomeStatementsRouter);
+app.use("/api/v1/inbox", inboxRouter);
 app.use("/api/v1/jobs", jobsRouter);
+app.use("/api/v1/profile", profileRouter);
+app.use("/api/v1/requests", requestsRouter);
 app.use("/api/v1/webhooks/payments", paymentWebhooksRouter);
 
 app.use(notFoundHandler);

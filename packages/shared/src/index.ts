@@ -12,6 +12,8 @@ export const jobStatuses = [
   "DISPUTED",
   "CANCELLED"
 ] as const;
+export const jobApplicationStatuses = ["PENDING", "ACCEPTED", "REJECTED", "WITHDRAWN"] as const;
+export const jobInvitationStatuses = ["PENDING", "ACCEPTED", "REJECTED", "CANCELLED"] as const;
 export const escrowStatuses = [
   "UNFUNDED",
   "FUNDED",
@@ -45,6 +47,8 @@ export const jobValidationThreshold = 70;
 export type AppRole = (typeof appRoles)[number];
 export type RegistrationRole = (typeof registrationRoles)[number];
 export type JobStatus = (typeof jobStatuses)[number];
+export type JobApplicationStatus = (typeof jobApplicationStatuses)[number];
+export type JobInvitationStatus = (typeof jobInvitationStatuses)[number];
 export type EscrowStatus = (typeof escrowStatuses)[number];
 export type MilestoneStatus = (typeof milestoneStatuses)[number];
 export type SubmissionStatus = (typeof submissionStatuses)[number];
@@ -61,7 +65,8 @@ export const registerSchema = z.object({
 
 export const loginSchema = z.object({
   email: z.string().trim().email().max(255),
-  password: z.string().min(8).max(72)
+  password: z.string().min(8).max(72),
+  role: z.enum(appRoles)
 });
 
 const checklistItemSchema = z.string().trim().min(1).max(240);
@@ -94,6 +99,46 @@ export const upsertJobDraftSchema = z.object({
 
 export const assignFreelancerSchema = z.object({
   freelancerId: z.string().trim().min(1).max(191)
+});
+
+export const createJobApplicationSchema = z.object({
+  coverNote: z.string().trim().max(2000).optional().default("")
+});
+
+export const createJobInvitationSchema = z.object({
+  freelancerId: z.string().trim().min(1).max(191),
+  note: z.string().trim().max(2000).optional().default("")
+});
+
+export const respondJobInvitationSchema = z.object({
+  action: z.enum(["accept", "reject"])
+});
+
+export const createConversationThreadSchema = z.object({
+  participantIds: z.array(z.string().trim().min(1).max(191)).min(1).max(10),
+  subject: z.string().trim().max(160).optional().default(""),
+  jobId: z.string().trim().min(1).max(191).optional()
+});
+
+export const createConversationMessageSchema = z.object({
+  body: z.string().trim().min(1).max(4000)
+});
+
+export const updateFreelancerProfileSchema = z.object({
+  displayName: z.string().trim().min(2).max(120).optional(),
+  portfolioUrl: z.string().trim().url().max(255).optional().or(z.literal("")),
+  headline: z.string().trim().max(160).optional(),
+  bio: z.string().trim().max(4000).optional(),
+  experienceYears: z.coerce.number().int().min(0).max(80).optional(),
+  pastProjects: z.array(z.string().trim().min(1).max(500)).max(100).optional(),
+  skills: z.array(z.string().trim().min(1).max(120)).max(50).optional()
+});
+
+export const updateCompanyProfileSchema = z.object({
+  companyName: z.string().trim().min(2).max(120).optional(),
+  website: z.string().trim().url().max(255).optional().or(z.literal("")),
+  industry: z.string().trim().max(120).optional(),
+  about: z.string().trim().max(4000).optional()
 });
 
 export const milestonePlanItemSchema = z.object({
@@ -156,6 +201,13 @@ export type JobTimeline = z.infer<typeof jobTimelineSchema>;
 export type JobBriefInput = z.infer<typeof jobBriefSchema>;
 export type UpsertJobDraftInput = z.infer<typeof upsertJobDraftSchema>;
 export type AssignFreelancerInput = z.infer<typeof assignFreelancerSchema>;
+export type CreateJobApplicationInput = z.infer<typeof createJobApplicationSchema>;
+export type CreateJobInvitationInput = z.infer<typeof createJobInvitationSchema>;
+export type RespondJobInvitationInput = z.infer<typeof respondJobInvitationSchema>;
+export type CreateConversationThreadInput = z.infer<typeof createConversationThreadSchema>;
+export type CreateConversationMessageInput = z.infer<typeof createConversationMessageSchema>;
+export type UpdateFreelancerProfileInput = z.infer<typeof updateFreelancerProfileSchema>;
+export type UpdateCompanyProfileInput = z.infer<typeof updateCompanyProfileSchema>;
 export type MilestonePlanInput = z.infer<typeof milestonePlanSchema>;
 export type MilestonePlanItemInput = z.infer<typeof milestonePlanItemSchema>;
 export type MockPaymentWebhookInput = z.infer<typeof mockPaymentWebhookSchema>;
@@ -428,6 +480,130 @@ export type JobMatchRecord = {
   matchScore: number;
   reasons: string[];
   requiredSkills: string[];
+};
+
+export type JobAvailabilityRecord = {
+  id: string;
+  title: string;
+  companyName: string;
+  budget: number;
+  milestoneCount: number;
+  publishedAt: string | null;
+};
+
+export type JobApplicationRecord = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  status: JobApplicationStatus;
+  coverNote: string | null;
+  appliedAt: string;
+  updatedAt: string;
+};
+
+export type CompanyJobApplicationRecord = {
+  id: string;
+  freelancerId: string;
+  freelancerName: string;
+  freelancerEmail: string;
+  freelancerDisplayName: string;
+  status: JobApplicationStatus;
+  coverNote: string | null;
+  appliedAt: string;
+};
+
+export type JobInvitationRecord = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  companyId: string;
+  companyName: string;
+  note: string | null;
+  status: JobInvitationStatus;
+  createdAt: string;
+  respondedAt: string | null;
+};
+
+export type CompanyJobInvitationRecord = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  freelancerId: string;
+  freelancerName: string;
+  freelancerEmail: string;
+  note: string | null;
+  status: JobInvitationStatus;
+  createdAt: string;
+  respondedAt: string | null;
+};
+
+export type ConversationThreadRecord = {
+  id: string;
+  subject: string | null;
+  jobId: string | null;
+  updatedAt: string;
+  participants: Array<{
+    userId: string;
+    name: string;
+    email: string;
+    role: AppRole;
+  }>;
+  lastMessage: {
+    senderName: string;
+    body: string;
+    createdAt: string;
+  } | null;
+  unreadCount: number;
+};
+
+export type ConversationMessageRecord = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  body: string;
+  createdAt: string;
+};
+
+export type NotificationRecord = {
+  id: string;
+  type: string;
+  title: string;
+  message: string | null;
+  isRead: boolean;
+  createdAt: string;
+};
+
+export type FreelancerProfileRecord = {
+  displayName: string;
+  portfolioUrl: string | null;
+  skills: string[];
+  headline: string | null;
+  bio: string | null;
+  experienceYears: number | null;
+  pastProjects: string[];
+  resumeFileName: string | null;
+  resumeUploadedAt: string | null;
+};
+
+export type CompanyProfileRecord = {
+  companyName: string;
+  website: string | null;
+  industry: string | null;
+  about: string | null;
+  postedJobs: Array<{
+    id: string;
+    title: string;
+    status: JobStatus;
+    updatedAt: string;
+  }>;
+};
+
+export type PublicCompanyProfileRecord = {
+  id: string;
+  companyName: string;
+  website: string | null;
+  industry: string | null;
+  about: string | null;
 };
 
 export type AdminAuditLogRecord = {

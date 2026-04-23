@@ -3,9 +3,7 @@
 import type { FreelancerJobRecord, PublicUser } from "@gighub/shared";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
-import { ApiRequestError, freelancerWorkspaceApi } from "@/lib/api";
-import { FreelancerIncomePanel } from "./freelancer-income-panel";
-import { FreelancerJobMatchesPanel } from "./freelancer-job-matches-panel";
+import { ApiRequestError, freelancerWorkspaceApi, requestsApi } from "@/lib/api";
 import { FreelancerWorkspaceShell } from "./freelancer-workspace-shell";
 
 type FreelancerDashboardProps = {
@@ -15,7 +13,11 @@ type FreelancerDashboardProps = {
 type JobsState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; jobs: FreelancerJobRecord[] };
+  | {
+      status: "ready";
+      jobs: FreelancerJobRecord[];
+      recommendedJobs: Awaited<ReturnType<typeof requestsApi.listAvailability>>["jobs"];
+    };
 
 const formatDate = (value: string | null) => {
   if (!value) {
@@ -33,9 +35,12 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
   useEffect(() => {
     let isMounted = true;
 
-    const loadJobs = async () => {
+    const loadDashboard = async () => {
       try {
-        const response = await freelancerWorkspaceApi.listJobs();
+        const [jobsResponse, recommendedResponse] = await Promise.all([
+          freelancerWorkspaceApi.listJobs(),
+          requestsApi.listAvailability()
+        ]);
 
         if (!isMounted) {
           return;
@@ -43,7 +48,8 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
 
         setState({
           status: "ready",
-          jobs: response.jobs
+          jobs: jobsResponse.jobs,
+          recommendedJobs: recommendedResponse.jobs.slice(0, 8)
         });
       } catch (error) {
         if (!isMounted) {
@@ -55,12 +61,12 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
           message:
             error instanceof ApiRequestError
               ? error.message
-              : "Unable to load the assigned milestones right now."
+              : "Unable to load your dashboard right now."
         });
       }
     };
 
-    void loadJobs();
+    void loadDashboard();
 
     return () => {
       isMounted = false;
@@ -69,75 +75,90 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
 
   return (
     <FreelancerWorkspaceShell
-      description="Track assigned milestones, upload confidential submissions, and keep every revision inside the protected workflow."
+      description="View recommended jobs, your current working task list, and working schedule."
       freelancerEmail={user.email}
       freelancerName={user.name}
       title="Freelancer dashboard"
     >
-      <div className="workspace-grid">
-        <FreelancerIncomePanel />
-        <FreelancerJobMatchesPanel />
-      </div>
-
       {state.status === "loading" ? (
         <section className="inline-panel">
-          <h2>Loading assigned work</h2>
-          <p className="muted">Pulling the jobs and milestone status from the freelancer workspace.</p>
+          <h2>Loading dashboard</h2>
+          <p className="muted">Pulling recommendations and current task data.</p>
         </section>
       ) : null}
 
       {state.status === "error" ? (
         <section className="inline-panel">
-          <h2>Workspace unavailable</h2>
+          <h2>Dashboard unavailable</h2>
           <p className="form-error">{state.message}</p>
         </section>
       ) : null}
 
-      {state.status === "ready" && state.jobs.length === 0 ? (
-        <section className="inline-panel">
-          <h2>No assigned jobs yet</h2>
-          <p className="muted">
-            When a company assigns a funded project to this freelancer account, it will appear here
-            with its milestone submission links.
-          </p>
-        </section>
-      ) : null}
-
       {state.status === "ready" ? (
-        <div className="card-stack">
-          {state.jobs.map((job) => (
-            <section className="list-card" key={job.id}>
-              <div className="list-card-header">
-                <div>
-                  <p className="eyebrow">Assigned job</p>
-                  <h2>{job.title}</h2>
-                  <p className="muted">
-                    {job.companyName} · {job.status}
-                  </p>
-                </div>
-              </div>
-
-              <div className="directory-grid">
-                {job.milestones.map((milestone) => (
-                  <article className="directory-card" key={milestone.id}>
-                    <p className="eyebrow">Milestone {milestone.sequence}</p>
-                    <h3>{milestone.title}</h3>
-                    <p className="muted">{milestone.description || "No description added yet."}</p>
-                    <p className="muted">Due: {formatDate(milestone.dueAt)}</p>
-                    <p className="muted">
-                      {milestone.revisionCount} / 3 revisions used · {milestone.status}
-                    </p>
-                    <Link
-                      className="button-primary"
-                      href={`/freelancer/milestones/${milestone.id}`}
-                    >
-                      Open milestone
+        <div className="workspace-grid">
+          <section className="inline-panel">
+            <p className="eyebrow">Job recommended currently</p>
+            <h2>Recommended jobs</h2>
+            <div className="card-stack">
+              {state.recommendedJobs.length === 0 ? (
+                <p className="muted">No recommendations yet. Check Job Request for all open jobs.</p>
+              ) : (
+                state.recommendedJobs.map((job) => (
+                  <article className="status-panel" key={job.id}>
+                    <strong>{job.title}</strong>
+                    <p className="muted">{job.companyName}</p>
+                    <p className="muted">Budget: {job.budget}</p>
+                    <Link className="button-primary" href={`/freelancer/requests?jobId=${job.id}`}>
+                      Open in Job Request
                     </Link>
                   </article>
-                ))}
-              </div>
-            </section>
-          ))}
+                ))
+              )}
+            </div>
+          </section>
+
+          <section className="inline-panel">
+            <p className="eyebrow">Current working task list</p>
+            <h2>Active milestones</h2>
+            <div className="card-stack">
+              {state.jobs.length === 0 ? (
+                <p className="muted">No active jobs assigned yet.</p>
+              ) : (
+                state.jobs.flatMap((job) =>
+                  job.milestones.map((milestone) => (
+                    <article className="status-panel" key={milestone.id}>
+                      <strong>{milestone.title}</strong>
+                      <p>{job.title}</p>
+                      <p className="muted">Status: {milestone.status}</p>
+                      <Link className="button-secondary" href={`/freelancer/milestones/${milestone.id}`}>
+                        Open milestone
+                      </Link>
+                    </article>
+                  ))
+                )
+              )}
+            </div>
+          </section>
+
+          <section className="inline-panel">
+            <p className="eyebrow">Working schedule</p>
+            <h2>Upcoming due dates</h2>
+            <div className="card-stack">
+              {state.jobs.length === 0 ? (
+                <p className="muted">No schedule items yet.</p>
+              ) : (
+                state.jobs.flatMap((job) =>
+                  job.milestones.map((milestone) => (
+                    <article className="status-panel" key={`${milestone.id}-schedule`}>
+                      <strong>{milestone.title}</strong>
+                      <p className="muted">{job.title}</p>
+                      <p>Due: {formatDate(milestone.dueAt)}</p>
+                    </article>
+                  ))
+                )
+              )}
+            </div>
+          </section>
         </div>
       ) : null}
     </FreelancerWorkspaceShell>
