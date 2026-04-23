@@ -1,6 +1,6 @@
 import type { SupportedSubmissionFormat } from "@gighub/shared";
 
-type MilestoneScoringInput = {
+export type MilestoneScoringInput = {
   briefOverview: string;
   deliverables: string[];
   acceptanceCriteria: string[];
@@ -14,7 +14,7 @@ type MilestoneScoringInput = {
   fileName: string;
 };
 
-type RequirementScore = {
+export type RequirementScore = {
   requirement: string;
   score: number;
 };
@@ -26,14 +26,14 @@ export type MilestoneScoringResult = {
   reasoning: string;
 };
 
-type DisputeAnalysisInput = {
+export type DisputeAnalysisInput = {
   rejectionReason: string;
   milestoneScore: number | null;
   milestonePassFail: string | null;
   clientDisputeHistoryCount: number;
 };
 
-type IncomeNarrativeInput = {
+export type IncomeNarrativeInput = {
   totalEarned: number;
   totalJobs: number;
   totalMilestones: number;

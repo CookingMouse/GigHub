@@ -2,6 +2,7 @@ import type { DemoReadinessRecord, ReadinessCheckRecord } from "@gighub/shared";
 import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
+import { glmProviderMode } from "./glm-provider";
 
 const demoAccounts = [
   {
@@ -144,7 +145,7 @@ export const getDemoReadiness = async (): Promise<DemoReadinessRecord> => {
     status: failed ? "degraded" : warned ? "needs_seed" : "ready",
     generatedAt: new Date().toISOString(),
     providers: {
-      glm: env.GLM_MODE,
+      glm: glmProviderMode,
       payments: env.PAYMENT_PROVIDER,
       storage: env.STORAGE_PROVIDER
     },
