@@ -33,10 +33,25 @@ type DisputeAnalysisInput = {
   clientDisputeHistoryCount: number;
 };
 
+type IncomeNarrativeInput = {
+  totalEarned: number;
+  totalJobs: number;
+  totalMilestones: number;
+  avgMonthlyIncome: number;
+  currency: string;
+  periodStart: Date;
+  periodEnd: Date;
+  topCategories: string[];
+};
+
 export type DisputeAnalysisResult = {
   recommendation: "release_funds" | "request_revision";
   badFaithFlags: string[];
   reasoning: string;
+};
+
+export type IncomeNarrativeResult = {
+  narrative: string;
 };
 
 const clampScore = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
@@ -181,6 +196,32 @@ export const mockGLMProvider = {
         badFaithFlags.length > 0
           ? "Mock GLM found bad-faith indicators around the rejection and recommends releasing funds pending moderator review."
           : "Mock GLM found the available milestone evidence stronger than the rejection rationale and recommends release pending moderator review."
+    };
+  },
+
+  generateIncomeNarrative(input: IncomeNarrativeInput): IncomeNarrativeResult {
+    const formatter = new Intl.NumberFormat("en-MY", {
+      style: "currency",
+      currency: input.currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    const period = `${input.periodStart.toISOString().slice(0, 10)} to ${input.periodEnd
+      .toISOString()
+      .slice(0, 10)}`;
+    const categories =
+      input.topCategories.length > 0
+        ? ` Key earning categories include ${input.topCategories.join(", ")}.`
+        : "";
+
+    return {
+      narrative: `For the period ${period}, this freelancer earned ${formatter.format(
+        input.totalEarned
+      )} across ${input.totalMilestones} released milestone(s) from ${
+        input.totalJobs
+      } completed job(s). Estimated average monthly income is ${formatter.format(
+        input.avgMonthlyIncome
+      )}.${categories} This statement is generated from released escrow records and is suitable for income review workflows.`
     };
   }
 };

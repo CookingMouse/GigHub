@@ -8,6 +8,7 @@ import { authRouter } from "./routes/auth";
 import { freelancerRouter } from "./routes/freelancer";
 import { freelancersRouter } from "./routes/freelancers";
 import { healthRouter } from "./routes/health";
+import { incomeStatementsRouter } from "./routes/income-statements";
 import { jobsRouter } from "./routes/jobs";
 import { paymentWebhooksRouter } from "./routes/payment-webhooks";
 import { errorHandler } from "./middleware/error-handler";
@@ -35,6 +36,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/freelancer", freelancerRouter);
 app.use("/api/v1/freelancers", freelancersRouter);
+app.use("/api/v1/income-statements", incomeStatementsRouter);
 app.use("/api/v1/jobs", jobsRouter);
 app.use("/api/v1/webhooks/payments", paymentWebhooksRouter);
 

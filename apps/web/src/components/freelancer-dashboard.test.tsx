@@ -9,7 +9,9 @@ vi.mock("@/lib/api", async () => {
   return {
     ...actual,
     freelancerWorkspaceApi: {
-      listJobs: vi.fn()
+      listJobs: vi.fn(),
+      getIncome: vi.fn(),
+      listJobMatches: vi.fn()
     }
   };
 });
@@ -25,6 +27,8 @@ vi.mock("next/navigation", () => ({
 describe("FreelancerDashboard", () => {
   afterEach(() => {
     vi.mocked(freelancerWorkspaceApi.listJobs).mockReset();
+    vi.mocked(freelancerWorkspaceApi.getIncome).mockReset();
+    vi.mocked(freelancerWorkspaceApi.listJobMatches).mockReset();
   });
 
   it("renders assigned milestone cards for the freelancer workspace", async () => {
@@ -51,6 +55,31 @@ describe("FreelancerDashboard", () => {
         }
       ]
     });
+    vi.mocked(freelancerWorkspaceApi.getIncome).mockResolvedValue({
+      summary: {
+        totalEarned: 2400,
+        releasedMilestones: 1,
+        completedJobs: 1,
+        avgMilestoneValue: 2400,
+        latestStatement: null
+      },
+      statements: []
+    });
+    vi.mocked(freelancerWorkspaceApi.listJobMatches).mockResolvedValue({
+      matches: [
+        {
+          jobId: "job-open-1",
+          title: "Figma landing page design",
+          companyName: "Kampung Labs",
+          budget: 1800,
+          milestoneCount: 2,
+          publishedAt: "2026-04-21T08:00:00.000Z",
+          matchScore: 84,
+          reasons: ["Skill match: Figma"],
+          requiredSkills: ["Figma"]
+        }
+      ]
+    });
 
     render(
       <FreelancerDashboard
@@ -64,6 +93,8 @@ describe("FreelancerDashboard", () => {
     );
 
     expect(await screen.findByText(/campaign microsite rebuild/i)).toBeInTheDocument();
+    expect(await screen.findByText(/escrow-backed earnings record/i)).toBeInTheDocument();
+    expect(await screen.findByText(/figma landing page design/i)).toBeInTheDocument();
     expect(screen.getByText(/milestone 1/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /open milestone/i })).toHaveAttribute(
       "href",

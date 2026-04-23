@@ -5,7 +5,10 @@ import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
 import {
   getAdminDisputeDetail,
+  getAdminJobTrace,
+  listAdminAuditLogs,
   listAdminDisputes,
+  listAdminIncomeStatements,
   resolveAdminDispute
 } from "../services/admin-service";
 
@@ -22,6 +25,34 @@ adminRouter.get("/ping", (_request, response) => {
     }
   });
 });
+
+adminRouter.get(
+  "/audit-logs",
+  asyncHandler(async (_request, response) => {
+    const auditLogs = await listAdminAuditLogs();
+    const incomeStatements = await listAdminIncomeStatements();
+
+    response.json({
+      data: {
+        auditLogs,
+        incomeStatements
+      }
+    });
+  })
+);
+
+adminRouter.get(
+  "/jobs/:jobId/trace",
+  asyncHandler(async (request, response) => {
+    const trace = await getAdminJobTrace(readParam(request.params.jobId));
+
+    response.json({
+      data: {
+        trace
+      }
+    });
+  })
+);
 
 adminRouter.get(
   "/disputes",

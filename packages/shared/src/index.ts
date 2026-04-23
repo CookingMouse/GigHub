@@ -38,6 +38,7 @@ export const submissionStatuses = [
 ] as const;
 export const supportedSubmissionFormats = ["pdf", "docx", "png", "jpg", "zip"] as const;
 export const disputeResolutionOutcomes = ["release_funds", "request_revision"] as const;
+export const statementStatuses = ["GENERATED", "VERIFIED", "REVOKED"] as const;
 export const submissionRevisionLimit = 3;
 export const jobValidationThreshold = 70;
 
@@ -49,6 +50,7 @@ export type MilestoneStatus = (typeof milestoneStatuses)[number];
 export type SubmissionStatus = (typeof submissionStatuses)[number];
 export type SupportedSubmissionFormat = (typeof supportedSubmissionFormats)[number];
 export type DisputeResolutionOutcome = (typeof disputeResolutionOutcomes)[number];
+export type StatementStatus = (typeof statementStatuses)[number];
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -143,6 +145,11 @@ export const resolveDisputeSchema = z.object({
   adminNote: z.string().trim().max(2000).optional().default("")
 });
 
+export const generateIncomeStatementSchema = z.object({
+  periodStart: z.string().trim().datetime(),
+  periodEnd: z.string().trim().datetime()
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type JobTimeline = z.infer<typeof jobTimelineSchema>;
@@ -155,6 +162,7 @@ export type MockPaymentWebhookInput = z.infer<typeof mockPaymentWebhookSchema>;
 export type SubmissionNotesInput = z.infer<typeof submissionNotesSchema>;
 export type RejectMilestoneInput = z.infer<typeof rejectMilestoneSchema>;
 export type ResolveDisputeInput = z.infer<typeof resolveDisputeSchema>;
+export type GenerateIncomeStatementInput = z.infer<typeof generateIncomeStatementSchema>;
 
 export type PublicUser = {
   id: string;
@@ -372,6 +380,91 @@ export type AdminDisputeDetailRecord = {
   submission: SubmissionRecord;
   milestoneDecision: GLMDecisionRecord | null;
   disputeDecision: GLMDecisionRecord | null;
+};
+
+export type IncomeStatementLineItemRecord = {
+  id: string;
+  milestoneId: string;
+  jobTitle: string;
+  companyName: string;
+  amount: number;
+  releasedAt: string;
+  category: string | null;
+};
+
+export type IncomeStatementRecord = {
+  id: string;
+  freelancerId: string;
+  periodStart: string;
+  periodEnd: string;
+  totalEarned: number;
+  totalJobs: number;
+  totalMilestones: number;
+  avgMonthlyIncome: number;
+  currency: string;
+  generatedAt: string;
+  pdfStorageKey: string | null;
+  verifyToken: string;
+  glmNarrative: string | null;
+  status: StatementStatus;
+  lineItems: IncomeStatementLineItemRecord[];
+};
+
+export type IncomeSummaryRecord = {
+  totalEarned: number;
+  releasedMilestones: number;
+  completedJobs: number;
+  avgMilestoneValue: number;
+  latestStatement: IncomeStatementRecord | null;
+};
+
+export type JobMatchRecord = {
+  jobId: string;
+  title: string;
+  companyName: string;
+  budget: number;
+  milestoneCount: number;
+  publishedAt: string | null;
+  matchScore: number;
+  reasons: string[];
+  requiredSkills: string[];
+};
+
+export type AdminAuditLogRecord = {
+  id: string;
+  actorName: string | null;
+  actorEmail: string | null;
+  entityType: string;
+  entityId: string;
+  eventType: string;
+  payload: unknown;
+  createdAt: string;
+};
+
+export type AdminIncomeStatementRecord = {
+  id: string;
+  freelancerName: string;
+  freelancerEmail: string;
+  periodStart: string;
+  periodEnd: string;
+  totalEarned: number;
+  totalJobs: number;
+  totalMilestones: number;
+  generatedAt: string;
+  verifyToken: string;
+  status: StatementStatus;
+};
+
+export type AdminJobTraceRecord = {
+  id: string;
+  title: string;
+  status: JobStatus;
+  companyName: string;
+  freelancerName: string | null;
+  escrow: EscrowRecord | null;
+  milestones: MilestoneRecord[];
+  glmDecisions: GLMDecisionRecord[];
+  auditLogs: AdminAuditLogRecord[];
 };
 
 export type ApiSuccess<T> = {

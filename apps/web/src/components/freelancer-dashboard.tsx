@@ -4,6 +4,8 @@ import type { FreelancerJobRecord, PublicUser } from "@gighub/shared";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { ApiRequestError, freelancerWorkspaceApi } from "@/lib/api";
+import { FreelancerIncomePanel } from "./freelancer-income-panel";
+import { FreelancerJobMatchesPanel } from "./freelancer-job-matches-panel";
 import { FreelancerWorkspaceShell } from "./freelancer-workspace-shell";
 
 type FreelancerDashboardProps = {
@@ -72,6 +74,11 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
       freelancerName={user.name}
       title="Freelancer dashboard"
     >
+      <div className="workspace-grid">
+        <FreelancerIncomePanel />
+        <FreelancerJobMatchesPanel />
+      </div>
+
       {state.status === "loading" ? (
         <section className="inline-panel">
           <h2>Loading assigned work</h2>

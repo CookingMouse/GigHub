@@ -90,6 +90,12 @@ export const AdminDisputesPage = ({ user }: AdminDisputesPageProps) => {
         with either release or revision.
       </p>
 
+      <div className="action-row">
+        <Link className="button-secondary" href="/admin/audit">
+          Audit and verification
+        </Link>
+      </div>
+
       {state.status === "loading" ? (
         <section className="inline-panel">
           <h2>Loading disputes</h2>

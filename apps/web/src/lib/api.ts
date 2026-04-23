@@ -3,11 +3,18 @@
 import type {
   AdminDisputeDetailRecord,
   AdminDisputeListRecord,
+  AdminAuditLogRecord,
+  AdminIncomeStatementRecord,
+  AdminJobTraceRecord,
   ApiErrorResponse,
   AssignFreelancerInput,
   FreelancerJobRecord,
   FreelancerDirectoryRecord,
   FreelancerMilestoneDetailRecord,
+  GenerateIncomeStatementInput,
+  IncomeStatementRecord,
+  IncomeSummaryRecord,
+  JobMatchRecord,
   JobRecord,
   LoginInput,
   MilestonePlanInput,
@@ -241,7 +248,23 @@ export const freelancerWorkspaceApi = {
         method: "POST"
       }
     );
-  }
+  },
+  getIncome: () =>
+    requestJson<{
+      summary: IncomeSummaryRecord;
+      statements: IncomeStatementRecord[];
+    }>("/freelancer/income", {
+      method: "GET"
+    }),
+  generateIncomeStatement: (input: GenerateIncomeStatementInput) =>
+    requestJson<{ statement: IncomeStatementRecord }>("/freelancer/income/statements", {
+      method: "POST",
+      json: input
+    }),
+  listJobMatches: () =>
+    requestJson<{ matches: JobMatchRecord[] }>("/freelancer/job-matches", {
+      method: "GET"
+    })
 };
 
 export const adminApi = {
@@ -257,5 +280,26 @@ export const adminApi = {
     requestJson<{ dispute: AdminDisputeDetailRecord }>(`/admin/disputes/${disputeId}/resolve`, {
       method: "POST",
       json: input
+    }),
+  getAudit: () =>
+    requestJson<{
+      auditLogs: AdminAuditLogRecord[];
+      incomeStatements: AdminIncomeStatementRecord[];
+    }>("/admin/audit-logs", {
+      method: "GET"
+    }),
+  getJobTrace: (jobId: string) =>
+    requestJson<{ trace: AdminJobTraceRecord }>(`/admin/jobs/${jobId}/trace`, {
+      method: "GET"
     })
+};
+
+export const incomeStatementsApi = {
+  verify: (verifyToken: string) =>
+    requestJson<{ statement: IncomeStatementRecord }>(
+      `/income-statements/verify/${verifyToken}`,
+      {
+        method: "GET"
+      }
+    )
 };
