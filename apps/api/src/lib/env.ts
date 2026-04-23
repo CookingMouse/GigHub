@@ -18,8 +18,13 @@ const envSchema = z.object({
   COOKIE_SAME_SITE: z.enum(["lax", "strict", "none"]).default("lax"),
   COOKIE_DOMAIN: z.string().optional().transform((value) => value?.trim() || undefined),
   ADMIN_EMAIL: z.string().email().default("admin@gighub.local"),
-  ADMIN_PASSWORD: z.string().min(8).default("Admin123!")
+  ADMIN_PASSWORD: z.string().min(8).default("Admin123!"),
+  FILE_STORAGE_ROOT: z.string().min(1).default(".gighub-storage"),
+  FILE_ENCRYPTION_SECRET: z
+    .string()
+    .min(16)
+    .default("local-file-encryption-secret-change-me"),
+  FILE_RETENTION_HOURS: z.coerce.number().int().positive().default(72)
 });
 
 export const env = envSchema.parse(process.env);
-

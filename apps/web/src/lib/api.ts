@@ -3,7 +3,9 @@
 import type {
   ApiErrorResponse,
   AssignFreelancerInput,
+  FreelancerJobRecord,
   FreelancerDirectoryRecord,
+  FreelancerMilestoneDetailRecord,
   JobRecord,
   LoginInput,
   MilestonePlanInput,
@@ -40,6 +42,35 @@ const requestJson = async <T>(
     credentials: "include",
     headers,
     body: init.json === undefined ? init.body : JSON.stringify(init.json)
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | { data: T }
+    | ApiErrorResponse
+    | null;
+
+  if (!response.ok) {
+    const errorPayload = payload as ApiErrorResponse | null;
+
+    throw new ApiRequestError(
+      errorPayload?.message ?? "The request failed.",
+      response.status,
+      errorPayload?.code
+    );
+  }
+
+  return (payload as { data: T }).data;
+};
+
+const requestFormData = async <T>(
+  path: string,
+  formData: FormData,
+  init: Omit<RequestInit, "body"> = {}
+): Promise<T> => {
+  const response = await fetch(`${webConfig.apiBaseUrl}/api/v1${path}`, {
+    ...init,
+    credentials: "include",
+    body: formData
   });
 
   const payload = (await response.json().catch(() => null)) as
@@ -164,4 +195,28 @@ export const paymentsApi = {
         type: "payment.succeeded"
       }
     })
+};
+
+export const freelancerWorkspaceApi = {
+  listJobs: () =>
+    requestJson<{ jobs: FreelancerJobRecord[] }>("/freelancer/jobs", {
+      method: "GET"
+    }),
+  getMilestone: (milestoneId: string) =>
+    requestJson<{ milestone: FreelancerMilestoneDetailRecord }>(`/freelancer/milestones/${milestoneId}`, {
+      method: "GET"
+    }),
+  createSubmission: (milestoneId: string, input: { file: File; notes: string }) => {
+    const formData = new FormData();
+    formData.set("file", input.file);
+    formData.set("notes", input.notes);
+
+    return requestFormData<{ milestone: FreelancerMilestoneDetailRecord }>(
+      `/freelancer/milestones/${milestoneId}/submissions`,
+      formData,
+      {
+        method: "POST"
+      }
+    );
+  }
 };

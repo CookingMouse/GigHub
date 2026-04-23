@@ -249,6 +249,7 @@ model Submission {
   milestoneId    String
   revision      Int              @default(1)
   status        SubmissionStatus @default(PENDING_REVIEW)
+  notes         String?
   fileName      String?
   fileFormat    String?
   fileSizeBytes Int?
