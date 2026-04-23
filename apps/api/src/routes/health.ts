@@ -2,6 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../lib/async-handler";
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
+import { getDemoReadiness } from "../services/readiness-service";
 
 export const healthRouter = Router();
 
@@ -25,3 +26,15 @@ healthRouter.get(
   })
 );
 
+healthRouter.get(
+  "/readiness",
+  asyncHandler(async (_request, response) => {
+    const readiness = await getDemoReadiness();
+
+    response.json({
+      data: {
+        readiness
+      }
+    });
+  })
+);

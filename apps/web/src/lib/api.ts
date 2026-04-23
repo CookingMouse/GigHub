@@ -8,6 +8,7 @@ import type {
   AdminJobTraceRecord,
   ApiErrorResponse,
   AssignFreelancerInput,
+  DemoReadinessRecord,
   FreelancerJobRecord,
   FreelancerDirectoryRecord,
   FreelancerMilestoneDetailRecord,
@@ -124,6 +125,13 @@ export const authApi = {
   refresh: () =>
     requestJson<{ user: PublicUser }>("/auth/refresh", {
       method: "POST"
+    })
+};
+
+export const healthApi = {
+  readiness: () =>
+    requestJson<{ readiness: DemoReadinessRecord }>("/health/readiness", {
+      method: "GET"
     })
 };
 
