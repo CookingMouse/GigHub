@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 import { HttpError } from "../lib/http-error";
 
@@ -22,6 +23,15 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
     return;
   }
 
+  if (error instanceof MulterError) {
+    response.status(400).json({
+      code: "UPLOAD_ERROR",
+      message: error.message,
+      requestId: request.requestId
+    });
+    return;
+  }
+
   console.error(error);
 
   response.status(500).json({
@@ -30,4 +40,3 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
     requestId: request.requestId
   });
 };
-

@@ -30,6 +30,14 @@ export const milestoneStatuses = [
   "DISPUTED",
   "REVISION_REQUESTED"
 ] as const;
+export const submissionStatuses = [
+  "PENDING_REVIEW",
+  "APPROVED",
+  "REJECTED",
+  "DISPUTED"
+] as const;
+export const supportedSubmissionFormats = ["pdf", "docx", "png", "jpg", "zip"] as const;
+export const submissionRevisionLimit = 3;
 export const jobValidationThreshold = 70;
 
 export type AppRole = (typeof appRoles)[number];
@@ -37,6 +45,8 @@ export type RegistrationRole = (typeof registrationRoles)[number];
 export type JobStatus = (typeof jobStatuses)[number];
 export type EscrowStatus = (typeof escrowStatuses)[number];
 export type MilestoneStatus = (typeof milestoneStatuses)[number];
+export type SubmissionStatus = (typeof submissionStatuses)[number];
+export type SupportedSubmissionFormat = (typeof supportedSubmissionFormats)[number];
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -117,6 +127,10 @@ export const mockPaymentWebhookSchema = z.object({
   type: z.literal("payment.succeeded")
 });
 
+export const submissionNotesSchema = z.object({
+  notes: z.string().trim().max(2000).optional().default("")
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type JobTimeline = z.infer<typeof jobTimelineSchema>;
@@ -126,6 +140,7 @@ export type AssignFreelancerInput = z.infer<typeof assignFreelancerSchema>;
 export type MilestonePlanInput = z.infer<typeof milestonePlanSchema>;
 export type MilestonePlanItemInput = z.infer<typeof milestonePlanItemSchema>;
 export type MockPaymentWebhookInput = z.infer<typeof mockPaymentWebhookSchema>;
+export type SubmissionNotesInput = z.infer<typeof submissionNotesSchema>;
 
 export type PublicUser = {
   id: string;
@@ -185,6 +200,62 @@ export type MilestoneRecord = {
   dueAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type SubmissionRecord = {
+  id: string;
+  revision: number;
+  status: SubmissionStatus;
+  notes: string | null;
+  fileName: string | null;
+  fileFormat: string | null;
+  fileSizeBytes: number | null;
+  fileHash: string | null;
+  wordCount: number | null;
+  dimensions: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+};
+
+export type FreelancerMilestoneSummaryRecord = {
+  id: string;
+  sequence: number;
+  title: string;
+  description: string;
+  status: MilestoneStatus;
+  dueAt: string | null;
+  revisionCount: number;
+  remainingRevisions: number;
+};
+
+export type FreelancerJobRecord = {
+  id: string;
+  title: string;
+  status: JobStatus;
+  companyName: string;
+  milestones: FreelancerMilestoneSummaryRecord[];
+};
+
+export type FreelancerMilestoneDetailRecord = {
+  id: string;
+  sequence: number;
+  title: string;
+  description: string;
+  status: MilestoneStatus;
+  dueAt: string | null;
+  job: {
+    id: string;
+    title: string;
+    companyName: string;
+  };
+  brief: {
+    overview: string;
+    deliverables: string[];
+    acceptanceCriteria: string[];
+  };
+  revisionCount: number;
+  remainingRevisions: number;
+  submissionHistory: SubmissionRecord[];
 };
 
 export type MockPaymentIntentRecord = {

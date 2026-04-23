@@ -371,6 +371,14 @@ p {
   font-size: 1.2rem;
 }
 
+.directory-card p {
+  margin: 0;
+}
+
+.status-panel p {
+  margin-bottom: 0;
+}
+
 @media (max-width: 640px) {
   .hero-card,
   .shell-card {
