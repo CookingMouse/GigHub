@@ -2,7 +2,9 @@ import { Prisma, type JobBrief, type JobStatus } from "@prisma/client";
 import {
   milestonePlanSchema,
   jobValidationThreshold,
+  type DisputeRecord,
   type FreelancerDirectoryRecord,
+  type GLMDecisionRecord,
   type JobBriefRecord,
   type JobRecord,
   type JobTimeline,
@@ -10,8 +12,10 @@ import {
   type MilestoneRecord,
   type MockPaymentIntentRecord,
   type MockPaymentWebhookInput,
+  type SubmissionRecord,
   type UpsertJobDraftInput
 } from "@gighub/shared";
+import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { redis } from "../lib/redis";
@@ -19,7 +23,9 @@ import {
   deterministicBriefValidationProvider,
   type BriefValidationProvider
 } from "./brief-validation-service";
+import { mockGLMProvider } from "./mock-glm-service";
 import { mockPaymentProvider } from "./mock-payment-service";
+import { releaseMilestoneEscrow } from "./release-service";
 
 const companyJobInclude = {
   brief: true,
@@ -30,6 +36,35 @@ const companyJobInclude = {
   },
   escrow: true,
   milestones: {
+    include: {
+      submissions: {
+        orderBy: {
+          revision: "desc"
+        },
+        include: {
+          dispute: {
+            include: {
+              glmDecisions: {
+                where: {
+                  decisionType: "DISPUTE_ANALYSIS"
+                },
+                orderBy: {
+                  createdAt: "desc"
+                }
+              }
+            }
+          },
+          glmDecisions: {
+            where: {
+              decisionType: "MILESTONE_SCORING"
+            },
+            orderBy: {
+              createdAt: "desc"
+            }
+          }
+        }
+      }
+    },
     orderBy: {
       sequence: "asc"
     }
@@ -46,12 +81,16 @@ type FreelancerWithProfile = Prisma.UserGetPayload<{
 }>;
 
 type JobValidationPayload = JobBriefRecord["validation"];
+type CompanyMilestone = CompanyJob["milestones"][number];
+type CompanySubmission = CompanyMilestone["submissions"][number];
 
 const emptyTimeline: JobTimeline = {
   startDate: "",
   endDate: "",
   notes: ""
 };
+
+const reviewWindowMs = env.REVIEW_WINDOW_HOURS * 60 * 60 * 1000;
 
 const normalizeSkills = (value: Prisma.JsonValue | null | undefined) => {
   if (!Array.isArray(value)) {
@@ -67,6 +106,31 @@ const normalizeStringArray = (value: Prisma.JsonValue | null | undefined) => {
   }
 
   return value.filter((item): item is string => typeof item === "string");
+};
+
+const normalizeRequirementScores = (value: Prisma.JsonValue | null | undefined) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || Array.isArray(item) || typeof item !== "object") {
+      return [];
+    }
+
+    const record = item as Record<string, unknown>;
+
+    if (typeof record.requirement !== "string" || typeof record.score !== "number") {
+      return [];
+    }
+
+    return [
+      {
+        requirement: record.requirement,
+        score: record.score
+      }
+    ];
+  });
 };
 
 const normalizeTimeline = (value: Prisma.JsonValue | null | undefined): JobTimeline => {
@@ -90,6 +154,69 @@ const buildBriefData = (input: UpsertJobDraftInput) => ({
   ...input.brief
 });
 
+const toGLMDecisionRecord = (
+  decision:
+    | CompanySubmission["glmDecisions"][number]
+    | NonNullable<NonNullable<CompanySubmission["dispute"]>["glmDecisions"]>[number]
+    | null
+): GLMDecisionRecord | null => {
+  if (!decision) {
+    return null;
+  }
+
+  return {
+    decisionType: decision.decisionType,
+    overallScore: decision.overallScore ?? null,
+    passFail: decision.passFail ?? null,
+    recommendation: decision.recommendation ?? null,
+    requirementScores: normalizeRequirementScores(decision.requirementScores),
+    badFaithFlags: normalizeStringArray(decision.badFaithFlags),
+    reasoning: decision.reasoning ?? null,
+    createdAt: decision.createdAt.toISOString()
+  };
+};
+
+const toSubmissionRecord = (submission: CompanySubmission | null): SubmissionRecord | null => {
+  if (!submission) {
+    return null;
+  }
+
+  return {
+    id: submission.id,
+    revision: submission.revision,
+    status: submission.status,
+    notes: submission.notes ?? null,
+    reviewDecision: submission.reviewDecision ?? null,
+    rejectionReason: submission.rejectionReason ?? null,
+    fileName: submission.fileName ?? null,
+    fileFormat: submission.fileFormat ?? null,
+    fileSizeBytes: submission.fileSizeBytes ?? null,
+    fileHash: submission.fileHash ?? null,
+    wordCount: submission.wordCount ?? null,
+    dimensions: submission.dimensions ?? null,
+    submittedAt: submission.submittedAt.toISOString(),
+    reviewedAt: submission.reviewedAt?.toISOString() ?? null
+  };
+};
+
+const toDisputeRecord = (dispute: CompanySubmission["dispute"] | null): DisputeRecord | null => {
+  if (!dispute) {
+    return null;
+  }
+
+  return {
+    id: dispute.id,
+    status: dispute.status,
+    rejectionReason: dispute.rejectionReason,
+    resolutionType: dispute.resolutionType ?? null,
+    resolutionSummary: dispute.resolutionSummary ?? null,
+    adminNote: dispute.adminNote ?? null,
+    openedAt: dispute.openedAt.toISOString(),
+    resolvedAt: dispute.resolvedAt?.toISOString() ?? null,
+    latestDecision: toGLMDecisionRecord(dispute.glmDecisions[0] ?? null)
+  };
+};
+
 const toFreelancerDirectoryRecord = (
   freelancer: FreelancerWithProfile | CompanyJob["freelancer"] | null
 ): FreelancerDirectoryRecord | null => {
@@ -112,7 +239,12 @@ const toFreelancerDirectoryRecord = (
   };
 };
 
-const toMilestoneRecord = (milestone: CompanyJob["milestones"][number]): MilestoneRecord => ({
+const latestSubmissionForMilestone = (milestone: CompanyMilestone) => milestone.submissions[0] ?? null;
+
+const latestMilestoneDecision = (milestone: CompanyMilestone) =>
+  latestSubmissionForMilestone(milestone)?.glmDecisions[0] ?? null;
+
+const toMilestoneRecord = (milestone: CompanyMilestone): MilestoneRecord => ({
   id: milestone.id,
   sequence: milestone.sequence,
   title: milestone.title,
@@ -120,8 +252,16 @@ const toMilestoneRecord = (milestone: CompanyJob["milestones"][number]): Milesto
   amount: Number(milestone.amount),
   status: milestone.status,
   dueAt: milestone.dueAt?.toISOString() ?? null,
+  submittedAt: milestone.submittedAt?.toISOString() ?? null,
+  approvedAt: milestone.approvedAt?.toISOString() ?? null,
+  releasedAt: milestone.releasedAt?.toISOString() ?? null,
+  reviewDueAt: milestone.reviewDueAt?.toISOString() ?? null,
+  revisionRequestedAt: milestone.revisionRequestedAt?.toISOString() ?? null,
   createdAt: milestone.createdAt.toISOString(),
-  updatedAt: milestone.updatedAt.toISOString()
+  updatedAt: milestone.updatedAt.toISOString(),
+  latestSubmission: toSubmissionRecord(latestSubmissionForMilestone(milestone)),
+  latestDecision: toGLMDecisionRecord(latestMilestoneDecision(milestone)),
+  activeDispute: toDisputeRecord(latestSubmissionForMilestone(milestone)?.dispute ?? null)
 });
 
 const isValidationStale = (brief: Pick<JobBrief, "updatedAt" | "lastValidatedAt"> | null) => {
@@ -199,6 +339,20 @@ const findCompanyJobOrThrow = async (companyId: string, jobId: string) => {
   }
 
   return job;
+};
+
+const findCompanyMilestoneOrThrow = async (companyId: string, jobId: string, milestoneId: string) => {
+  const job = await findCompanyJobOrThrow(companyId, jobId);
+  const milestone = job.milestones.find((item) => item.id === milestoneId);
+
+  if (!milestone) {
+    throw new HttpError(404, "MILESTONE_NOT_FOUND", "That milestone could not be found for this job.");
+  }
+
+  return {
+    job,
+    milestone
+  };
 };
 
 const ensureDraftStatus = (job: Pick<CompanyJob, "status">, action: string) => {
@@ -842,4 +996,185 @@ export const replaceJobMilestones = async (
   });
 
   return toJobRecord(updatedJob);
+};
+
+export const approveCompanyMilestone = async (
+  companyId: string,
+  jobId: string,
+  milestoneId: string
+) => {
+  const { milestone } = await findCompanyMilestoneOrThrow(companyId, jobId, milestoneId);
+
+  if (!["UNDER_REVIEW", "RELEASED"].includes(milestone.status)) {
+    throw new HttpError(
+      409,
+      "MILESTONE_REVIEW_UNAVAILABLE",
+      "Only reviewable milestones can be approved in this phase."
+    );
+  }
+
+  const result = await releaseMilestoneEscrow(milestone.id, companyId, "CLIENT_APPROVAL");
+  const job = await findCompanyJobOrThrow(companyId, jobId);
+
+  return {
+    duplicate: result.duplicate,
+    job: toJobRecord(job)
+  };
+};
+
+export const runCompanyAutoReleaseCheck = async (
+  companyId: string,
+  jobId: string,
+  milestoneId: string
+) => {
+  const { milestone } = await findCompanyMilestoneOrThrow(companyId, jobId, milestoneId);
+
+  if (milestone.status === "RELEASED") {
+    return {
+      duplicate: true,
+      job: toJobRecord(await findCompanyJobOrThrow(companyId, jobId))
+    };
+  }
+
+  if (milestone.status !== "UNDER_REVIEW") {
+    throw new HttpError(
+      409,
+      "AUTO_RELEASE_UNAVAILABLE",
+      "Only milestones waiting for company review can enter the auto-release path."
+    );
+  }
+
+  if (!milestone.reviewDueAt || milestone.reviewDueAt.getTime() > Date.now()) {
+    throw new HttpError(
+      409,
+      "AUTO_RELEASE_NOT_DUE",
+      "The company review window has not expired yet."
+    );
+  }
+
+  const result = await releaseMilestoneEscrow(milestone.id, companyId, "AUTO_RELEASE");
+  const job = await findCompanyJobOrThrow(companyId, jobId);
+
+  return {
+    duplicate: result.duplicate,
+    job: toJobRecord(job)
+  };
+};
+
+export const rejectCompanyMilestone = async (
+  companyId: string,
+  jobId: string,
+  milestoneId: string,
+  rejectionReason: string
+) => {
+  const { job, milestone } = await findCompanyMilestoneOrThrow(companyId, jobId, milestoneId);
+
+  if (milestone.status !== "UNDER_REVIEW") {
+    throw new HttpError(
+      409,
+      "MILESTONE_REVIEW_UNAVAILABLE",
+      "Only milestones waiting for review can be rejected."
+    );
+  }
+
+  const submission = latestSubmissionForMilestone(milestone);
+
+  if (!submission) {
+    throw new HttpError(
+      409,
+      "SUBMISSION_NOT_FOUND",
+      "GigHub could not find a submission to attach to this rejection."
+    );
+  }
+
+  if (submission.dispute) {
+    throw new HttpError(
+      409,
+      "DISPUTE_ALREADY_OPEN",
+      "A dispute is already open for this submission."
+    );
+  }
+
+  const clientDisputeHistoryCount = await prisma.dispute.count({
+    where: {
+      raisedById: companyId
+    }
+  });
+  const milestoneDecision = latestMilestoneDecision(milestone);
+  const disputeAnalysis = mockGLMProvider.analyzeDispute({
+    rejectionReason,
+    milestoneScore: milestoneDecision?.overallScore ?? null,
+    milestonePassFail: milestoneDecision?.passFail ?? null,
+    clientDisputeHistoryCount
+  });
+  const reviewedAt = new Date();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.submission.update({
+      where: {
+        id: submission.id
+      },
+      data: {
+        status: "DISPUTED",
+        reviewDecision: "COMPANY_REJECTED",
+        rejectionReason,
+        reviewedAt
+      }
+    });
+
+    const dispute = await tx.dispute.create({
+      data: {
+        submissionId: submission.id,
+        raisedById: companyId,
+        rejectionReason,
+        status: "OPEN"
+      }
+    });
+
+    await tx.gLMDecision.create({
+      data: {
+        jobId: job.id,
+        disputeId: dispute.id,
+        decisionType: "DISPUTE_ANALYSIS",
+        recommendation: disputeAnalysis.recommendation,
+        badFaithFlags: disputeAnalysis.badFaithFlags,
+        reasoning: disputeAnalysis.reasoning,
+        rawResponse: disputeAnalysis
+      }
+    });
+
+    await tx.milestone.update({
+      where: {
+        id: milestone.id
+      },
+      data: {
+        status: "DISPUTED",
+        reviewDueAt: null
+      }
+    });
+
+    await tx.job.update({
+      where: {
+        id: job.id
+      },
+      data: {
+        status: "DISPUTED"
+      }
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorId: companyId,
+        entityType: "milestone",
+        entityId: milestone.id,
+        eventType: "milestone.rejected",
+        payload: {
+          submissionId: submission.id,
+          rejectionReason
+        }
+      }
+    });
+  });
+
+  return toJobRecord(await findCompanyJobOrThrow(companyId, jobId));
 };

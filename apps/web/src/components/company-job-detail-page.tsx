@@ -76,6 +76,10 @@ export const CompanyJobDetailPage = () => {
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
   const [isSavingMilestones, setIsSavingMilestones] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
+  const [actingReviewMilestoneId, setActingReviewMilestoneId] = useState<string | null>(null);
+  const [reviewAction, setReviewAction] = useState<"approve" | "reject" | "auto-release" | null>(null);
 
   useEffect(() => {
     if (session.status !== "ready") {
@@ -488,6 +492,89 @@ export const CompanyJobDetailPage = () => {
     });
   };
 
+  const updateRejectReason = (milestoneId: string, value: string) => {
+    setReviewError(null);
+    setRejectReasons((current) => ({
+      ...current,
+      [milestoneId]: value
+    }));
+  };
+
+  const handleApproveMilestone = (milestoneId: string) => {
+    setReviewError(null);
+    setActingReviewMilestoneId(milestoneId);
+    setReviewAction("approve");
+
+    startTransition(async () => {
+      try {
+        const response = await jobsApi.approveMilestone(job.id, milestoneId);
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setReviewError(error.message);
+        } else {
+          setReviewError("Unable to approve the milestone right now.");
+        }
+      } finally {
+        setActingReviewMilestoneId(null);
+        setReviewAction(null);
+      }
+    });
+  };
+
+  const handleRejectMilestone = (milestoneId: string) => {
+    const rejectionReason = rejectReasons[milestoneId]?.trim() ?? "";
+
+    if (rejectionReason.length < 10) {
+      setReviewError("Add a specific rejection reason before opening a dispute.");
+      return;
+    }
+
+    setReviewError(null);
+    setActingReviewMilestoneId(milestoneId);
+    setReviewAction("reject");
+
+    startTransition(async () => {
+      try {
+        const response = await jobsApi.rejectMilestone(job.id, milestoneId, {
+          rejectionReason
+        });
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setReviewError(error.message);
+        } else {
+          setReviewError("Unable to reject the milestone right now.");
+        }
+      } finally {
+        setActingReviewMilestoneId(null);
+        setReviewAction(null);
+      }
+    });
+  };
+
+  const handleAutoReleaseCheck = (milestoneId: string) => {
+    setReviewError(null);
+    setActingReviewMilestoneId(milestoneId);
+    setReviewAction("auto-release");
+
+    startTransition(async () => {
+      try {
+        const response = await jobsApi.runAutoReleaseCheck(job.id, milestoneId);
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setReviewError(error.message);
+        } else {
+          setReviewError("Unable to run the auto-release check right now.");
+        }
+      } finally {
+        setActingReviewMilestoneId(null);
+        setReviewAction(null);
+      }
+    });
+  };
+
   return (
     <CompanyWorkspaceShell
       actions={
@@ -786,6 +873,162 @@ export const CompanyJobDetailPage = () => {
             />
           )}
         </section>
+
+        {job.milestones.length > 0 ? (
+          <section className="inline-panel">
+            <div className="panel-heading-row">
+              <div>
+                <p className="eyebrow">Step 4</p>
+                <h2>Review milestone scoring and disputes</h2>
+              </div>
+            </div>
+
+            <p className="muted">
+              GigHub only opens company review when mocked GLM passes a milestone. Partial or failed
+              scoring routes the work back for revision automatically.
+            </p>
+
+            {reviewError ? <p className="form-error">{reviewError}</p> : null}
+
+            <div className="card-stack">
+              {job.milestones.map((milestone) => {
+                const decision = milestone.latestDecision;
+                const submission = milestone.latestSubmission;
+                const dispute = milestone.activeDispute;
+                const autoReleaseDue =
+                  milestone.reviewDueAt !== null &&
+                  new Date(milestone.reviewDueAt).getTime() <= Date.now();
+                const isActing = actingReviewMilestoneId === milestone.id;
+
+                return (
+                  <article className="list-card" key={milestone.id}>
+                    <div className="list-card-header">
+                      <div>
+                        <p className="eyebrow">Milestone {milestone.sequence}</p>
+                        <h2>{milestone.title}</h2>
+                        <p className="muted">
+                          {milestone.status} · {formatCurrency(milestone.amount)}
+                        </p>
+                      </div>
+                      <span className="status-chip">{milestone.status}</span>
+                    </div>
+
+                    <div className="status-grid compact-grid">
+                      <article className="status-panel">
+                        <span className="panel-label">Latest submission</span>
+                        <strong>{submission?.fileName ?? "No submission yet"}</strong>
+                        <p>
+                          {submission?.fileFormat?.toUpperCase() ?? "N/A"} · Revision{" "}
+                          {submission?.revision ?? "-"}
+                        </p>
+                      </article>
+
+                      <article className="status-panel">
+                        <span className="panel-label">GLM scoring</span>
+                        <strong>
+                          {decision?.overallScore !== null && decision?.overallScore !== undefined
+                            ? `${decision.overallScore}/100`
+                            : "Not scored yet"}
+                        </strong>
+                        <p>{decision?.passFail ?? "Waiting for the first submission"}</p>
+                      </article>
+
+                      <article className="status-panel">
+                        <span className="panel-label">Review deadline</span>
+                        <strong>{formatDate(milestone.reviewDueAt)}</strong>
+                        <p>{milestone.releasedAt ? `Released ${formatDate(milestone.releasedAt)}` : "Pending"}</p>
+                      </article>
+                    </div>
+
+                    {decision?.reasoning ? <p className="muted">{decision.reasoning}</p> : null}
+
+                    {decision?.requirementScores.length ? (
+                      <ul className="feedback-list">
+                        {decision.requirementScores.map((requirement) => (
+                          <li key={`${milestone.id}-${requirement.requirement}`}>
+                            {requirement.requirement.replace(/_/g, " ")}: {requirement.score}/100
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+
+                    {milestone.status === "UNDER_REVIEW" ? (
+                      <>
+                        <div className="action-row">
+                          <button
+                            className="button-primary"
+                            disabled={isActing}
+                            onClick={() => handleApproveMilestone(milestone.id)}
+                            type="button"
+                          >
+                            {isActing && reviewAction === "approve" ? "Approving..." : "Approve and release"}
+                          </button>
+                          <button
+                            className="button-secondary"
+                            disabled={isActing || !autoReleaseDue}
+                            onClick={() => handleAutoReleaseCheck(milestone.id)}
+                            type="button"
+                          >
+                            {isActing && reviewAction === "auto-release"
+                              ? "Checking..."
+                              : autoReleaseDue
+                                ? "Run auto-release"
+                                : "Auto-release not due"}
+                          </button>
+                        </div>
+
+                        <label className="field" htmlFor={`reject-${milestone.id}`}>
+                          <span>Reject and open dispute</span>
+                          <textarea
+                            id={`reject-${milestone.id}`}
+                            onChange={(event) => updateRejectReason(milestone.id, event.target.value)}
+                            placeholder="State the exact mismatch between the submission and the validated milestone brief."
+                            value={rejectReasons[milestone.id] ?? ""}
+                          />
+                        </label>
+
+                        <div className="action-row">
+                          <button
+                            className="button-secondary"
+                            disabled={isActing}
+                            onClick={() => handleRejectMilestone(milestone.id)}
+                            type="button"
+                          >
+                            {isActing && reviewAction === "reject" ? "Opening dispute..." : "Reject with reason"}
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+
+                    {milestone.status === "REVISION_REQUESTED" ? (
+                      <p className="callout-warning">
+                        The submission did not pass mocked GLM scoring, so GigHub routed it back to
+                        the freelancer for revision before company review.
+                      </p>
+                    ) : null}
+
+                    {milestone.status === "DISPUTED" && dispute ? (
+                      <div className="callout-warning">
+                        <strong>Dispute open.</strong> {dispute.rejectionReason}
+                        {dispute.latestDecision?.recommendation ? (
+                          <p className="muted">
+                            Mocked GLM recommendation: {dispute.latestDecision.recommendation}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {milestone.status === "RELEASED" ? (
+                      <p className="helper-copy">
+                        Funds released at {formatDate(milestone.releasedAt)}.
+                      </p>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
       </div>
     </CompanyWorkspaceShell>
   );

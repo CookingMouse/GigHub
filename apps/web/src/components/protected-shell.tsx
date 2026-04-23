@@ -4,6 +4,7 @@ import type { AppRole, PublicUser } from "@gighub/shared";
 import Link from "next/link";
 import React from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
+import { AdminDisputesPage } from "./admin-disputes-page";
 import { FreelancerDashboard } from "./freelancer-dashboard";
 import { LogoutButton } from "./logout-button";
 
@@ -67,6 +68,10 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
         : isAdmin
           ? "This placeholder confirms admin accounts can also pass the standard dashboard guard."
           : "Track assigned milestones, upload deliverables, and keep revisions inside the protected workflow.";
+
+  if (mode === "admin") {
+    return <AdminDisputesPage user={user} />;
+  }
 
   if (user.role === "freelancer" && mode === "dashboard") {
     return <FreelancerDashboard user={user} />;

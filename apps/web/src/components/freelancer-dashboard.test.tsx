@@ -43,6 +43,7 @@ describe("FreelancerDashboard", () => {
               description: "Initial screen layout",
               status: "SUBMITTED",
               dueAt: "2026-05-02T00:00:00.000Z",
+              reviewDueAt: null,
               revisionCount: 1,
               remainingRevisions: 2
             }

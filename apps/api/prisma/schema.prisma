@@ -230,8 +230,10 @@ model Milestone {
   status         MilestoneStatus           @default(PENDING)
   dueAt          DateTime?
   submittedAt    DateTime?
+  reviewDueAt    DateTime?
   approvedAt     DateTime?
   releasedAt     DateTime?
+  revisionRequestedAt DateTime?
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @updatedAt
   job            Job                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -250,6 +252,8 @@ model Submission {
   revision      Int              @default(1)
   status        SubmissionStatus @default(PENDING_REVIEW)
   notes         String?
+  reviewDecision String?
+  rejectionReason String?
   fileName      String?
   fileFormat    String?
   fileSizeBytes Int?
@@ -275,6 +279,7 @@ model Dispute {
   raisedById        String
   status            DisputeStatus  @default(OPEN)
   rejectionReason   String
+  resolutionType    String?
   resolutionSummary String?
   adminNote         String?
   openedAt          DateTime       @default(now())

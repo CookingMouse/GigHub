@@ -33,8 +33,9 @@ const baseMilestone = {
   sequence: 1,
   title: "Landing page delivery",
   description: "Deliver the approved design file",
-  status: "SUBMITTED" as const,
+  status: "IN_PROGRESS" as const,
   dueAt: "2026-05-02T00:00:00.000Z",
+  reviewDueAt: null,
   job: {
     id: "job-1",
     title: "Campaign microsite rebuild",
@@ -47,6 +48,8 @@ const baseMilestone = {
   },
   revisionCount: 1,
   remainingRevisions: 2,
+  latestDecision: null,
+  activeDispute: null,
   submissionHistory: []
 };
 
@@ -93,5 +96,35 @@ describe("FreelancerMilestoneDetailPage", () => {
     render(<FreelancerMilestoneDetailPage milestoneId="milestone-1" />);
 
     expect(await screen.findByText(/three-revision limit has been reached/i)).toBeInTheDocument();
+  });
+
+  it("renders the latest mocked GLM feedback when scoring exists", async () => {
+    vi.mocked(freelancerWorkspaceApi.getMilestone).mockResolvedValue({
+      milestone: {
+        ...baseMilestone,
+        status: "REVISION_REQUESTED",
+        latestDecision: {
+          decisionType: "MILESTONE_SCORING",
+          overallScore: 58,
+          passFail: "partial",
+          recommendation: null,
+          requirementScores: [
+            {
+              requirement: "brief_coverage",
+              score: 62
+            }
+          ],
+          badFaithFlags: [],
+          reasoning: "Mock GLM found partial evidence and requested another revision.",
+          createdAt: "2026-04-23T10:00:00.000Z"
+        }
+      }
+    });
+
+    render(<FreelancerMilestoneDetailPage milestoneId="milestone-1" />);
+
+    expect(await screen.findByText(/latest glm scoring and dispute state/i)).toBeInTheDocument();
+    expect(screen.getByText(/58\/100/i)).toBeInTheDocument();
+    expect(screen.getByText(/brief coverage: 62\/100/i)).toBeInTheDocument();
   });
 });
