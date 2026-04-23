@@ -9,9 +9,5 @@ type MilestoneDetailPageProps = {
 export default async function MilestoneDetailPage({ params }: MilestoneDetailPageProps) {
   const { milestoneId } = await params;
 
-  return (
-    <main className="page-shell page-shell-top">
-      <FreelancerMilestoneDetailPage milestoneId={milestoneId} />
-    </main>
-  );
+  return <FreelancerMilestoneDetailPage milestoneId={milestoneId} />;
 }

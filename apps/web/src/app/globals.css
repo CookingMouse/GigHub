@@ -379,6 +379,56 @@ p {
   margin-bottom: 0;
 }
 
+.workspace-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+}
+
+.workspace-sidebar {
+  border-right: 1px solid var(--border);
+  background: rgba(255, 251, 245, 0.95);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.workspace-brand h2 {
+  margin: 0 0 8px;
+}
+
+.workspace-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.workspace-nav-link {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.workspace-nav-link.active {
+  border-color: rgba(11, 110, 79, 0.35);
+  background: rgba(11, 110, 79, 0.12);
+  color: var(--accent);
+}
+
+.workspace-sidebar-actions {
+  margin-top: auto;
+}
+
+.workspace-main {
+  padding: 24px;
+  overflow-x: auto;
+}
+
 @media (max-width: 640px) {
   .hero-card,
   .shell-card {

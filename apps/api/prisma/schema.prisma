@@ -31,6 +31,13 @@ enum JobApplicationStatus {
   WITHDRAWN
 }
 
+enum JobInvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
 enum EscrowStatus {
   UNFUNDED
   FUNDED
@@ -104,8 +111,13 @@ model User {
   jobApplications  JobApplication[]       @relation("JobApplicationFreelancer")
   raisedDisputes   Dispute[]              @relation("DisputeRaisedBy")
   notifications    Notification[]         @relation("NotificationRecipient")
+  sentMessages     ConversationMessage[]  @relation("ConversationMessageSender")
+  conversationParticipants ConversationParticipant[]
+  createdThreads   ConversationThread[]   @relation("ConversationThreadCreator")
   auditLogs        AuditLog[]             @relation("AuditActor")
   incomeStatements IncomeStatement[]      @relation("IncomeStatementFreelancer")
+  sentInvitations  JobInvitation[]        @relation("JobInvitationCompany")
+  receivedInvitations JobInvitation[]     @relation("JobInvitationFreelancer")
 }
 
 model FreelancerProfile {
@@ -116,6 +128,13 @@ model FreelancerProfile {
   skills        Json?
   hourlyRate    Decimal? @db.Decimal(10, 2)
   ratingAverage Decimal? @db.Decimal(4, 2)
+  headline      String?
+  bio           String?
+  experienceYears Int?
+  pastProjects  Json?
+  resumeFileName String?
+  resumeStorageKey String?
+  resumeUploadedAt DateTime?
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -123,6 +142,9 @@ model CompanyProfile {
   id          String @id @default(cuid())
   userId      String @unique
   companyName String
+  website     String?
+  industry    String?
+  about       String?
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -144,11 +166,73 @@ model Job {
   escrow       Escrow?
   milestones   Milestone[]
   applications JobApplication[]
+  invitations  JobInvitation[]
+  conversations ConversationThread[]
   glmDecisions GLMDecision[]
 
   @@index([companyId])
   @@index([freelancerId])
   @@index([status])
+}
+
+model JobInvitation {
+  id           String              @id @default(cuid())
+  jobId         String
+  companyId     String
+  freelancerId  String
+  note          String?
+  status        JobInvitationStatus @default(PENDING)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  respondedAt   DateTime?
+  job           Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  company       User                @relation("JobInvitationCompany", fields: [companyId], references: [id], onDelete: Cascade)
+  freelancer    User                @relation("JobInvitationFreelancer", fields: [freelancerId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status])
+  @@index([freelancerId, status])
+  @@index([jobId, status])
+}
+
+model ConversationThread {
+  id            String                     @id @default(cuid())
+  jobId         String?
+  createdById   String
+  subject       String?
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+  job           Job?                       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdBy     User                       @relation("ConversationThreadCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  participants  ConversationParticipant[]
+  messages      ConversationMessage[]
+
+  @@index([jobId])
+  @@index([updatedAt])
+}
+
+model ConversationParticipant {
+  id          String             @id @default(cuid())
+  threadId    String
+  userId      String
+  lastReadAt  DateTime?
+  createdAt   DateTime           @default(now())
+  thread      ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
+  @@index([userId])
+}
+
+model ConversationMessage {
+  id          String             @id @default(cuid())
+  threadId    String
+  senderId    String
+  body        String
+  createdAt   DateTime           @default(now())
+  thread      ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender      User               @relation("ConversationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
 }
 
 model JobBrief {

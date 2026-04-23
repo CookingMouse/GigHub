@@ -13,7 +13,6 @@ import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { extractFileMetadata } from "./file-metadata-service";
 import { removeStoredSubmissionFile, storeSubmissionFile } from "./file-storage-service";
-import { selectedGLMProvider } from "./glm-provider";
 
 const freelancerJobInclude = {
   company: {
@@ -343,36 +342,17 @@ export const createFreelancerSubmission = async (
     fileBuffer: file.buffer,
     format: metadata.format
   });
-  const scoring = await selectedGLMProvider.scoreMilestone({
-    briefOverview: milestone.job.brief?.overview ?? "",
-    deliverables: normalizeStringArray(milestone.job.brief?.deliverables),
-    acceptanceCriteria: normalizeStringArray(milestone.job.brief?.acceptanceCriteria),
-    fileFormat: metadata.format,
-    fileSizeBytes: file.size,
-    fileHash: storedFile.fileHash,
-    wordCount: metadata.wordCount,
-    dimensions: metadata.dimensions,
-    revision: nextRevision,
-    notes,
-    fileName: file.originalname
-  });
-  const nextMilestoneStatus =
-    scoring.passFail === "pass" ? "UNDER_REVIEW" : "REVISION_REQUESTED";
-  const submissionStatus = scoring.passFail === "pass" ? "PENDING_REVIEW" : "REJECTED";
-  const reviewDecision =
-    scoring.passFail === "pass" ? "GLM_PASS" : scoring.passFail === "partial" ? "GLM_PARTIAL" : "GLM_FAIL";
-  const reviewDueAt =
-    scoring.passFail === "pass" ? new Date(submittedAt.getTime() + reviewWindowMs) : null;
+  const reviewDueAt = new Date(submittedAt.getTime() + reviewWindowMs);
 
   try {
     const updatedMilestone = await prisma.$transaction(async (tx) => {
-      const submission = await tx.submission.create({
+      await tx.submission.create({
         data: {
           milestoneId: milestone.id,
           revision: nextRevision,
-          status: submissionStatus,
+          status: "PENDING_REVIEW",
           notes: notes || null,
-          reviewDecision,
+          reviewDecision: null,
           fileName: file.originalname,
           fileFormat: metadata.format,
           fileSizeBytes: file.size,
@@ -380,7 +360,7 @@ export const createFreelancerSubmission = async (
           wordCount: metadata.wordCount,
           dimensions: metadata.dimensions,
           submittedAt,
-          reviewedAt: scoring.passFail === "pass" ? null : submittedAt,
+          reviewedAt: null,
           activityLog: [
             {
               type: "submission.created",
@@ -395,28 +375,15 @@ export const createFreelancerSubmission = async (
         }
       });
 
-      await tx.gLMDecision.create({
-        data: {
-          jobId: milestone.jobId,
-          submissionId: submission.id,
-          decisionType: "MILESTONE_SCORING",
-          overallScore: scoring.overallScore,
-          passFail: scoring.passFail,
-          requirementScores: scoring.requirementScores,
-          reasoning: scoring.reasoning,
-          rawResponse: scoring
-        }
-      });
-
       await tx.milestone.update({
         where: {
           id: milestone.id
         },
         data: {
-          status: nextMilestoneStatus,
+          status: "UNDER_REVIEW",
           submittedAt,
           reviewDueAt,
-          revisionRequestedAt: scoring.passFail === "pass" ? null : submittedAt
+          revisionRequestedAt: null
         }
       });
 
@@ -429,9 +396,7 @@ export const createFreelancerSubmission = async (
           payload: {
             revision: nextRevision,
             fileFormat: metadata.format,
-            fileHash: storedFile.fileHash,
-            glmPassFail: scoring.passFail,
-            overallScore: scoring.overallScore
+            fileHash: storedFile.fileHash
           }
         }
       });

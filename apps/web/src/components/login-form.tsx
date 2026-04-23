@@ -8,6 +8,7 @@ import { ApiRequestError, authApi } from "@/lib/api";
 
 export const LoginForm = () => {
   const router = useRouter();
+  const [role, setRole] = useState<"freelancer" | "company" | "admin">("freelancer");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -18,7 +19,8 @@ export const LoginForm = () => {
     const formData = new FormData(event.currentTarget);
     const parsed = loginSchema.safeParse({
       email: formData.get("email"),
-      password: formData.get("password")
+      password: formData.get("password"),
+      role
     });
 
     if (!parsed.success) {
@@ -47,6 +49,40 @@ export const LoginForm = () => {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
+      <fieldset className="role-switch">
+        <legend>Login as</legend>
+        <label>
+          <input
+            checked={role === "freelancer"}
+            name="role"
+            onChange={() => setRole("freelancer")}
+            type="radio"
+            value="freelancer"
+          />
+          <span>Freelancer</span>
+        </label>
+        <label>
+          <input
+            checked={role === "company"}
+            name="role"
+            onChange={() => setRole("company")}
+            type="radio"
+            value="company"
+          />
+          <span>Company</span>
+        </label>
+        <label>
+          <input
+            checked={role === "admin"}
+            name="role"
+            onChange={() => setRole("admin")}
+            type="radio"
+            value="admin"
+          />
+          <span>Admin</span>
+        </label>
+      </fieldset>
+
       <label className="field">
         <span>Email</span>
         <input autoComplete="email" name="email" placeholder="name@example.com" type="email" />

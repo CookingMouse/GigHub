@@ -11,6 +11,7 @@ import {
 } from "../services/freelancer-service";
 import {
   generateFreelancerIncomeStatement,
+  getFreelancerIncomeStatementPdf,
   getFreelancerIncomeSummary,
   listFreelancerIncomeStatements
 } from "../services/income-service";
@@ -48,6 +49,18 @@ freelancerRouter.post(
         statement
       }
     });
+  })
+);
+
+freelancerRouter.get(
+  "/income/statements/:statementId/pdf",
+  asyncHandler(async (request, response) => {
+    const pdf = await getFreelancerIncomeStatementPdf(
+      request.auth!.userId,
+      readParam(request.params.statementId)
+    );
+
+    response.download(pdf.filePath, pdf.fileName);
   })
 );
 
