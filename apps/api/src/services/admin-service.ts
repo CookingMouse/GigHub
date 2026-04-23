@@ -1,7 +1,10 @@
 import { Prisma } from "@prisma/client";
 import type {
+  AdminAuditLogRecord,
   AdminDisputeDetailRecord,
   AdminDisputeListRecord,
+  AdminIncomeStatementRecord,
+  AdminJobTraceRecord,
   DisputeRecord,
   GLMDecisionRecord,
   MilestoneRecord,
@@ -71,6 +74,17 @@ type AdminDispute = Prisma.DisputeGetPayload<{
 
 type AdminSubmission = AdminDispute["submission"];
 
+type DecisionShape = {
+  decisionType: "BRIEF_VALIDATION" | "MILESTONE_SCORING" | "DISPUTE_ANALYSIS";
+  overallScore: number | null;
+  passFail: string | null;
+  recommendation: string | null;
+  requirementScores: Prisma.JsonValue | null;
+  badFaithFlags: Prisma.JsonValue | null;
+  reasoning: string | null;
+  createdAt: Date;
+};
+
 const normalizeRequirementScores = (value: Prisma.JsonValue | null | undefined) => {
   if (!Array.isArray(value)) {
     return [];
@@ -108,6 +122,7 @@ const toDecisionRecord = (
   decision:
     | AdminSubmission["glmDecisions"][number]
     | AdminDispute["glmDecisions"][number]
+    | DecisionShape
     | null
 ): GLMDecisionRecord | null => {
   if (!decision) {
@@ -126,7 +141,61 @@ const toDecisionRecord = (
   };
 };
 
+const toAuditLogRecord = (auditLog: {
+  id: string;
+  actor: {
+    name: string;
+    email: string;
+  } | null;
+  entityType: string;
+  entityId: string;
+  eventType: string;
+  payload: Prisma.JsonValue | null;
+  createdAt: Date;
+}): AdminAuditLogRecord => ({
+  id: auditLog.id,
+  actorName: auditLog.actor?.name ?? null,
+  actorEmail: auditLog.actor?.email ?? null,
+  entityType: auditLog.entityType,
+  entityId: auditLog.entityId,
+  eventType: auditLog.eventType,
+  payload: auditLog.payload,
+  createdAt: auditLog.createdAt.toISOString()
+});
+
 const toSubmissionRecord = (submission: AdminSubmission): SubmissionRecord => ({
+  id: submission.id,
+  revision: submission.revision,
+  status: submission.status,
+  notes: submission.notes ?? null,
+  reviewDecision: submission.reviewDecision ?? null,
+  rejectionReason: submission.rejectionReason ?? null,
+  fileName: submission.fileName ?? null,
+  fileFormat: submission.fileFormat ?? null,
+  fileSizeBytes: submission.fileSizeBytes ?? null,
+  fileHash: submission.fileHash ?? null,
+  wordCount: submission.wordCount ?? null,
+  dimensions: submission.dimensions ?? null,
+  submittedAt: submission.submittedAt.toISOString(),
+  reviewedAt: submission.reviewedAt?.toISOString() ?? null
+});
+
+const toTraceSubmissionRecord = (submission: {
+  id: string;
+  revision: number;
+  status: "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "DISPUTED";
+  notes: string | null;
+  reviewDecision: string | null;
+  rejectionReason: string | null;
+  fileName: string | null;
+  fileFormat: string | null;
+  fileSizeBytes: number | null;
+  fileHash: string | null;
+  wordCount: number | null;
+  dimensions: string | null;
+  submittedAt: Date;
+  reviewedAt: Date | null;
+}): SubmissionRecord => ({
   id: submission.id,
   revision: submission.revision,
   status: submission.status,
@@ -383,4 +452,204 @@ export const resolveAdminDispute = async (
   }
 
   return getAdminDisputeDetail(disputeId);
+};
+
+export const listAdminAuditLogs = async (): Promise<AdminAuditLogRecord[]> => {
+  const auditLogs = await prisma.auditLog.findMany({
+    include: {
+      actor: true
+    },
+    orderBy: {
+      createdAt: "desc"
+    },
+    take: 100
+  });
+
+  return auditLogs.map(toAuditLogRecord);
+};
+
+export const listAdminIncomeStatements = async (): Promise<AdminIncomeStatementRecord[]> => {
+  const statements = await prisma.incomeStatement.findMany({
+    include: {
+      freelancer: true
+    },
+    orderBy: {
+      generatedAt: "desc"
+    },
+    take: 50
+  });
+
+  return statements.map((statement) => ({
+    id: statement.id,
+    freelancerName: statement.freelancer.name,
+    freelancerEmail: statement.freelancer.email,
+    periodStart: statement.periodStart.toISOString(),
+    periodEnd: statement.periodEnd.toISOString(),
+    totalEarned: Number(statement.totalEarned),
+    totalJobs: statement.totalJobs,
+    totalMilestones: statement.totalMilestones,
+    generatedAt: statement.generatedAt.toISOString(),
+    verifyToken: statement.verifyToken,
+    status: statement.status
+  }));
+};
+
+export const getAdminJobTrace = async (jobId: string): Promise<AdminJobTraceRecord> => {
+  const job = await prisma.job.findUnique({
+    where: {
+      id: jobId
+    },
+    include: {
+      company: {
+        include: {
+          companyProfile: true
+        }
+      },
+      freelancer: {
+        include: {
+          freelancerProfile: true
+        }
+      },
+      escrow: true,
+      glmDecisions: {
+        orderBy: {
+          createdAt: "desc"
+        }
+      },
+      milestones: {
+        include: {
+          submissions: {
+            orderBy: {
+              revision: "desc"
+            },
+            include: {
+              dispute: {
+                include: {
+                  glmDecisions: {
+                    where: {
+                      decisionType: "DISPUTE_ANALYSIS"
+                    },
+                    orderBy: {
+                      createdAt: "desc"
+                    }
+                  }
+                }
+              },
+              glmDecisions: {
+                where: {
+                  decisionType: "MILESTONE_SCORING"
+                },
+                orderBy: {
+                  createdAt: "desc"
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          sequence: "asc"
+        }
+      }
+    }
+  });
+
+  if (!job) {
+    throw new HttpError(404, "JOB_TRACE_NOT_FOUND", "That job trace could not be found.");
+  }
+
+  const milestoneIds = job.milestones.map((milestone) => milestone.id);
+  const submissionIds = job.milestones.flatMap((milestone) =>
+    milestone.submissions.map((submission) => submission.id)
+  );
+  const disputeIds = job.milestones.flatMap((milestone) =>
+    milestone.submissions.flatMap((submission) => (submission.dispute ? [submission.dispute.id] : []))
+  );
+  const escrowReleaseIds = await prisma.escrowRelease.findMany({
+    where: {
+      milestoneId: {
+        in: milestoneIds
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+  const traceEntityIds = [
+    job.id,
+    job.escrow?.id ?? "",
+    ...milestoneIds,
+    ...submissionIds,
+    ...disputeIds,
+    ...escrowReleaseIds.map((release) => release.id)
+  ].filter(Boolean);
+  const auditLogs = await prisma.auditLog.findMany({
+    where: {
+      entityId: {
+        in: traceEntityIds
+      }
+    },
+    include: {
+      actor: true
+    },
+    orderBy: {
+      createdAt: "desc"
+    }
+  });
+
+  return {
+    id: job.id,
+    title: job.title,
+    status: job.status,
+    companyName: job.company.companyProfile?.companyName ?? job.company.name,
+    freelancerName:
+      job.freelancer?.freelancerProfile?.displayName ?? job.freelancer?.name ?? null,
+    escrow: job.escrow
+      ? {
+          status: job.escrow.status,
+          fundedAmount: Number(job.escrow.fundedAmount),
+          releasedAmount: Number(job.escrow.releasedAmount),
+          provider: job.escrow.provider ?? null,
+          providerReference: job.escrow.providerReference ?? null,
+          fundedAt: job.escrow.fundedAt?.toISOString() ?? null,
+          releasedAt: job.escrow.releasedAt?.toISOString() ?? null
+        }
+      : null,
+    milestones: job.milestones.map((milestone) => {
+      const submission = milestone.submissions[0] ?? null;
+
+      return {
+        id: milestone.id,
+        sequence: milestone.sequence,
+        title: milestone.title,
+        description: milestone.description ?? "",
+        amount: Number(milestone.amount),
+        status: milestone.status,
+        dueAt: milestone.dueAt?.toISOString() ?? null,
+        submittedAt: milestone.submittedAt?.toISOString() ?? null,
+        approvedAt: milestone.approvedAt?.toISOString() ?? null,
+        releasedAt: milestone.releasedAt?.toISOString() ?? null,
+        reviewDueAt: milestone.reviewDueAt?.toISOString() ?? null,
+        revisionRequestedAt: milestone.revisionRequestedAt?.toISOString() ?? null,
+        createdAt: milestone.createdAt.toISOString(),
+        updatedAt: milestone.updatedAt.toISOString(),
+        latestSubmission: submission ? toTraceSubmissionRecord(submission) : null,
+        latestDecision: toDecisionRecord(submission?.glmDecisions[0] ?? null),
+        activeDispute: submission?.dispute
+          ? {
+              id: submission.dispute.id,
+              status: submission.dispute.status,
+              rejectionReason: submission.dispute.rejectionReason,
+              resolutionType: submission.dispute.resolutionType ?? null,
+              resolutionSummary: submission.dispute.resolutionSummary ?? null,
+              adminNote: submission.dispute.adminNote ?? null,
+              openedAt: submission.dispute.openedAt.toISOString(),
+              resolvedAt: submission.dispute.resolvedAt?.toISOString() ?? null,
+              latestDecision: toDecisionRecord(submission.dispute.glmDecisions[0] ?? null)
+            }
+          : null
+      };
+    }),
+    glmDecisions: job.glmDecisions.map(toDecisionRecord).filter((decision) => decision !== null),
+    auditLogs: auditLogs.map(toAuditLogRecord)
+  };
 };

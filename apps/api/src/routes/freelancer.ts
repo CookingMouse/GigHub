@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { submissionNotesSchema } from "@gighub/shared";
+import { generateIncomeStatementSchema, submissionNotesSchema } from "@gighub/shared";
 import { asyncHandler } from "../lib/async-handler";
 import { submissionUpload } from "../lib/upload";
 import { requireAuth } from "../middleware/auth";
@@ -9,12 +9,60 @@ import {
   getFreelancerMilestoneDetail,
   listFreelancerJobs
 } from "../services/freelancer-service";
+import {
+  generateFreelancerIncomeStatement,
+  getFreelancerIncomeSummary,
+  listFreelancerIncomeStatements
+} from "../services/income-service";
+import { listFreelancerJobMatches } from "../services/job-matching-service";
 
 export const freelancerRouter = Router();
 
 const readParam = (value: string | string[]) => (Array.isArray(value) ? value[0] : value);
 
 freelancerRouter.use(requireAuth, requireRole("freelancer"));
+
+freelancerRouter.get(
+  "/income",
+  asyncHandler(async (request, response) => {
+    const summary = await getFreelancerIncomeSummary(request.auth!.userId);
+    const statements = await listFreelancerIncomeStatements(request.auth!.userId);
+
+    response.json({
+      data: {
+        summary,
+        statements
+      }
+    });
+  })
+);
+
+freelancerRouter.post(
+  "/income/statements",
+  asyncHandler(async (request, response) => {
+    const input = generateIncomeStatementSchema.parse(request.body);
+    const statement = await generateFreelancerIncomeStatement(request.auth!.userId, input);
+
+    response.status(201).json({
+      data: {
+        statement
+      }
+    });
+  })
+);
+
+freelancerRouter.get(
+  "/job-matches",
+  asyncHandler(async (request, response) => {
+    const matches = await listFreelancerJobMatches(request.auth!.userId);
+
+    response.json({
+      data: {
+        matches
+      }
+    });
+  })
+);
 
 freelancerRouter.get(
   "/jobs",
