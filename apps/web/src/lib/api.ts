@@ -1,6 +1,8 @@
 "use client";
 
 import type {
+  AdminDisputeDetailRecord,
+  AdminDisputeListRecord,
   ApiErrorResponse,
   AssignFreelancerInput,
   FreelancerJobRecord,
@@ -11,7 +13,9 @@ import type {
   MilestonePlanInput,
   MockPaymentIntentRecord,
   PublicUser,
+  RejectMilestoneInput,
   RegisterInput,
+  ResolveDisputeInput,
   UpsertJobDraftInput
 } from "@gighub/shared";
 import { webConfig } from "./config";
@@ -164,6 +168,25 @@ export const jobsApi = {
       method: "PUT",
       json: input
     }),
+  approveMilestone: (jobId: string, milestoneId: string) =>
+    requestJson<{ job: JobRecord; duplicate: boolean }>(
+      `/jobs/${jobId}/milestones/${milestoneId}/approve`,
+      {
+        method: "POST"
+      }
+    ),
+  rejectMilestone: (jobId: string, milestoneId: string, input: RejectMilestoneInput) =>
+    requestJson<{ job: JobRecord }>(`/jobs/${jobId}/milestones/${milestoneId}/reject`, {
+      method: "POST",
+      json: input
+    }),
+  runAutoReleaseCheck: (jobId: string, milestoneId: string) =>
+    requestJson<{ job: JobRecord; duplicate: boolean }>(
+      `/jobs/${jobId}/milestones/${milestoneId}/auto-release/check`,
+      {
+        method: "POST"
+      }
+    ),
   validate: (jobId: string) =>
     requestJson<{ job: JobRecord }>(`/jobs/${jobId}/validate`, {
       method: "POST"
@@ -219,4 +242,20 @@ export const freelancerWorkspaceApi = {
       }
     );
   }
+};
+
+export const adminApi = {
+  listDisputes: () =>
+    requestJson<{ disputes: AdminDisputeListRecord[] }>("/admin/disputes", {
+      method: "GET"
+    }),
+  getDispute: (disputeId: string) =>
+    requestJson<{ dispute: AdminDisputeDetailRecord }>(`/admin/disputes/${disputeId}`, {
+      method: "GET"
+    }),
+  resolveDispute: (disputeId: string, input: ResolveDisputeInput) =>
+    requestJson<{ dispute: AdminDisputeDetailRecord }>(`/admin/disputes/${disputeId}/resolve`, {
+      method: "POST",
+      json: input
+    })
 };

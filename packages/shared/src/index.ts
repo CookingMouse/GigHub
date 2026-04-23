@@ -37,6 +37,7 @@ export const submissionStatuses = [
   "DISPUTED"
 ] as const;
 export const supportedSubmissionFormats = ["pdf", "docx", "png", "jpg", "zip"] as const;
+export const disputeResolutionOutcomes = ["release_funds", "request_revision"] as const;
 export const submissionRevisionLimit = 3;
 export const jobValidationThreshold = 70;
 
@@ -47,6 +48,7 @@ export type EscrowStatus = (typeof escrowStatuses)[number];
 export type MilestoneStatus = (typeof milestoneStatuses)[number];
 export type SubmissionStatus = (typeof submissionStatuses)[number];
 export type SupportedSubmissionFormat = (typeof supportedSubmissionFormats)[number];
+export type DisputeResolutionOutcome = (typeof disputeResolutionOutcomes)[number];
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -131,6 +133,16 @@ export const submissionNotesSchema = z.object({
   notes: z.string().trim().max(2000).optional().default("")
 });
 
+export const rejectMilestoneSchema = z.object({
+  rejectionReason: z.string().trim().min(10).max(2000)
+});
+
+export const resolveDisputeSchema = z.object({
+  outcome: z.enum(disputeResolutionOutcomes),
+  resolutionSummary: z.string().trim().min(10).max(2000),
+  adminNote: z.string().trim().max(2000).optional().default("")
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type JobTimeline = z.infer<typeof jobTimelineSchema>;
@@ -141,6 +153,8 @@ export type MilestonePlanInput = z.infer<typeof milestonePlanSchema>;
 export type MilestonePlanItemInput = z.infer<typeof milestonePlanItemSchema>;
 export type MockPaymentWebhookInput = z.infer<typeof mockPaymentWebhookSchema>;
 export type SubmissionNotesInput = z.infer<typeof submissionNotesSchema>;
+export type RejectMilestoneInput = z.infer<typeof rejectMilestoneSchema>;
+export type ResolveDisputeInput = z.infer<typeof resolveDisputeSchema>;
 
 export type PublicUser = {
   id: string;
@@ -198,8 +212,16 @@ export type MilestoneRecord = {
   amount: number;
   status: MilestoneStatus;
   dueAt: string | null;
+  submittedAt: string | null;
+  approvedAt: string | null;
+  releasedAt: string | null;
+  reviewDueAt: string | null;
+  revisionRequestedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  latestSubmission: SubmissionRecord | null;
+  latestDecision: GLMDecisionRecord | null;
+  activeDispute: DisputeRecord | null;
 };
 
 export type SubmissionRecord = {
@@ -207,6 +229,8 @@ export type SubmissionRecord = {
   revision: number;
   status: SubmissionStatus;
   notes: string | null;
+  reviewDecision: string | null;
+  rejectionReason: string | null;
   fileName: string | null;
   fileFormat: string | null;
   fileSizeBytes: number | null;
@@ -215,6 +239,34 @@ export type SubmissionRecord = {
   dimensions: string | null;
   submittedAt: string;
   reviewedAt: string | null;
+};
+
+export type RequirementScoreRecord = {
+  requirement: string;
+  score: number;
+};
+
+export type GLMDecisionRecord = {
+  decisionType: "BRIEF_VALIDATION" | "MILESTONE_SCORING" | "DISPUTE_ANALYSIS";
+  overallScore: number | null;
+  passFail: string | null;
+  recommendation: string | null;
+  requirementScores: RequirementScoreRecord[];
+  badFaithFlags: string[];
+  reasoning: string | null;
+  createdAt: string;
+};
+
+export type DisputeRecord = {
+  id: string;
+  status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
+  rejectionReason: string;
+  resolutionType: string | null;
+  resolutionSummary: string | null;
+  adminNote: string | null;
+  openedAt: string;
+  resolvedAt: string | null;
+  latestDecision: GLMDecisionRecord | null;
 };
 
 export type FreelancerMilestoneSummaryRecord = {
@@ -226,6 +278,7 @@ export type FreelancerMilestoneSummaryRecord = {
   dueAt: string | null;
   revisionCount: number;
   remainingRevisions: number;
+  reviewDueAt: string | null;
 };
 
 export type FreelancerJobRecord = {
@@ -243,6 +296,7 @@ export type FreelancerMilestoneDetailRecord = {
   description: string;
   status: MilestoneStatus;
   dueAt: string | null;
+  reviewDueAt: string | null;
   job: {
     id: string;
     title: string;
@@ -255,6 +309,8 @@ export type FreelancerMilestoneDetailRecord = {
   };
   revisionCount: number;
   remainingRevisions: number;
+  latestDecision: GLMDecisionRecord | null;
+  activeDispute: DisputeRecord | null;
   submissionHistory: SubmissionRecord[];
 };
 
@@ -280,6 +336,42 @@ export type JobRecord = {
   escrow: EscrowRecord | null;
   milestones: MilestoneRecord[];
   brief: JobBriefRecord;
+};
+
+export type AdminDisputeListRecord = {
+  id: string;
+  status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
+  jobId: string;
+  jobTitle: string;
+  milestoneId: string;
+  milestoneTitle: string;
+  companyName: string;
+  freelancerName: string;
+  rejectionReason: string;
+  recommendation: string | null;
+  badFaithFlags: string[];
+  openedAt: string;
+};
+
+export type AdminDisputeDetailRecord = {
+  id: string;
+  status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
+  rejectionReason: string;
+  resolutionType: string | null;
+  resolutionSummary: string | null;
+  adminNote: string | null;
+  openedAt: string;
+  resolvedAt: string | null;
+  job: {
+    id: string;
+    title: string;
+    companyName: string;
+    freelancerName: string;
+  };
+  milestone: MilestoneRecord;
+  submission: SubmissionRecord;
+  milestoneDecision: GLMDecisionRecord | null;
+  disputeDecision: GLMDecisionRecord | null;
 };
 
 export type ApiSuccess<T> = {

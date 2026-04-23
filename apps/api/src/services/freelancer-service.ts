@@ -1,15 +1,19 @@
 import { Prisma } from "@prisma/client";
 import {
   submissionRevisionLimit,
+  type DisputeRecord,
   type FreelancerJobRecord,
   type FreelancerMilestoneDetailRecord,
   type FreelancerMilestoneSummaryRecord,
+  type GLMDecisionRecord,
   type SubmissionRecord
 } from "@gighub/shared";
+import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { extractFileMetadata } from "./file-metadata-service";
 import { removeStoredSubmissionFile, storeSubmissionFile } from "./file-storage-service";
+import { mockGLMProvider } from "./mock-glm-service";
 
 const freelancerJobInclude = {
   company: {
@@ -21,7 +25,29 @@ const freelancerJobInclude = {
     include: {
       submissions: {
         orderBy: {
-          revision: "asc"
+          revision: "desc"
+        },
+        include: {
+          dispute: {
+            include: {
+              glmDecisions: {
+                where: {
+                  decisionType: "DISPUTE_ANALYSIS"
+                },
+                orderBy: {
+                  createdAt: "desc"
+                }
+              }
+            }
+          },
+          glmDecisions: {
+            where: {
+              decisionType: "MILESTONE_SCORING"
+            },
+            orderBy: {
+              createdAt: "desc"
+            }
+          }
         }
       }
     },
@@ -44,7 +70,29 @@ const freelancerMilestoneInclude = {
   },
   submissions: {
     orderBy: {
-      revision: "asc"
+      revision: "desc"
+    },
+    include: {
+      dispute: {
+        include: {
+          glmDecisions: {
+            where: {
+              decisionType: "DISPUTE_ANALYSIS"
+            },
+            orderBy: {
+              createdAt: "desc"
+            }
+          }
+        }
+      },
+      glmDecisions: {
+        where: {
+          decisionType: "MILESTONE_SCORING"
+        },
+        orderBy: {
+          createdAt: "desc"
+        }
+      }
     }
   }
 } satisfies Prisma.MilestoneInclude;
@@ -57,6 +105,10 @@ type FreelancerMilestone = Prisma.MilestoneGetPayload<{
   include: typeof freelancerMilestoneInclude;
 }>;
 
+type FreelancerSubmission = FreelancerMilestone["submissions"][number];
+
+const reviewWindowMs = env.REVIEW_WINDOW_HOURS * 60 * 60 * 1000;
+
 const normalizeStringArray = (value: Prisma.JsonValue | null | undefined) => {
   if (!Array.isArray(value)) {
     return [];
@@ -65,16 +117,81 @@ const normalizeStringArray = (value: Prisma.JsonValue | null | undefined) => {
   return value.filter((item): item is string => typeof item === "string");
 };
 
+const normalizeRequirementScores = (value: Prisma.JsonValue | null | undefined) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || Array.isArray(item) || typeof item !== "object") {
+      return [];
+    }
+
+    const record = item as Record<string, unknown>;
+
+    if (typeof record.requirement !== "string" || typeof record.score !== "number") {
+      return [];
+    }
+
+    return [
+      {
+        requirement: record.requirement,
+        score: record.score
+      }
+    ];
+  });
+};
+
 const companyNameForJob = (job: FreelancerJob | FreelancerMilestone["job"]) =>
   job.company.companyProfile?.companyName ?? job.company.name;
 
-const toSubmissionRecord = (
-  submission: FreelancerMilestone["submissions"][number]
-): SubmissionRecord => ({
+const toDecisionRecord = (
+  decision:
+    | FreelancerSubmission["glmDecisions"][number]
+    | NonNullable<NonNullable<FreelancerSubmission["dispute"]>["glmDecisions"]>[number]
+    | null
+): GLMDecisionRecord | null => {
+  if (!decision) {
+    return null;
+  }
+
+  return {
+    decisionType: decision.decisionType,
+    overallScore: decision.overallScore ?? null,
+    passFail: decision.passFail ?? null,
+    recommendation: decision.recommendation ?? null,
+    requirementScores: normalizeRequirementScores(decision.requirementScores),
+    badFaithFlags: normalizeStringArray(decision.badFaithFlags),
+    reasoning: decision.reasoning ?? null,
+    createdAt: decision.createdAt.toISOString()
+  };
+};
+
+const toDisputeRecord = (dispute: FreelancerSubmission["dispute"] | null): DisputeRecord | null => {
+  if (!dispute) {
+    return null;
+  }
+
+  return {
+    id: dispute.id,
+    status: dispute.status,
+    rejectionReason: dispute.rejectionReason,
+    resolutionType: dispute.resolutionType ?? null,
+    resolutionSummary: dispute.resolutionSummary ?? null,
+    adminNote: dispute.adminNote ?? null,
+    openedAt: dispute.openedAt.toISOString(),
+    resolvedAt: dispute.resolvedAt?.toISOString() ?? null,
+    latestDecision: toDecisionRecord(dispute.glmDecisions[0] ?? null)
+  };
+};
+
+const toSubmissionRecord = (submission: FreelancerSubmission): SubmissionRecord => ({
   id: submission.id,
   revision: submission.revision,
   status: submission.status,
   notes: submission.notes ?? null,
+  reviewDecision: submission.reviewDecision ?? null,
+  rejectionReason: submission.rejectionReason ?? null,
   fileName: submission.fileName ?? null,
   fileFormat: submission.fileFormat ?? null,
   fileSizeBytes: submission.fileSizeBytes ?? null,
@@ -84,6 +201,9 @@ const toSubmissionRecord = (
   submittedAt: submission.submittedAt.toISOString(),
   reviewedAt: submission.reviewedAt?.toISOString() ?? null
 });
+
+const latestSubmissionForMilestone = (milestone: FreelancerMilestone | FreelancerJob["milestones"][number]) =>
+  milestone.submissions[0] ?? null;
 
 const toMilestoneSummaryRecord = (
   milestone: FreelancerJob["milestones"][number]
@@ -95,7 +215,8 @@ const toMilestoneSummaryRecord = (
   status: milestone.status,
   dueAt: milestone.dueAt?.toISOString() ?? null,
   revisionCount: milestone.submissions.length,
-  remainingRevisions: Math.max(submissionRevisionLimit - milestone.submissions.length, 0)
+  remainingRevisions: Math.max(submissionRevisionLimit - milestone.submissions.length, 0),
+  reviewDueAt: milestone.reviewDueAt?.toISOString() ?? null
 });
 
 const toFreelancerJobRecord = (job: FreelancerJob): FreelancerJobRecord => ({
@@ -115,6 +236,7 @@ const toFreelancerMilestoneDetailRecord = (
   description: milestone.description ?? "",
   status: milestone.status,
   dueAt: milestone.dueAt?.toISOString() ?? null,
+  reviewDueAt: milestone.reviewDueAt?.toISOString() ?? null,
   job: {
     id: milestone.job.id,
     title: milestone.job.title,
@@ -127,7 +249,9 @@ const toFreelancerMilestoneDetailRecord = (
   },
   revisionCount: milestone.submissions.length,
   remainingRevisions: Math.max(submissionRevisionLimit - milestone.submissions.length, 0),
-  submissionHistory: milestone.submissions.map(toSubmissionRecord)
+  latestDecision: toDecisionRecord(latestSubmissionForMilestone(milestone)?.glmDecisions[0] ?? null),
+  activeDispute: toDisputeRecord(latestSubmissionForMilestone(milestone)?.dispute ?? null),
+  submissionHistory: milestone.submissions.slice().reverse().map(toSubmissionRecord)
 });
 
 const findFreelancerMilestoneOrThrow = async (freelancerId: string, milestoneId: string) => {
@@ -161,11 +285,11 @@ const ensureSubmittableMilestone = (milestone: FreelancerMilestone) => {
     );
   }
 
-  if (["APPROVED", "RELEASED", "DISPUTED"].includes(milestone.status)) {
+  if (["UNDER_REVIEW", "APPROVED", "RELEASED", "DISPUTED"].includes(milestone.status)) {
     throw new HttpError(
       409,
       "SUBMISSION_LOCKED",
-      "This milestone is no longer open for freelancer submissions."
+      "This milestone is not open for another freelancer submission right now."
     );
   }
 
@@ -219,15 +343,36 @@ export const createFreelancerSubmission = async (
     fileBuffer: file.buffer,
     format: metadata.format
   });
+  const scoring = mockGLMProvider.scoreMilestone({
+    briefOverview: milestone.job.brief?.overview ?? "",
+    deliverables: normalizeStringArray(milestone.job.brief?.deliverables),
+    acceptanceCriteria: normalizeStringArray(milestone.job.brief?.acceptanceCriteria),
+    fileFormat: metadata.format,
+    fileSizeBytes: file.size,
+    fileHash: storedFile.fileHash,
+    wordCount: metadata.wordCount,
+    dimensions: metadata.dimensions,
+    revision: nextRevision,
+    notes,
+    fileName: file.originalname
+  });
+  const nextMilestoneStatus =
+    scoring.passFail === "pass" ? "UNDER_REVIEW" : "REVISION_REQUESTED";
+  const submissionStatus = scoring.passFail === "pass" ? "PENDING_REVIEW" : "REJECTED";
+  const reviewDecision =
+    scoring.passFail === "pass" ? "GLM_PASS" : scoring.passFail === "partial" ? "GLM_PARTIAL" : "GLM_FAIL";
+  const reviewDueAt =
+    scoring.passFail === "pass" ? new Date(submittedAt.getTime() + reviewWindowMs) : null;
 
   try {
     const updatedMilestone = await prisma.$transaction(async (tx) => {
-      await tx.submission.create({
+      const submission = await tx.submission.create({
         data: {
           milestoneId: milestone.id,
           revision: nextRevision,
-          status: "PENDING_REVIEW",
+          status: submissionStatus,
           notes: notes || null,
+          reviewDecision,
           fileName: file.originalname,
           fileFormat: metadata.format,
           fileSizeBytes: file.size,
@@ -235,6 +380,7 @@ export const createFreelancerSubmission = async (
           wordCount: metadata.wordCount,
           dimensions: metadata.dimensions,
           submittedAt,
+          reviewedAt: scoring.passFail === "pass" ? null : submittedAt,
           activityLog: [
             {
               type: "submission.created",
@@ -249,13 +395,28 @@ export const createFreelancerSubmission = async (
         }
       });
 
+      await tx.gLMDecision.create({
+        data: {
+          jobId: milestone.jobId,
+          submissionId: submission.id,
+          decisionType: "MILESTONE_SCORING",
+          overallScore: scoring.overallScore,
+          passFail: scoring.passFail,
+          requirementScores: scoring.requirementScores,
+          reasoning: scoring.reasoning,
+          rawResponse: scoring
+        }
+      });
+
       await tx.milestone.update({
         where: {
           id: milestone.id
         },
         data: {
-          status: "SUBMITTED",
-          submittedAt
+          status: nextMilestoneStatus,
+          submittedAt,
+          reviewDueAt,
+          revisionRequestedAt: scoring.passFail === "pass" ? null : submittedAt
         }
       });
 
@@ -268,7 +429,9 @@ export const createFreelancerSubmission = async (
           payload: {
             revision: nextRevision,
             fileFormat: metadata.format,
-            fileHash: storedFile.fileHash
+            fileHash: storedFile.fileHash,
+            glmPassFail: scoring.passFail,
+            overallScore: scoring.overallScore
           }
         }
       });

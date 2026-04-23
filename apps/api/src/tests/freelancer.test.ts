@@ -402,21 +402,23 @@ describe("freelancer routes", () => {
       }
     }
   ])(
-    "accepts $label submissions and stores the metadata and hash",
+    "accepts $label submissions, stores metadata, and routes pass results into company review",
     async ({ fileName, mimeType, createBuffer, assertMetadata }) => {
       const { freelancer, milestoneId } = await prepareInProgressMilestone();
       const fileBuffer = await createBuffer();
 
       const response = await freelancer
         .post(`/api/v1/freelancer/milestones/${milestoneId}/submissions`)
-        .field("notes", `GigHub ${fileName} submission`)
+        .field("notes", `GigHub ${fileName} submission __force_pass`)
         .attach("file", fileBuffer, {
           filename: fileName,
           contentType: mimeType
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.milestone.status).toBe("SUBMITTED");
+      expect(response.body.data.milestone.status).toBe("UNDER_REVIEW");
+      expect(response.body.data.milestone.reviewDueAt).toBeTruthy();
+      expect(response.body.data.milestone.latestDecision.passFail).toBe("pass");
       expect(response.body.data.milestone.submissionHistory).toHaveLength(1);
 
       const submission = await prisma.submission.findFirstOrThrow({
@@ -428,9 +430,48 @@ describe("freelancer routes", () => {
       expect(submission.fileName).toBe(fileName);
       expect(submission.fileHash).toHaveLength(64);
       expect(submission.notes).toMatch(/GigHub/);
+      expect(submission.reviewDecision).toBe("GLM_PASS");
       assertMetadata(submission as unknown as Record<string, unknown>);
     }
   );
+
+  it.each([
+    {
+      label: "partial",
+      forcedToken: "__force_partial",
+      expectedDecision: "GLM_PARTIAL"
+    },
+    {
+      label: "fail",
+      forcedToken: "__force_fail",
+      expectedDecision: "GLM_FAIL"
+    }
+  ])("routes $label milestone scoring results into revision requested", async ({ forcedToken, expectedDecision }) => {
+    const { freelancer, milestoneId } = await prepareInProgressMilestone();
+
+    const response = await freelancer
+      .post(`/api/v1/freelancer/milestones/${milestoneId}/submissions`)
+      .field("notes", `GigHub revision ${forcedToken}`)
+      .attach("file", await createZipBuffer(), {
+        filename: `revision-${forcedToken}.zip`,
+        contentType: "application/zip"
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.milestone.status).toBe("REVISION_REQUESTED");
+    expect(response.body.data.milestone.latestDecision.passFail).toBe(
+      forcedToken === "__force_partial" ? "partial" : "fail"
+    );
+
+    const submission = await prisma.submission.findFirstOrThrow({
+      where: {
+        milestoneId
+      }
+    });
+
+    expect(submission.status).toBe("REJECTED");
+    expect(submission.reviewDecision).toBe(expectedDecision);
+  });
 
   it("rejects the fourth revision for the same milestone", async () => {
     const { freelancer, milestoneId } = await prepareInProgressMilestone();
@@ -438,7 +479,7 @@ describe("freelancer routes", () => {
     for (let revision = 1; revision <= 3; revision += 1) {
       const response = await freelancer
         .post(`/api/v1/freelancer/milestones/${milestoneId}/submissions`)
-        .field("notes", `Revision ${revision}`)
+        .field("notes", `Revision ${revision} __force_fail`)
         .attach("file", await createZipBuffer(), {
           filename: `revision-${revision}.zip`,
           contentType: "application/zip"

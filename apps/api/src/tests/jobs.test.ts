@@ -134,6 +134,55 @@ const twoMilestonePlan = (): MilestonePlanInput => ({
   ]
 });
 
+const prepareReviewableMilestone = async () => {
+  const company = request.agent(app);
+  await registerCompany(company);
+
+  const freelancer = request.agent(app);
+  const freelancerUser = await registerFreelancer(freelancer);
+  const jobId = await publishJob(company);
+
+  await company.post(`/api/v1/jobs/${jobId}/assign`).send({
+    freelancerId: freelancerUser.id
+  });
+
+  const intentResponse = await company.post(`/api/v1/jobs/${jobId}/escrow/intent`);
+
+  await request(app).post("/api/v1/webhooks/payments/mock").send({
+    eventId: `mock_evt_review_${crypto.randomUUID()}`,
+    intentId: intentResponse.body.data.intent.intentId as string,
+    type: "payment.succeeded"
+  });
+
+  await company.put(`/api/v1/jobs/${jobId}/milestones`).send(twoMilestonePlan());
+
+  const milestone = await prisma.milestone.findFirstOrThrow({
+    where: {
+      jobId,
+      sequence: 1
+    }
+  });
+
+  const submissionResponse = await freelancer
+    .post(`/api/v1/freelancer/milestones/${milestone.id}/submissions`)
+    .field("notes", "Phase 9 review submission __force_pass")
+    .attach("file", Buffer.from("GigHub reviewable submission"), {
+      filename: "delivery__force_pass.zip",
+      contentType: "application/zip"
+    });
+
+  expect(submissionResponse.status).toBe(201);
+  expect(submissionResponse.body.data.milestone.status).toBe("UNDER_REVIEW");
+
+  return {
+    company,
+    freelancer,
+    freelancerUser,
+    jobId,
+    milestoneId: milestone.id
+  };
+};
+
 describe("job routes", () => {
   beforeAll(async () => {
     await prisma.$connect();
@@ -410,5 +459,82 @@ describe("job routes", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.code).toBe("MILESTONE_TOTAL_MISMATCH");
+  });
+
+  it("approves an under-review milestone and releases escrow", async () => {
+    const { company, jobId, milestoneId } = await prepareReviewableMilestone();
+
+    const response = await company.post(`/api/v1/jobs/${jobId}/milestones/${milestoneId}/approve`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.job.milestones[0].status).toBe("RELEASED");
+    expect(response.body.data.job.milestones[0].releasedAt).toBeTruthy();
+    expect(response.body.data.job.escrow.releasedAmount).toBe(1600);
+
+    const release = await prisma.escrowRelease.findFirst({
+      where: {
+        milestoneId
+      }
+    });
+
+    expect(release).not.toBeNull();
+  });
+
+  it("creates a dispute when the company rejects an under-review milestone", async () => {
+    const { company, jobId, milestoneId } = await prepareReviewableMilestone();
+
+    const response = await company.post(`/api/v1/jobs/${jobId}/milestones/${milestoneId}/reject`).send({
+      rejectionReason:
+        "The submitted design is missing the approved CTA hierarchy and the final lead capture block."
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.job.status).toBe("DISPUTED");
+    expect(response.body.data.job.milestones[0].status).toBe("DISPUTED");
+    expect(response.body.data.job.milestones[0].activeDispute).toBeTruthy();
+    expect(response.body.data.job.milestones[0].activeDispute.latestDecision.recommendation).toBeTruthy();
+
+    const dispute = await prisma.dispute.findFirstOrThrow({
+      where: {
+        submission: {
+          milestoneId
+        }
+      },
+      include: {
+        glmDecisions: true
+      }
+    });
+
+    expect(dispute.status).toBe("OPEN");
+    expect(dispute.glmDecisions[0]?.decisionType).toBe("DISPUTE_ANALYSIS");
+  });
+
+  it("auto-releases an overdue under-review milestone and stays idempotent on repeat checks", async () => {
+    const { company, jobId, milestoneId } = await prepareReviewableMilestone();
+
+    await prisma.milestone.update({
+      where: {
+        id: milestoneId
+      },
+      data: {
+        reviewDueAt: new Date(Date.now() - 60_000)
+      }
+    });
+
+    const firstResponse = await company.post(
+      `/api/v1/jobs/${jobId}/milestones/${milestoneId}/auto-release/check`
+    );
+
+    expect(firstResponse.status).toBe(200);
+    expect(firstResponse.body.data.duplicate).toBe(false);
+    expect(firstResponse.body.data.job.milestones[0].status).toBe("RELEASED");
+
+    const secondResponse = await company.post(
+      `/api/v1/jobs/${jobId}/milestones/${milestoneId}/auto-release/check`
+    );
+
+    expect(secondResponse.status).toBe(200);
+    expect(secondResponse.body.data.duplicate).toBe(true);
+    expect(secondResponse.body.data.job.milestones[0].status).toBe("RELEASED");
   });
 });

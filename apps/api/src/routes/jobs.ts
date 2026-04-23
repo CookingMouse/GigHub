@@ -2,19 +2,23 @@ import { Router } from "express";
 import {
   assignFreelancerSchema,
   milestonePlanSchema,
+  rejectMilestoneSchema,
   upsertJobDraftSchema
 } from "@gighub/shared";
 import { asyncHandler } from "../lib/async-handler";
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
 import {
+  approveCompanyMilestone,
   assignFreelancerToJob,
   createMockEscrowIntent,
   createCompanyJob,
   getCompanyJob,
   listCompanyJobs,
   publishCompanyJob,
+  rejectCompanyMilestone,
   replaceJobMilestones,
+  runCompanyAutoReleaseCheck,
   updateCompanyJob,
   validateCompanyJob
 } from "../services/job-service";
@@ -133,6 +137,55 @@ jobsRouter.put(
       data: {
         job
       }
+    });
+  })
+);
+
+jobsRouter.post(
+  "/:jobId/milestones/:milestoneId/approve",
+  asyncHandler(async (request, response) => {
+    const result = await approveCompanyMilestone(
+      request.auth!.userId,
+      readJobId(request.params.jobId),
+      readJobId(request.params.milestoneId)
+    );
+
+    response.json({
+      data: result
+    });
+  })
+);
+
+jobsRouter.post(
+  "/:jobId/milestones/:milestoneId/reject",
+  asyncHandler(async (request, response) => {
+    const input = rejectMilestoneSchema.parse(request.body);
+    const job = await rejectCompanyMilestone(
+      request.auth!.userId,
+      readJobId(request.params.jobId),
+      readJobId(request.params.milestoneId),
+      input.rejectionReason
+    );
+
+    response.json({
+      data: {
+        job
+      }
+    });
+  })
+);
+
+jobsRouter.post(
+  "/:jobId/milestones/:milestoneId/auto-release/check",
+  asyncHandler(async (request, response) => {
+    const result = await runCompanyAutoReleaseCheck(
+      request.auth!.userId,
+      readJobId(request.params.jobId),
+      readJobId(request.params.milestoneId)
+    );
+
+    response.json({
+      data: result
     });
   })
 );
