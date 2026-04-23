@@ -467,6 +467,32 @@ export type AdminJobTraceRecord = {
   auditLogs: AdminAuditLogRecord[];
 };
 
+export type DemoAccountRecord = {
+  role: AppRole;
+  email: string;
+  password: string;
+  label: string;
+};
+
+export type ReadinessCheckRecord = {
+  name: string;
+  status: "pass" | "warn" | "fail";
+  detail: string;
+};
+
+export type DemoReadinessRecord = {
+  status: "ready" | "needs_seed" | "degraded";
+  generatedAt: string;
+  providers: {
+    glm: "mock" | "live";
+    payments: string;
+    storage: string;
+  };
+  checks: ReadinessCheckRecord[];
+  demoAccounts: DemoAccountRecord[];
+  demoFlow: string[];
+};
+
 export type ApiSuccess<T> = {
   data: T;
 };

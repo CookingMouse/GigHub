@@ -25,7 +25,10 @@ const envSchema = z.object({
     .min(16)
     .default("local-file-encryption-secret-change-me"),
   FILE_RETENTION_HOURS: z.coerce.number().int().positive().default(72),
-  REVIEW_WINDOW_HOURS: z.coerce.number().int().positive().default(72)
+  REVIEW_WINDOW_HOURS: z.coerce.number().int().positive().default(72),
+  GLM_MODE: z.enum(["mock", "live"]).default("mock"),
+  PAYMENT_PROVIDER: z.string().trim().min(1).default("mock"),
+  STORAGE_PROVIDER: z.string().trim().min(1).default("local")
 });
 
 export const env = envSchema.parse(process.env);

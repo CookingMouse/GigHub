@@ -5,10 +5,11 @@ export default function HomePage() {
     <main className="page-shell">
       <section className="hero-card">
         <p className="eyebrow">GigHub</p>
-        <h1>Phase 0 and Phase 1 are the trust foundation.</h1>
+        <h1>Escrow-backed freelance work with AI decision intelligence.</h1>
         <p className="muted">
-          This branch establishes the monorepo, local infrastructure, JWT session handling, and
-          role-based auth for freelancer, company, and seeded admin accounts.
+          GigHub now supports structured briefs, mock GLM validation, funded escrow, milestone
+          submissions, disputes, income statements, matching, and admin audit views for the full
+          hackathon demo loop.
         </p>
 
         <div className="cta-row">
@@ -18,15 +19,17 @@ export default function HomePage() {
           <Link className="button-secondary" href="/login">
             Sign in
           </Link>
+          <Link className="button-secondary" href="/demo">
+            Demo readiness
+          </Link>
         </div>
 
         <div className="meta-row">
-          <span className="button-secondary">Freelancer + company self-registration</span>
-          <span className="button-secondary">Admin seeded from Prisma</span>
-          <span className="button-secondary">Protected dashboards live</span>
+          <span className="button-secondary">Mock GLM providers active</span>
+          <span className="button-secondary">Seeded demo accounts</span>
+          <span className="button-secondary">End-to-end marketplace flow</span>
         </div>
       </section>
     </main>
   );
 }
-
