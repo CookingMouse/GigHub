@@ -556,7 +556,12 @@ export const CompanyJobDetailPage = () => {
                               placeholder="Provide detailed feedback on what needs to be changed..."
                               style={{ width: "100%", minHeight: 80, padding: 12, borderRadius: 8, border: "1px solid #D1D5DB", fontSize: 14 }}
                               value={rejectReasons[m.id] ?? ""}
-                              onChange={(e) => updateRejectReason(m.id, e.target.value)}
+                              onChange={(e) =>
+                                setRejectReasons((previous) => ({
+                                  ...previous,
+                                  [m.id]: e.target.value
+                                }))
+                              }
                             />
                             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
                               <button className="button-secondary" style={{ color: "#DC2626", borderColor: "#DC2626" }} 
@@ -577,8 +582,4 @@ export const CompanyJobDetailPage = () => {
       </div>
     </CompanyWorkspaceShell>
   );
-};
-
-const updateRejectReason = (milestoneId: string, value: string) => {
-  // this is handled inside the component now, but keep helper functions clean
 };
