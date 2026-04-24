@@ -128,7 +128,8 @@ export const listInboxThreads = async (userId: string): Promise<ConversationThre
       lastMessage: lastMessage
         ? {
             senderName: lastMessage.sender.name,
-            body: lastMessage.body,
+            body: lastMessage.isEncrypted ? null : (lastMessage.body ?? null),
+            isEncrypted: Boolean(lastMessage.isEncrypted),
             createdAt: lastMessage.createdAt.toISOString()
           }
         : null,
@@ -206,7 +207,12 @@ export const listThreadMessages = async (
     id: message.id,
     senderId: message.senderId,
     senderName: message.sender.name,
-    body: message.body,
+    body: message.isEncrypted ? null : (message.body ?? null),
+    encryptedBody: message.encryptedBody ?? null,
+    iv: message.iv ?? null,
+    encryptedKeyForSender: message.encryptedKeyForSender ?? null,
+    encryptedKeyForRecipient: message.encryptedKeyForRecipient ?? null,
+    isEncrypted: Boolean(message.isEncrypted),
     createdAt: message.createdAt.toISOString()
   }));
 };
@@ -222,7 +228,12 @@ export const createThreadMessage = async (
     data: {
       threadId,
       senderId: userId,
-      body: input.body
+      body: input.isEncrypted ? null : input.body,
+      encryptedBody: input.encryptedBody ?? null,
+      iv: input.iv ?? null,
+      encryptedKeyForSender: input.encryptedKeyForSender ?? null,
+      encryptedKeyForRecipient: input.encryptedKeyForRecipient ?? null,
+      isEncrypted: Boolean(input.isEncrypted)
     }
   });
 

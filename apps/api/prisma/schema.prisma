@@ -100,6 +100,7 @@ model User {
   passwordHash     String
   name             String
   role             Role
+  publicKey        String?                @db.Text
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
   freelancerProfile FreelancerProfile?
@@ -223,13 +224,18 @@ model ConversationParticipant {
 }
 
 model ConversationMessage {
-  id          String             @id @default(cuid())
-  threadId    String
-  senderId    String
-  body        String
-  createdAt   DateTime           @default(now())
-  thread      ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  sender      User               @relation("ConversationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  id                       String             @id @default(cuid())
+  threadId                 String
+  senderId                 String
+  body                     String?
+  encryptedBody            String?            @db.Text
+  iv                       String?
+  encryptedKeyForSender    String?            @db.Text
+  encryptedKeyForRecipient String?            @db.Text
+  isEncrypted              Boolean            @default(false)
+  createdAt                DateTime           @default(now())
+  thread                   ConversationThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender                   User               @relation("ConversationMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([threadId, createdAt])
 }
@@ -337,10 +343,12 @@ model Submission {
   notes         String?
   reviewDecision String?
   rejectionReason String?
-  fileName      String?
-  fileFormat    String?
-  fileSizeBytes Int?
-  fileHash      String?
+  fileName           String?
+  fileFormat         String?
+  fileSizeBytes      Int?
+  fileHash           String?
+  clientIv           String?
+  clientEncryptedKey String?    @db.Text
   wordCount     Int?
   dimensions    String?
   activityLog   Json?
