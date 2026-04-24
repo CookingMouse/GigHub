@@ -1,5 +1,5 @@
-import { CompanyActiveJobsPage } from "@/components/company-active-jobs-page";
+import { CompanyJobsPage } from "@/components/company-jobs-page";
 
 export default function CompanyActiveJobsRoute() {
-  return <CompanyActiveJobsPage />;
+  return <CompanyJobsPage />;
 }

@@ -594,6 +594,6 @@ export const CompanyJobDetailPage = () => {
           </div>
         )}
       </div>
-    </CompanyWorkspaceShell>
+    </WorkspaceLayout>
   );
 };

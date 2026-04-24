@@ -36,7 +36,8 @@ import type {
   RespondJobInvitationInput,
   UpdateCompanyProfileInput,
   UpdateFreelancerProfileInput,
-  UpsertJobDraftInput
+  UpsertJobDraftInput,
+  WorkerRecommendationRecord
 } from "@gighub/shared";
 import { webConfig } from "./config";
 
