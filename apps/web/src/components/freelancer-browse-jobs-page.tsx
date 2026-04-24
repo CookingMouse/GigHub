@@ -65,6 +65,7 @@ export const FreelancerBrowseJobsPage = () => {
   const [sortValue, setSortValue] = useState<SortValue>("newest");
   const [minBudget, setMinBudget] = useState("");
   const [maxBudget, setMaxBudget] = useState("");
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const reload = async () => {
@@ -201,13 +202,13 @@ export const FreelancerBrowseJobsPage = () => {
                   value={sortValue}
                 >
                   <option value="newest">Newest</option>
-                  <option value="budget-desc">Highest budget</option>
-                  <option value="budget-asc">Lowest budget</option>
+                  <option value="budget-desc">Highest wages</option>
+                  <option value="budget-asc">Lowest wages</option>
                 </select>
               </label>
 
               <label className="field" htmlFor="browse-job-min-budget">
-                <span>Min budget</span>
+                <span>Min wages</span>
                 <input
                   id="browse-job-min-budget"
                   inputMode="numeric"
@@ -220,7 +221,7 @@ export const FreelancerBrowseJobsPage = () => {
               </label>
 
               <label className="field" htmlFor="browse-job-max-budget">
-                <span>Max budget</span>
+                <span>Max wages</span>
                 <input
                   id="browse-job-max-budget"
                   inputMode="numeric"
@@ -282,10 +283,51 @@ export const FreelancerBrowseJobsPage = () => {
                         )}
                       </div>
 
+                      {job.description && (
+                        <div style={{ marginBottom: 16 }}>
+                          <p style={{ fontSize: 12.5, color: "#6B7280", fontWeight: 400, lineHeight: 1.5, margin: 0 }}>
+                            {expandedDescriptions.has(job.id)
+                              ? job.description
+                              : job.description.length > 150
+                                ? `${job.description.substring(0, 150)}...`
+                                : job.description}
+                            {job.description.length > 150 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedDescriptions(prev => {
+                                    const next = new Set(prev);
+                                    if (next.has(job.id)) {
+                                      next.delete(job.id);
+                                    } else {
+                                      next.add(job.id);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                style={{
+                                  background: "none",
+                                  border: "none",
+                                  color: "#0F6E56",
+                                  cursor: "pointer",
+                                  fontSize: 12.5,
+                                  fontWeight: 500,
+                                  marginLeft: 4,
+                                  padding: 0,
+                                  textDecoration: "none",
+                                }}
+                              >
+                                {expandedDescriptions.has(job.id) ? "See less" : "See more"}
+                              </button>
+                            )}
+                          </p>
+                        </div>
+                      )}
+
                       <div className="browse-job-meta">
                         <p>
-                          <span className="panel-label">Budget</span>
-                          <strong>{formatCurrency(job.budget)}</strong>
+                          <span className="panel-label">Wages</span>
+                          <strong style={{ fontFamily: "'DM Mono', monospace", color: "#111827" }}>{formatCurrency(job.budget)}</strong>
                         </p>
                         <p>
                           <span className="panel-label">Milestones</span>

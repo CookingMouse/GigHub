@@ -153,6 +153,7 @@ model Job {
   companyId    String
   freelancerId String?
   title        String
+  description  String?         @db.Text
   budget       Decimal         @db.Decimal(12, 2)
   milestoneCount Int           @default(1)
   status       JobStatus       @default(DRAFT)

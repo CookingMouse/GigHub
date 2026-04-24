@@ -69,7 +69,8 @@ export const listJobAvailability = async (): Promise<JobAvailabilityRecord[]> =>
     companyName: companyName(job),
     budget: Number(job.budget),
     milestoneCount: job.milestoneCount,
-    publishedAt: job.publishedAt?.toISOString() ?? null
+    publishedAt: job.publishedAt?.toISOString() ?? null,
+    description: job.description ?? undefined
   }));
 };
 

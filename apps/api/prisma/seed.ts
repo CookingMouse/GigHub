@@ -189,6 +189,7 @@ const createDemoOpenJob = async (companyId: string) =>
     data: {
       companyId,
       title: "Demo Open Job - Figma landing page design",
+      description: "We need a professional Figma landing page design for our SME financing campaign. This includes a responsive mobile-first layout with clear CTA hierarchy, lead capture form, and developer handoff notes. Design should align with our modern fintech aesthetic and be ready for developer implementation within three working days.",
       budget: "1800.00",
       milestoneCount: 2,
       status: "OPEN",
@@ -225,6 +226,7 @@ const createDemoActiveJob = async (companyId: string, freelancerId: string) =>
       companyId,
       freelancerId,
       title: "Demo Active Job - SME campaign microsite",
+      description: "Build a complete microsite for our Malaysian SME financing campaign. The site should feature a compelling homepage, clear lead capture flow, and mobile-responsive design. We're looking for both design direction and a finished handoff package ready for developer implementation. Must maintain consistency with our brand system throughout all sections.",
       budget: "3200.00",
       milestoneCount: 2,
       status: "IN_PROGRESS",
@@ -292,6 +294,7 @@ const createDemoDisputeJob = async (companyId: string, freelancerId: string) => 
       companyId,
       freelancerId,
       title: "Demo Disputed Job - Product launch assets",
+      description: "Create visual launch assets for our new SME product page including multiple format variations. Deliverables include a complete asset pack, social media graphics, web banners, and detailed handoff notes for our development team. All assets must follow our established brand style guide and include requested image sizes and specifications.",
       budget: "1400.00",
       milestoneCount: 1,
       status: "DISPUTED",
@@ -405,6 +408,7 @@ const createDemoCompletedJob = async (companyId: string, freelancerId: string) =
       companyId,
       freelancerId,
       title: "Demo Completed Job - Loan explainer design",
+      description: "Design a comprehensive loan explainer page with a clean mobile-first layout and clear conversion path. The page needed to explain our loan product features, benefits, and eligibility criteria in an engaging visual format. Includes clear CTA hierarchy and strong mobile readability to guide users toward the application process.",
       budget: "2400.00",
       milestoneCount: 1,
       status: "COMPLETED",
@@ -765,6 +769,7 @@ const buildOrUpdateMockOpenJobs = async (companies: Array<{ id: string; name: st
     });
 
     const publishedAt = new Date(Date.now() - index * 60 * 60 * 1000);
+    const jobDescription = `We need a professional landing page design with compelling copy for our ${["marketing", "product launch", "SME campaign", "fintech", "e-commerce"][index % 5]} initiative. This includes responsive mobile-first layout, clear CTA hierarchy, lead capture form, and developer handoff notes. Design should align with our brand aesthetic and be ready for implementation.`;
     const job =
       existing !== null
         ? await prisma.job.update({
@@ -776,6 +781,7 @@ const buildOrUpdateMockOpenJobs = async (companies: Array<{ id: string; name: st
               freelancerId: null,
               assignedAt: null,
               title,
+              description: jobDescription,
               budget: "2500.00",
               milestoneCount: 2,
               publishedAt
@@ -785,6 +791,7 @@ const buildOrUpdateMockOpenJobs = async (companies: Array<{ id: string; name: st
             data: {
               companyId: company.id,
               title,
+              description: jobDescription,
               budget: "2500.00",
               milestoneCount: 2,
               status: "OPEN",

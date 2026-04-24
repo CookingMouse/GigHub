@@ -489,6 +489,7 @@ export type JobAvailabilityRecord = {
   budget: number;
   milestoneCount: number;
   publishedAt: string | null;
+  description?: string;
 };
 
 export type JobApplicationRecord = {
