@@ -286,7 +286,7 @@ export const InboxPage = ({ user }: InboxPageProps) => {
                           </p>
                         </div>
                         <p style={{ fontSize: 12, color: T.sub, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: (thread.unreadCount ?? 0) > 0 ? 500 : 400 }}>
-                          {thread.lastMessage ?? "No messages yet"}
+                          {thread.lastMessage ? `${thread.lastMessage.senderName}: ${thread.lastMessage.body}` : "No messages yet"}
                         </p>
                       </div>
                       {(thread.unreadCount ?? 0) > 0 && (
@@ -387,7 +387,7 @@ export const InboxPage = ({ user }: InboxPageProps) => {
                     {selectedThread.subject ?? "Conversation"}
                   </p>
                   <p style={{ fontSize: 12, color: T.sub, margin: 0 }}>
-                    {selectedThread.participantCount ?? 0} participant(s)
+                    {(selectedThread.participants ?? []).length} participant(s)
                   </p>
                 </div>
               </div>
