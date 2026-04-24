@@ -7,6 +7,7 @@ import { asyncHandler } from "../lib/async-handler";
 import { submissionUpload } from "../lib/upload";
 import { requireAuth } from "../middleware/auth";
 import { requireRole } from "../middleware/rbac";
+import { prisma } from "../lib/prisma";
 import {
   getCompanyProfile,
   getPublicCompanyProfile,
@@ -159,5 +160,41 @@ profileRouter.patch(
         profile
       }
     });
+  })
+);
+
+// ── E2E public key endpoints ───────────────────────────────────────────────
+
+profileRouter.put(
+  "/public-key",
+  asyncHandler(async (request, response) => {
+    const { publicKey } = request.body as { publicKey?: string };
+
+    if (!publicKey || typeof publicKey !== "string" || publicKey.trim().length === 0) {
+      return response.status(400).json({ code: "INVALID_PUBLIC_KEY", message: "publicKey is required." });
+    }
+
+    await prisma.user.update({
+      where: { id: request.auth!.userId },
+      data: { publicKey: publicKey.trim() }
+    });
+
+    response.json({ data: { success: true } });
+  })
+);
+
+profileRouter.get(
+  "/public-key/:userId",
+  asyncHandler(async (request, response) => {
+    const userId = Array.isArray(request.params.userId)
+      ? request.params.userId[0]
+      : request.params.userId;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { publicKey: true }
+    });
+
+    response.json({ data: { publicKey: user?.publicKey ?? null } });
   })
 );

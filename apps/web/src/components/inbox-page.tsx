@@ -2,7 +2,17 @@
 
 import type { PublicUser } from "@gighub/shared";
 import React, { startTransition, useEffect, useRef, useState } from "react";
-import { ApiRequestError, inboxApi } from "@/lib/api";
+import { ApiRequestError, inboxApi, profileApi } from "@/lib/api";
+import {
+  decryptMessage,
+  encryptMessage,
+  exportPublicKey,
+  generateUserKeyPair,
+  hasPersistedKey,
+  importPublicKey,
+  loadPersistedPrivateKey,
+  persistPrivateKey,
+} from "@/lib/e2e-crypto";
 import { WorkspaceLayout } from "./workspace-layout";
 
 type InboxPageProps = { user: PublicUser };
@@ -118,10 +128,74 @@ export const InboxPage = ({ user }: InboxPageProps) => {
   const [threads, setThreads]       = useState<Thread[]>([]);
   const [selectedThread, setThread] = useState<Thread | null>(null);
   const [messages, setMessages]     = useState<Msg[]>([]);
+  const [decryptedBodies, setDecryptedBodies] = useState<Record<string, string>>({});
   const [notifications, setNotifs]  = useState<Notif[]>([]);
   const [msgInput, setMsgInput]     = useState("");
   const [error, setError]           = useState<string | null>(null);
+  const [e2eReady, setE2eReady]     = useState(false);
+  const [e2eError, setE2eError]     = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const privateKeyRef = useRef<CryptoKey | null>(null);
+
+  // ── E2E key setup ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const setupKeys = async () => {
+      try {
+        let privateKey = await loadPersistedPrivateKey();
+
+        if (!privateKey) {
+          // First time: generate key pair and upload public key to server
+          const keyPair = await generateUserKeyPair();
+          await persistPrivateKey(keyPair.privateKey);
+          const publicKeyB64 = await exportPublicKey(keyPair.publicKey);
+          await profileApi.uploadPublicKey(publicKeyB64);
+          privateKey = keyPair.privateKey;
+        } else if (!hasPersistedKey()) {
+          // Key in memory ref but not localStorage — shouldn't happen, handle gracefully
+          privateKey = null;
+        }
+
+        privateKeyRef.current = privateKey;
+        setE2eReady(true);
+      } catch (err) {
+        setE2eError("Unable to initialise encryption keys. Messages will be sent unencrypted.");
+        setE2eReady(true); // allow inbox to load even without E2E
+      }
+    };
+
+    void setupKeys();
+  }, []);
+
+  // ── Message decryption ───────────────────────────────────────────────────
+  const decryptMessages = async (msgs: Msg[]) => {
+    if (!privateKeyRef.current) return;
+
+    const results: Record<string, string> = {};
+    await Promise.all(
+      msgs
+        .filter((m) => m.isEncrypted && m.encryptedBody && m.iv)
+        .map(async (m) => {
+          try {
+            const encryptedKey = m.senderId === user.id
+              ? m.encryptedKeyForSender
+              : m.encryptedKeyForRecipient;
+
+            if (!encryptedKey || !m.encryptedBody || !m.iv) return;
+
+            results[m.id] = await decryptMessage(
+              m.encryptedBody,
+              m.iv,
+              encryptedKey,
+              privateKeyRef.current!
+            );
+          } catch {
+            results[m.id] = "🔒 [Unable to decrypt]";
+          }
+        })
+    );
+
+    setDecryptedBodies((prev) => ({ ...prev, ...results }));
+  };
 
   // Initial load
   useEffect(() => {
@@ -148,6 +222,7 @@ export const InboxPage = ({ user }: InboxPageProps) => {
       try {
         const { messages: msgs } = await inboxApi.listMessages(selectedThread.id);
         setMessages(msgs);
+        void decryptMessages(msgs);
         await inboxApi.markThreadRead(selectedThread.id);
       } catch (e) {
         setError(e instanceof ApiRequestError ? e.message : "Unable to load messages.");
@@ -167,9 +242,47 @@ export const InboxPage = ({ user }: InboxPageProps) => {
     setMsgInput("");
     startTransition(async () => {
       try {
+        const otherParticipant = selectedThread.participants.find((p) => p.userId !== user.id);
+
+        if (privateKeyRef.current && otherParticipant) {
+          // Attempt E2E encrypted send
+          try {
+            const [myKeyRes, theirKeyRes] = await Promise.all([
+              profileApi.getPublicKey(user.id),
+              profileApi.getPublicKey(otherParticipant.userId),
+            ]);
+
+            if (myKeyRes.publicKey && theirKeyRes.publicKey) {
+              const [myPublicKey, theirPublicKey] = await Promise.all([
+                importPublicKey(myKeyRes.publicKey),
+                importPublicKey(theirKeyRes.publicKey),
+              ]);
+
+              const payload = await encryptMessage(body, myPublicKey, theirPublicKey);
+
+              await inboxApi.createMessage(selectedThread.id, {
+                isEncrypted: true,
+                encryptedBody: payload.encryptedBody,
+                iv: payload.iv,
+                encryptedKeyForSender: payload.encryptedKeyForSender,
+                encryptedKeyForRecipient: payload.encryptedKeyForRecipient,
+              });
+
+              const { messages: msgs } = await inboxApi.listMessages(selectedThread.id);
+              setMessages(msgs);
+              void decryptMessages(msgs);
+              return;
+            }
+          } catch {
+            // Recipient has no public key yet — fall through to plaintext
+          }
+        }
+
+        // Plaintext fallback (recipient hasn't set up E2E yet)
         await inboxApi.createMessage(selectedThread.id, { body });
         const { messages: msgs } = await inboxApi.listMessages(selectedThread.id);
         setMessages(msgs);
+        void decryptMessages(msgs);
       } catch (e) {
         setError(e instanceof ApiRequestError ? e.message : "Unable to send message.");
       }
@@ -191,6 +304,11 @@ export const InboxPage = ({ user }: InboxPageProps) => {
 
   return (
     <WorkspaceLayout title="Inbox" subtitle="Messages, milestone updates, and platform alerts." user={user}>
+      {e2eError && (
+        <p style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "#FEF3C7", border: "1px solid #FDE68A", color: "#92400E", fontSize: 13 }}>
+          ⚠️ {e2eError}
+        </p>
+      )}
       {error && <p className="form-error" style={{ marginBottom: 16 }}>{error}</p>}
 
       {/* ── Inbox container ── */}
@@ -286,7 +404,11 @@ export const InboxPage = ({ user }: InboxPageProps) => {
                           </p>
                         </div>
                         <p style={{ fontSize: 12, color: T.sub, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: (thread.unreadCount ?? 0) > 0 ? 500 : 400 }}>
-                          {thread.lastMessage ? `${thread.lastMessage.senderName}: ${thread.lastMessage.body}` : "No messages yet"}
+                          {thread.lastMessage
+                            ? thread.lastMessage.isEncrypted
+                              ? `${thread.lastMessage.senderName}: 🔒 Encrypted message`
+                              : `${thread.lastMessage.senderName}: ${thread.lastMessage.body ?? ""}`
+                            : "No messages yet"}
                         </p>
                       </div>
                       {(thread.unreadCount ?? 0) > 0 && (
@@ -401,6 +523,11 @@ export const InboxPage = ({ user }: InboxPageProps) => {
                 )}
                 {messages.map(msg => {
                   const isMe = msg.senderId === user.id;
+                  const displayBody = msg.isEncrypted
+                    ? (decryptedBodies[msg.id] ?? "🔒 Decrypting…")
+                    : (msg.body ?? "");
+                  const isDecrypted = msg.isEncrypted && decryptedBodies[msg.id] !== undefined;
+
                   return (
                     <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
                       <div style={{ maxWidth: "72%" }}>
@@ -415,7 +542,7 @@ export const InboxPage = ({ user }: InboxPageProps) => {
                           color: isMe ? "#fff" : T.text,
                           fontSize: 13.5, lineHeight: 1.55,
                         }}>
-                          {msg.body}
+                          {displayBody}
                         </div>
                         <div style={{
                           display: "flex", alignItems: "center", gap: 4,
@@ -425,6 +552,11 @@ export const InboxPage = ({ user }: InboxPageProps) => {
                           <span style={{ fontSize: 11, color: T.muted }}>
                             {msg.createdAt ? formatTime(msg.createdAt) : ""}
                           </span>
+                          {msg.isEncrypted && (
+                            <span title={isDecrypted ? "End-to-end encrypted" : "Decrypting…"} style={{ fontSize: 11, color: isMe ? T.accentLight : T.accent }}>
+                              🔒
+                            </span>
+                          )}
                           {isMe && <Icon d={ICONS.checks} size={12} />}
                         </div>
                       </div>

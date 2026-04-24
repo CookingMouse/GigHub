@@ -121,8 +121,16 @@ export const createConversationThreadSchema = z.object({
 });
 
 export const createConversationMessageSchema = z.object({
-  body: z.string().trim().min(1).max(4000)
-});
+  body: z.string().trim().min(1).max(4000).optional(),
+  encryptedBody: z.string().optional(),
+  iv: z.string().optional(),
+  encryptedKeyForSender: z.string().optional(),
+  encryptedKeyForRecipient: z.string().optional(),
+  isEncrypted: z.boolean().optional(),
+}).refine(
+  (d) => d.body || (d.encryptedBody && d.iv && d.encryptedKeyForSender && d.encryptedKeyForRecipient),
+  { message: "Provide either body (plaintext) or all four encrypted fields." }
+);
 
 export const updateFreelancerProfileSchema = z.object({
   displayName: z.string().trim().min(2).max(120).optional(),
@@ -573,7 +581,8 @@ export type ConversationThreadRecord = {
   }>;
   lastMessage: {
     senderName: string;
-    body: string;
+    body: string | null;
+    isEncrypted: boolean;
     createdAt: string;
   } | null;
   unreadCount: number;
@@ -583,7 +592,12 @@ export type ConversationMessageRecord = {
   id: string;
   senderId: string;
   senderName: string;
-  body: string;
+  body: string | null;
+  encryptedBody: string | null;
+  iv: string | null;
+  encryptedKeyForSender: string | null;
+  encryptedKeyForRecipient: string | null;
+  isEncrypted: boolean;
   createdAt: string;
 };
 

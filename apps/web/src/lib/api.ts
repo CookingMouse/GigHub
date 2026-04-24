@@ -310,6 +310,15 @@ export const profileApi = {
     requestJson<{ profile: CompanyProfileRecord }>("/profile/company", {
       method: "PATCH",
       json: input
+    }),
+  uploadPublicKey: (publicKey: string) =>
+    requestJson<{ success: boolean }>("/profile/public-key", {
+      method: "PUT",
+      json: { publicKey }
+    }),
+  getPublicKey: (userId: string) =>
+    requestJson<{ publicKey: string | null }>(`/profile/public-key/${userId}`, {
+      method: "GET"
     })
 };
 
