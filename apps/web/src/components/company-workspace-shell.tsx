@@ -35,8 +35,8 @@ export const CompanyWorkspaceShell = ({
 
         <article className="status-panel">
           <span className="panel-label">Workflow</span>
-          <strong>Draft - Validate - Publish</strong>
-          <p>Edits after validation require a fresh validation before the job can go live.</p>
+          <strong>Draft - Validate - Hire - Manage</strong>
+          <p>Structured briefs lead to AI-validated milestones and secure escrow releases.</p>
         </article>
       </div>
 

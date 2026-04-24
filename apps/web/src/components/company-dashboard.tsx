@@ -2,9 +2,6 @@
 
 import type {
   JobRecord,
-  CompanyJobApplicationRecord,
-  CompanyJobInvitationRecord,
-  MilestoneStatus,
   PublicUser
 } from "@gighub/shared";
 import Link from "next/link";
@@ -24,23 +21,7 @@ type SectionState<T> =
 type JobsResponse = Awaited<ReturnType<typeof jobsApi.list>>;
 type RequestsResponse = Awaited<ReturnType<typeof requestsApi.listCompanyRequests>>;
 
-type DeadlineItem = {
-  milestoneId: string;
-  milestoneTitle: string;
-  jobTitle: string;
-  freelancerName: string;
-  dueAt: string;
-  urgencyLabel: string;
-  urgencyColor: string;
-};
-
-const companyAccent = "#1D4ED8";
-const companyAccentLight = "#EFF6FF";
-const companyAccentText = "#1e40af";
-
-const reviewMilestoneStatuses: MilestoneStatus[] = ["SUBMITTED", "UNDER_REVIEW"];
-const completedMilestoneStatuses: MilestoneStatus[] = ["APPROVED", "RELEASED"];
-const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const hiringAccent = "#1D4ED8";
 
 const formatCurrency = (value: number, compact = false) =>
   new Intl.NumberFormat("en-MY", {
@@ -52,7 +33,7 @@ const formatCurrency = (value: number, compact = false) =>
 
 const formatDate = (value: string | null) => {
   if (!value) {
-    return "No due date";
+    return "No date set";
   }
 
   return new Intl.DateTimeFormat("en-MY", {
@@ -67,27 +48,25 @@ const toSentenceCase = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
-const isCompletedMilestone = (status: MilestoneStatus) => completedMilestoneStatuses.includes(status);
-
-const getStatusTone = (status: MilestoneStatus | null) => {
-  if (status === "IN_PROGRESS" || status === "APPROVED" || status === "RELEASED") {
+const getStatusTone = (status: string) => {
+  if (["IN_PROGRESS", "ESCROW_FUNDED"].includes(status)) {
     return {
-      label: toSentenceCase(status ?? "PENDING"),
-      color: companyAccent
+      label: toSentenceCase(status),
+      color: "#0F6E56"
     };
   }
 
-  if (status === "SUBMITTED" || status === "UNDER_REVIEW") {
+  if (status === "OPEN") {
     return {
-      label: "Needs review",
-      color: "#F59E0B"
+      label: "Live",
+      color: hiringAccent
     };
   }
 
-  if (status === "REVISION_REQUESTED") {
+  if (status === "DRAFT") {
     return {
-      label: "Revision sent",
-      color: "#6366F1"
+      label: "Draft",
+      color: "#6B7280"
     };
   }
 
@@ -99,89 +78,9 @@ const getStatusTone = (status: MilestoneStatus | null) => {
   }
 
   return {
-    label: "Queued",
+    label: toSentenceCase(status),
     color: "#6B7280"
   };
-};
-
-const getUrgencyTone = (dueAt: string) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dueDate = new Date(dueAt);
-  dueDate.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.round((dueDate.getTime() - today.getTime()) / 86_400_000);
-
-  if (diffDays < 0) {
-    return {
-      label: "Overdue",
-      color: "#DC2626"
-    };
-  }
-
-  if (diffDays === 0) {
-    return {
-      label: "Today",
-      color: "#DC2626"
-    };
-  }
-
-  if (diffDays === 1) {
-    return {
-      label: "Tomorrow",
-      color: "#B45309"
-    };
-  }
-
-  if (diffDays <= 7) {
-    return {
-      label: "This week",
-      color: companyAccent
-    };
-  }
-
-  return {
-    label: "Upcoming",
-    color: "#6B7280"
-  };
-};
-
-const buildDeadlineItems = (jobs: JobRecord[]): DeadlineItem[] =>
-  jobs
-    .flatMap((job) =>
-      job.milestones
-        .filter((milestone) => milestone.dueAt !== null && !isCompletedMilestone(milestone.status))
-        .map((milestone) => {
-          const urgency = getUrgencyTone(milestone.dueAt!);
-
-          return {
-            milestoneId: milestone.id,
-            milestoneTitle: milestone.title,
-            jobTitle: job.title,
-            freelancerName: job.assignedFreelancer?.displayName ?? "Unassigned",
-            dueAt: milestone.dueAt!,
-            urgencyLabel: urgency.label,
-            urgencyColor: urgency.color
-          };
-        })
-    )
-    .sort((left, right) => new Date(left.dueAt).getTime() - new Date(right.dueAt).getTime());
-
-const getCalendarCells = (referenceDate: Date) => {
-  const firstDay = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
-  const daysInMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate();
-  const leadingEmptyCells = firstDay.getDay();
-  const totalCells = Math.ceil((leadingEmptyCells + daysInMonth) / 7) * 7;
-
-  return Array.from({ length: totalCells }, (_, index) => {
-    const dateNumber = index - leadingEmptyCells + 1;
-
-    if (dateNumber <= 0 || dateNumber > daysInMonth) {
-      return null;
-    }
-
-    return new Date(referenceDate.getFullYear(), referenceDate.getMonth(), dateNumber);
-  });
 };
 
 const formatError = (error: unknown, fallback: string) =>
@@ -205,29 +104,36 @@ const DashboardStatCard = ({
   label: string;
   value: string;
   supportingText: string;
-  sentiment?: "positive" | "neutral" | "negative";
+  sentiment?: "positive" | "neutral" | "negative" | "hiring";
   isLoading?: boolean;
 }) => (
-  <article className="freelancer-dashboard-stat-card">
-    <p className="freelancer-dashboard-stat-label">{label}</p>
+  <article className="company-dashboard-stat-card">
+    <p className="company-dashboard-stat-label">{label}</p>
     {isLoading ? (
       <>
-        <span className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-stat" />
-        <span className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-text" />
+        <span className="company-dashboard-skeleton company-dashboard-skeleton-stat" />
+        <span className="company-dashboard-skeleton company-dashboard-skeleton-text" />
       </>
     ) : (
       <>
-        <p className="freelancer-dashboard-stat-value dashboard-mono">{value}</p>
-        <p className={`freelancer-dashboard-stat-note is-${sentiment}`}>{supportingText}</p>
+        <p className="company-dashboard-stat-value dashboard-mono">{value}</p>
+        <p className={`company-dashboard-stat-note is-${sentiment}`}>{supportingText}</p>
       </>
     )}
   </article>
 );
 
-const DashboardSectionHeader = ({ label, title }: { label: string; title: string }) => (
-  <div className="freelancer-dashboard-section-header">
-    <p className="freelancer-dashboard-section-label">{label}</p>
-    <h2 className="freelancer-dashboard-section-title">{title}</h2>
+const DashboardSectionHeader = ({ label, title, actionHref, actionLabel }: { label: string; title: string; actionHref?: string; actionLabel?: string }) => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+    <div>
+      <p className="company-dashboard-section-label">{label}</p>
+      <h2 className="company-dashboard-section-title">{title}</h2>
+    </div>
+    {actionHref && (
+      <Link href={actionHref} style={{ fontSize: 13, color: hiringAccent, fontWeight: 500, textDecoration: "none" }}>
+        {actionLabel ?? "View all →"}
+      </Link>
+    )}
   </div>
 );
 
@@ -262,7 +168,7 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
 
           setJobsState({
             status: "error",
-            message: formatError(error, "Jobs data is unavailable right now.")
+            message: formatError(error, "Job data is unavailable right now.")
           });
         });
 
@@ -285,7 +191,7 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
 
           setRequestsState({
             status: "error",
-            message: formatError(error, "Requests are unavailable right now.")
+            message: formatError(error, "Requests data is unavailable right now.")
           });
         });
     };
@@ -297,26 +203,18 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
     };
   }, []);
 
-  const allJobs = useMemo(() => (jobsState.status === "ready" ? jobsState.data.jobs : []), [jobsState]);
+  const allJobs = useMemo(
+    () => (jobsState.status === "ready" ? jobsState.data.jobs : []),
+    [jobsState]
+  );
 
   const activeJobs = useMemo(
-    () => allJobs.filter((job) => ["ASSIGNED", "ESCROW_FUNDED", "IN_PROGRESS"].includes(job.status)),
+    () => allJobs.filter((job) => ["IN_PROGRESS", "ASSIGNED", "ESCROW_FUNDED"].includes(job.status)),
     [allJobs]
   );
 
-  const pendingReviewCount = useMemo(
-    () =>
-      allJobs.reduce(
-        (sum, job) =>
-          sum + job.milestones.filter((milestone) => reviewMilestoneStatuses.includes(milestone.status)).length,
-        0
-      ),
-    [allJobs]
-  );
-
-  const totalSpend = useMemo(
-    () =>
-      allJobs.reduce((sum, job) => sum + (job.escrow?.releasedAmount ?? 0), 0),
+  const draftJobs = useMemo(
+    () => allJobs.filter((job) => job.status === "DRAFT"),
     [allJobs]
   );
 
@@ -325,29 +223,18 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
     [requestsState]
   );
 
-  const deadlineItems = useMemo(() => buildDeadlineItems(activeJobs), [activeJobs]);
-
-  const referenceCalendarDate = deadlineItems[0] ? new Date(deadlineItems[0].dueAt) : new Date();
-  const dueDateSet = new Set(
-    deadlineItems
-      .filter((item) => {
-        const date = new Date(item.dueAt);
-        return (
-          date.getFullYear() === referenceCalendarDate.getFullYear() &&
-          date.getMonth() === referenceCalendarDate.getMonth()
-        );
-      })
-      .map((item) => new Date(item.dueAt).getDate())
+  const totalBudgetHired = useMemo(
+    () => activeJobs.reduce((sum, job) => sum + Number(job.budget), 0),
+    [activeJobs]
   );
-  const calendarCells = getCalendarCells(referenceCalendarDate);
 
   const firstName = user.name.split(" ")[0];
   const subtitleText =
-    pendingReviewCount > 0
-      ? `You have ${pendingReviewCount} milestone${pendingReviewCount > 1 ? "s" : ""} awaiting your review.`
-      : pendingApplications.length > 0
-        ? `You have ${pendingApplications.length} new application${pendingApplications.length > 1 ? "s" : ""} to review.`
-        : "Your company workspace overview.";
+    pendingApplications.length > 0
+      ? `You have ${pendingApplications.length} new freelancer application${pendingApplications.length > 1 ? "s" : ""} to review.`
+      : activeJobs.length > 0
+        ? `You have ${activeJobs.length} active job${activeJobs.length > 1 ? "s" : ""} in progress.`
+        : "Your company hiring overview.";
 
   return (
     <WorkspaceLayout
@@ -355,31 +242,15 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
       subtitle={jobsState.status === "ready" ? subtitleText : "Loading your workspace…"}
       user={user}
     >
-      <div className="freelancer-dashboard">
-        <section className="freelancer-dashboard-stat-grid" aria-label="Company overview metrics">
+      <div className="company-dashboard">
+        <section className="company-dashboard-stat-grid" aria-label="Company overview metrics">
           <DashboardStatCard
             isLoading={jobsState.status === "loading"}
-            label="Total spend"
-            sentiment="neutral"
+            label="Active Jobs"
+            sentiment="positive"
             supportingText={
               jobsState.status === "ready"
-                ? "Released milestone payments"
-                : "Loading spend summary"
-            }
-            value={
-              jobsState.status === "ready"
-                ? statValue(totalSpend, (value) => formatCurrency(value, true))
-                : "--"
-            }
-          />
-
-          <DashboardStatCard
-            isLoading={jobsState.status === "loading"}
-            label="Active jobs"
-            sentiment={activeJobs.length > 0 ? "positive" : "neutral"}
-            supportingText={
-              jobsState.status === "ready"
-                ? `${activeJobs.length} work-in-progress roles`
+                ? `${activeJobs.length} roles currently filled`
                 : "Loading active work"
             }
             value={jobsState.status === "ready" ? statValue(activeJobs.length) : "--"}
@@ -387,102 +258,95 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
 
           <DashboardStatCard
             isLoading={jobsState.status === "loading"}
-            label="Pending reviews"
-            sentiment={pendingReviewCount > 0 ? "negative" : "neutral"}
-            supportingText={
+            label="Committed Budget"
+            sentiment="hiring"
+            supportingText="Total value in escrow"
+            value={
               jobsState.status === "ready"
-                ? pendingReviewCount > 0
-                  ? "Milestones awaiting approval"
-                  : "Everything is up to date"
-                : "Loading review status"
+                ? statValue(totalBudgetHired, (value) => formatCurrency(value, true))
+                : "--"
             }
-            value={jobsState.status === "ready" ? statValue(pendingReviewCount) : "--"}
           />
 
           <DashboardStatCard
             isLoading={requestsState.status === "loading"}
-            label="New applications"
-            sentiment={pendingApplications.length > 0 ? "positive" : "neutral"}
+            label="New Requests"
+            sentiment={pendingApplications.length > 0 ? "hiring" : "neutral"}
             supportingText={
               requestsState.status === "ready"
-                ? "Freelancers waiting for response"
-                : "Loading applications"
+                ? pendingApplications.length > 0
+                  ? "Pending your review"
+                  : "No new applications"
+                : "Loading requests"
+            }
+            value={requestsState.status === "ready" ? statValue(pendingApplications.length) : "--"}
+          />
+
+          <DashboardStatCard
+            isLoading={jobsState.status === "loading"}
+            label="Open Roles"
+            sentiment="hiring"
+            supportingText={
+              jobsState.status === "ready"
+                ? `${allJobs.filter(j => j.status === "OPEN").length} live listings`
+                : "Loading listings"
             }
             value={
-              requestsState.status === "ready"
-                ? statValue(pendingApplications.length)
+              jobsState.status === "ready"
+                ? statValue(allJobs.filter(j => j.status === "OPEN").length)
                 : "--"
             }
           />
         </section>
 
-        <section className="freelancer-dashboard-surface">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Active Job Progress
-            </p>
-            <Link href="/jobs" style={{ fontSize: 13, color: companyAccent, fontWeight: 500, textDecoration: "none" }}>
-              View all jobs →
-            </Link>
-          </div>
+        <section className="company-dashboard-surface">
+          <DashboardSectionHeader
+            label="Recent Activity"
+            title="Active Work Progress"
+            actionHref="/company/active-jobs"
+            actionLabel="View history →"
+          />
 
           {jobsState.status === "loading" ? (
-            <div className="freelancer-dashboard-activity-grid" aria-label="Loading active work">
+            <div className="company-dashboard-activity-grid">
               {Array.from({ length: 3 }, (_, index) => (
-                <article className="freelancer-dashboard-activity-card" key={`job-skeleton-${index}`}>
-                  <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-pill" />
-                  <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-heading" />
-                  <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-text" />
-                  <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-bar" />
-                  <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-text" />
-                  <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-button" />
+                <article className="company-dashboard-activity-card" key={`job-skeleton-${index}`}>
+                  <div className="company-dashboard-skeleton company-dashboard-skeleton-text" />
+                  <div className="company-dashboard-skeleton company-dashboard-skeleton-stat" />
                 </article>
               ))}
             </div>
           ) : null}
 
-          {jobsState.status === "error" ? (
-            <div className="freelancer-dashboard-empty-state">
-              <p className="freelancer-dashboard-empty-title">Job data unavailable</p>
-              <p className="freelancer-dashboard-empty-copy">{jobsState.message}</p>
-            </div>
-          ) : null}
-
           {jobsState.status === "ready" && activeJobs.length === 0 ? (
-            <div className="freelancer-dashboard-empty-state">
-              <p className="freelancer-dashboard-empty-title">No active jobs</p>
-              <p className="freelancer-dashboard-empty-copy">
-                Assigned jobs with funded escrow will appear here once freelancers start working.
+            <div className="company-dashboard-empty-state">
+              <p className="company-dashboard-empty-title">No active jobs</p>
+              <p className="company-dashboard-empty-copy">
+                When you hire a freelancer and fund escrow, progress tracking will appear here.
               </p>
-              <Link className="button-primary" href="/jobs/new" style={{ marginTop: 16 }}>
-                Create job draft
-              </Link>
+              <div className="action-row" style={{ justifyContent: "center" }}>
+                <Link href="/company/jobs" className="button-primary">Create a job</Link>
+              </div>
             </div>
           ) : null}
 
           {jobsState.status === "ready" && activeJobs.length > 0 ? (
-            <div className="freelancer-dashboard-activity-grid">
-              {activeJobs.slice(0, 3).map((job) => {
-                const completedMilestones = job.milestones.filter((milestone) =>
-                  isCompletedMilestone(milestone.status)
-                ).length;
-                const progressPercent =
-                  job.milestones.length > 0
-                    ? Math.round((completedMilestones / job.milestones.length) * 100)
-                    : 0;
-                
-                const currentMilestone = job.milestones.find(m => !isCompletedMilestone(m.status)) ?? job.milestones[job.milestones.length - 1];
-                const statusTone = getStatusTone(currentMilestone?.status ?? null);
+            <div className="company-dashboard-activity-grid">
+              {activeJobs.map((job) => {
+                const statusTone = getStatusTone(job.status);
+                const progressPercent = 33; // Mock or calculate if available
 
                 return (
-                  <article className="freelancer-dashboard-activity-card" key={job.id}>
-                    <div className="freelancer-dashboard-activity-header">
+                  <article className="company-dashboard-activity-card" key={job.id}>
+                    <div className="company-dashboard-activity-header">
                       <div>
-                        <p className="freelancer-dashboard-company">{job.assignedFreelancer?.displayName ?? "Unassigned"}</p>
+                        <p className="company-dashboard-freelancer">
+                          {job.assignedFreelancer?.displayName ?? "Unassigned"}
+                        </p>
                         <h3>{job.title}</h3>
                       </div>
                       <span
-                        className="freelancer-dashboard-badge"
+                        className="company-dashboard-badge"
                         style={{
                           backgroundColor: `${statusTone.color}15`,
                           color: statusTone.color
@@ -492,35 +356,21 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
                       </span>
                     </div>
 
-                    <div className="freelancer-dashboard-progress-block">
-                      <div className="freelancer-dashboard-progress-row">
+                    <div className="company-dashboard-progress-block">
+                      <div className="company-dashboard-progress-row">
                         <p>Progress</p>
                         <strong className="dashboard-mono">{progressPercent}%</strong>
                       </div>
-                      <div className="freelancer-dashboard-progress-track" aria-hidden="true">
+                      <div className="company-dashboard-progress-track">
                         <span
-                          className="freelancer-dashboard-progress-fill"
-                          style={{ width: `${progressPercent}%`, backgroundColor: companyAccent }}
+                          className="company-dashboard-progress-fill"
+                          style={{ width: `${progressPercent}%` }}
                         />
                       </div>
-                      <p className="freelancer-dashboard-progress-copy">
-                        {completedMilestones} of {job.milestones.length} milestone(s) released
-                      </p>
                     </div>
 
-                    <dl className="freelancer-dashboard-detail-grid">
-                      <div>
-                        <dt>Budget</dt>
-                        <dd>{formatCurrency(job.budget, true)}</dd>
-                      </div>
-                      <div>
-                        <dt>Status</dt>
-                        <dd>{toSentenceCase(job.status)}</dd>
-                      </div>
-                    </dl>
-
-                    <Link className="freelancer-dashboard-primary-action" href={`/jobs/${job.id}`} style={{ backgroundColor: companyAccent }}>
-                      Open Job Details
+                    <Link className="company-dashboard-primary-action" href={`/jobs/${job.id}`}>
+                      Manage Job
                     </Link>
                   </article>
                 );
@@ -529,164 +379,53 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
           ) : null}
         </section>
 
-        <div className="freelancer-dashboard-bottom-grid">
-          <section className="freelancer-dashboard-surface">
-            <DashboardSectionHeader label="Delivery Schedule" title="Upcoming milestone deadlines" />
+        <div className="company-dashboard-bottom-grid">
+          <section className="company-dashboard-surface">
+            <DashboardSectionHeader
+              label="Pipeline"
+              title="Drafts and Pending"
+              actionHref="/company/jobs"
+            />
 
-            {jobsState.status === "loading" ? (
-              <div className="freelancer-dashboard-deadline-grid">
-                <div className="freelancer-dashboard-calendar-card">
-                  <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-text" />
-                  <div className="freelancer-dashboard-calendar-skeleton-grid">
-                    {Array.from({ length: 35 }, (_, index) => (
-                      <span className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-day" key={index} />
-                    ))}
-                  </div>
-                </div>
-                <div className="freelancer-dashboard-upcoming-list">
-                  {Array.from({ length: 3 }, (_, index) => (
-                    <article className="freelancer-dashboard-upcoming-item" key={`deadline-skeleton-${index}`}>
-                      <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-heading" />
-                      <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-text" />
-                    </article>
-                  ))}
-                </div>
+            {jobsState.status === "ready" && draftJobs.length === 0 ? (
+              <p className="company-dashboard-empty-copy">No drafts currently in progress.</p>
+            ) : (
+              <div className="card-stack">
+                {draftJobs.slice(0, 3).map(job => (
+                  <article key={job.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", border: "1px solid #E5E7EB", borderRadius: 12 }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{job.title}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>Created {formatDate(job.createdAt)}</p>
+                    </div>
+                    <Link href={`/jobs/${job.id}`} style={{ fontSize: 13, fontWeight: 600, color: hiringAccent }}>Edit</Link>
+                  </article>
+                ))}
               </div>
-            ) : null}
-
-            {jobsState.status === "ready" && deadlineItems.length === 0 ? (
-              <div className="freelancer-dashboard-empty-state">
-                <p className="freelancer-dashboard-empty-title">No upcoming deadlines</p>
-                <p className="freelancer-dashboard-empty-copy">
-                  Deadlines will appear here when active milestones have due dates.
-                </p>
-              </div>
-            ) : null}
-
-            {jobsState.status === "ready" && deadlineItems.length > 0 ? (
-              <div className="freelancer-dashboard-deadline-grid">
-                <div className="freelancer-dashboard-calendar-card">
-                  <div className="freelancer-dashboard-calendar-header">
-                    <p>{new Intl.DateTimeFormat("en-MY", { month: "long", year: "numeric" }).format(referenceCalendarDate)}</p>
-                  </div>
-                  <div className="freelancer-dashboard-calendar-grid is-weekdays">
-                    {weekdayLabels.map((label) => (
-                      <span key={label}>{label}</span>
-                    ))}
-                  </div>
-                  <div className="freelancer-dashboard-calendar-grid">
-                    {calendarCells.map((cell, index) => {
-                      const isToday =
-                        cell !== null &&
-                        cell.toDateString() === new Date().toDateString();
-                      const hasDeadline = cell !== null && dueDateSet.has(cell.getDate());
-                      const className = [
-                        "freelancer-dashboard-calendar-day",
-                        isToday ? "is-today" : "",
-                        hasDeadline ? "is-highlighted" : ""
-                      ]
-                        .filter(Boolean)
-                        .join(" ");
-
-                      return (
-                        <span className={className} key={`calendar-cell-${index}`} style={hasDeadline ? { backgroundColor: companyAccentLight, color: companyAccentText } : {}}>
-                          {cell ? cell.getDate() : ""}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="freelancer-dashboard-upcoming-list">
-                  {deadlineItems.slice(0, 4).map((item) => (
-                    <article className="freelancer-dashboard-upcoming-item" key={item.milestoneId}>
-                      <div className="freelancer-dashboard-upcoming-header">
-                        <div>
-                          <p className="freelancer-dashboard-upcoming-title">{item.milestoneTitle}</p>
-                          <p className="freelancer-dashboard-upcoming-meta">
-                            {item.jobTitle} · {item.freelancerName}
-                          </p>
-                        </div>
-                        <span
-                          className="freelancer-dashboard-badge"
-                          style={{
-                            backgroundColor: `${item.urgencyColor}15`,
-                            color: item.urgencyColor
-                          }}
-                        >
-                          {item.urgencyLabel}
-                        </span>
-                      </div>
-                      <p className="freelancer-dashboard-upcoming-date">{formatDate(item.dueAt)}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            )}
           </section>
 
-          <section className="freelancer-dashboard-surface">
-            <DashboardSectionHeader label="Job Requests" title="Latest freelancer applications" />
-
-            {requestsState.status === "loading" ? (
-              <div className="freelancer-dashboard-upcoming-list">
-                {Array.from({ length: 4 }, (_, index) => (
-                  <article className="freelancer-dashboard-upcoming-item" key={`req-skeleton-${index}`}>
-                    <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-heading" />
-                    <div className="freelancer-dashboard-skeleton freelancer-dashboard-skeleton-text" />
-                  </article>
-                ))}
-              </div>
-            ) : null}
+          <section className="company-dashboard-surface">
+            <DashboardSectionHeader
+              label="Talent"
+              title="Recent Applications"
+              actionHref="/company/requests"
+            />
 
             {requestsState.status === "ready" && pendingApplications.length === 0 ? (
-              <div className="freelancer-dashboard-empty-state">
-                <p className="freelancer-dashboard-empty-title">No new applications</p>
-                <p className="freelancer-dashboard-empty-copy">
-                  When you publish jobs, freelancers will apply and their requests will show up here.
-                </p>
-                <Link className="button-secondary" href="/requests" style={{ marginTop: 16 }}>
-                  View all requests
-                </Link>
-              </div>
-            ) : null}
-
-            {requestsState.status === "ready" && pendingApplications.length > 0 ? (
-              <div className="freelancer-dashboard-upcoming-list">
-                {pendingApplications.slice(0, 5).map((app) => (
-                  <article className="freelancer-dashboard-upcoming-item" key={app.id}>
-                    <div className="freelancer-dashboard-upcoming-header">
-                      <div>
-                        <p className="freelancer-dashboard-upcoming-title">{app.freelancerDisplayName}</p>
-                        <p className="freelancer-dashboard-upcoming-meta">
-                          applied for: {app.freelancerEmail}
-                        </p>
-                      </div>
-                      <span
-                        className="freelancer-dashboard-badge"
-                        style={{
-                          backgroundColor: `${companyAccent}15`,
-                          color: companyAccent
-                        }}
-                      >
-                        New
-                      </span>
+              <p className="company-dashboard-empty-copy">No new talent applications to review.</p>
+            ) : (
+              <div className="card-stack">
+                {pendingApplications.slice(0, 3).map(app => (
+                  <article key={app.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", border: "1px solid #E5E7EB", borderRadius: 12 }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{app.freelancerDisplayName}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "#6B7280" }}>Applied for {app.jobTitle}</p>
                     </div>
-                    <p className="freelancer-dashboard-upcoming-date" style={{ color: "#374151", marginTop: 8 }}>
-                      {app.coverNote ? `"${app.coverNote.slice(0, 60)}..."` : "No cover note provided."}
-                    </p>
-                    <Link href="/requests" style={{ fontSize: 12, color: companyAccent, fontWeight: 500, textDecoration: "none", marginTop: 8, display: "inline-block" }}>
-                      Review application →
-                    </Link>
+                    <Link href="/company/requests" style={{ fontSize: 13, fontWeight: 600, color: hiringAccent }}>Review</Link>
                   </article>
                 ))}
-                {pendingApplications.length > 5 && (
-                  <Link href="/requests" className="freelancer-dashboard-primary-action" style={{ backgroundColor: "transparent", color: companyAccent, border: `1px solid ${companyAccent}`, marginTop: 12 }}>
-                    View all {pendingApplications.length} applications
-                  </Link>
-                )}
               </div>
-            ) : null}
+            )}
           </section>
         </div>
       </div>

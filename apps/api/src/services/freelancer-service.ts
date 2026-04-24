@@ -178,7 +178,6 @@ const toDisputeRecord = (dispute: FreelancerSubmission["dispute"] | null): Dispu
     rejectionReason: dispute.rejectionReason,
     resolutionType: dispute.resolutionType ?? null,
     resolutionSummary: dispute.resolutionSummary ?? null,
-    adminNote: dispute.adminNote ?? null,
     openedAt: dispute.openedAt.toISOString(),
     resolvedAt: dispute.resolvedAt?.toISOString() ?? null,
     latestDecision: toDecisionRecord(dispute.glmDecisions[0] ?? null)
@@ -400,7 +399,7 @@ export const createFreelancerSubmission = async (
         }
       });
 
-      await tx.auditLog.create({
+      await tx.activityLog.create({
         data: {
           actorId: freelancerId,
           entityType: "milestone",

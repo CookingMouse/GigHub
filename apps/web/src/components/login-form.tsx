@@ -8,7 +8,7 @@ import { ApiRequestError, authApi } from "@/lib/api";
 
 export const LoginForm = () => {
   const router = useRouter();
-  const [role, setRole] = useState<"freelancer" | "company" | "admin">("freelancer");
+  const [role, setRole] = useState<"freelancer" | "company">("freelancer");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,10 +32,11 @@ export const LoginForm = () => {
 
     startTransition(async () => {
       try {
-        const result = await authApi.login(parsed.data);
-        router.replace(result.user.role === "admin" ? "/admin" : "/dashboard");
+        await authApi.login(parsed.data);
+        router.replace("/dashboard");
         router.refresh();
-      } catch (error) {
+      }
+ catch (error) {
         if (error instanceof ApiRequestError) {
           setErrorMessage(error.message);
         } else {
@@ -70,16 +71,6 @@ export const LoginForm = () => {
             value="company"
           />
           <span>Company</span>
-        </label>
-        <label>
-          <input
-            checked={role === "admin"}
-            name="role"
-            onChange={() => setRole("admin")}
-            type="radio"
-            value="admin"
-          />
-          <span>Admin</span>
         </label>
       </fieldset>
 

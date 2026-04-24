@@ -3,8 +3,8 @@
 import type { AppRole, PublicUser } from "@gighub/shared";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { type ReactNode, startTransition, useEffect, useState } from "react";
-import { authApi, freelancersApi, profileApi } from "@/lib/api";
+import React, { type ReactNode, startTransition, useState } from "react";
+import { authApi } from "@/lib/api";
 
 // ── Inline SVG icon helper ────────────────────────────────────────────────────
 const Icon = ({ d, size = 16 }: { d: string; size?: number }) => (
@@ -74,8 +74,8 @@ const roleNavSections: Record<AppRole, NavSection[]> = {
       group: null,
       items: [
         { href: "/dashboard",          label: "Dashboard",   icon: "dashboard" },
-        { href: "/jobs",               label: "Job History", icon: "layers"    },
-        { href: "/company/requests",   label: "Job Requests",icon: "fileText"  },
+        { href: "/company/jobs",       label: "Job History", icon: "layers"    },
+        { href: "/company/requests",   label: "Requests",    icon: "fileText"  },
       ],
     },
     {
@@ -88,16 +88,6 @@ const roleNavSections: Record<AppRole, NavSection[]> = {
       group: "ACCOUNT",
       items: [
         { href: "/company/profile", label: "Profile", icon: "user" },
-      ],
-    },
-  ],
-  admin: [
-    {
-      group: null,
-      items: [
-        { href: "/admin",          label: "Dashboard",  icon: "dashboard"     },
-        { href: "/admin/disputes", label: "Disputes",   icon: "alertTriangle" },
-        { href: "/admin/audit",    label: "Audit Log",  icon: "clipboard"     },
       ],
     },
   ],
@@ -130,21 +120,12 @@ const roleStyle: Record<AppRole, RoleStyle> = {
     cta:         "Post Job",
     ctaHref:     "/jobs/new",
   },
-  admin: {
-    accent:      "#7C3AED",
-    accentLight: "#F5F3FF",
-    accentText:  "#5b21b6",
-    tagline:     "Super Admin",
-    cta:         "Audit Log",
-    ctaHref:     "/admin/audit",
-  },
 };
 
 const getInitials = (name: string) =>
   name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
-const isActive = (pathname: string, href: string, role: AppRole) => {
-  if (role === "admin" && href === "/admin") return pathname === "/admin";
+const isActive = (pathname: string, href: string) => {
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 
@@ -160,75 +141,10 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
   const pathname = usePathname();
   const router   = useRouter();
   const [logoutPending, setLogoutPending] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<{ id: string; name: string; type: "freelancer" | "company"; meta?: string }[]>([]);
-  const [showResults, setShowResults] = useState(false);
 
   const cfg      = roleStyle[user.role];
   const sections = roleNavSections[user.role];
   const initials = getInitials(user.name);
-
-  useEffect(() => {
-    if (!searchQuery.trim() || searchQuery.length < 2) {
-      setSearchResults([]);
-      setShowResults(false);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        if (user.role === "company") {
-          const { freelancers } = await freelancersApi.list();
-          const filtered = freelancers
-            .filter(f => 
-              f.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-              f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              f.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
-            .slice(0, 5)
-            .map(f => ({ 
-              id: f.id, 
-              name: f.displayName || f.name, 
-              type: "freelancer" as const, 
-              meta: f.skills.slice(0, 2).join(", ") || "No skills listed" 
-            }));
-          setSearchResults(filtered);
-        } else if (user.role === "freelancer") {
-          const { companies } = await profileApi.listPublicCompanies();
-          const filtered = companies
-            .filter(c => 
-              c.companyName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-              (c.industry && c.industry.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
-            .slice(0, 5)
-            .map(c => ({ 
-              id: c.id, 
-              name: c.companyName, 
-              type: "company" as const, 
-              meta: c.industry || "Industry unspecified" 
-            }));
-          setSearchResults(filtered);
-        }
-        setShowResults(true);
-      } catch (err) {
-        console.error("Search failed", err);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, user.role]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    
-    setShowResults(false);
-    if (user.role === "company") {
-      router.push(`/jobs?q=${encodeURIComponent(searchQuery)}`);
-    } else if (user.role === "freelancer") {
-      router.push(`/freelancer/browse-jobs?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
 
   const handleLogout = () => {
     setLogoutPending(true);
@@ -273,70 +189,24 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
         </div>
 
         {/* Search */}
-        <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6", position: "relative" }}>
-          <form 
-            onSubmit={handleSearch}
-            style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: "#F9FAFB", border: "1px solid #E5E7EB",
-              borderRadius: 9, padding: "7px 12px",
-            }}
-          >
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "#F9FAFB", border: "1px solid #E5E7EB",
+            borderRadius: 9, padding: "7px 12px",
+          }}>
             <span style={{ color: "#9CA3AF", flexShrink: 0 }}>
               <Icon d={ICONS.search} size={14} />
             </span>
             <input
               placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
               style={{
                 border: "none", background: "none", outline: "none",
                 fontSize: 13, color: "#374151", width: "100%",
                 fontFamily: "'DM Sans', sans-serif",
               }}
             />
-          </form>
-
-          {/* Search Results Dropdown */}
-          {showResults && searchResults.length > 0 && (
-            <div style={{
-              position: "absolute", top: "100%", left: 14, right: 14,
-              background: "#fff", border: "1px solid #E5E7EB", borderRadius: 10,
-              boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
-              zIndex: 100, marginTop: 4, overflow: "hidden"
-            }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#9CA3AF", padding: "10px 12px 4px", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>
-                {user.role === "company" ? "Freelancers" : "Companies"}
-              </p>
-              {searchResults.map(res => (
-                <Link
-                  key={res.id}
-                  href={res.type === "freelancer" ? `/freelancers/${res.id}` : `/companies/${res.id}`}
-                  onClick={() => { setShowResults(false); setSearchQuery(""); }}
-                  style={{
-                    display: "block", padding: "10px 12px", textDecoration: "none",
-                    borderBottom: "1px solid #F3F4F6", transition: "background 0.1s"
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#F9FAFB"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                >
-                  <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#111827" }}>{res.name}</span>
-                  {res.meta && <span style={{ display: "block", fontSize: 11, color: "#6B7280", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{res.meta}</span>}
-                </Link>
-              ))}
-              <button 
-                onClick={handleSearch}
-                style={{
-                  width: "100%", padding: "10px", background: "#F9FAFB", border: "none",
-                  fontSize: 11, fontWeight: 600, color: cfg.accentText, cursor: "pointer",
-                  textAlign: "center", display: "block"
-                }}
-              >
-                View all results for "{searchQuery}"
-              </button>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Nav sections */}

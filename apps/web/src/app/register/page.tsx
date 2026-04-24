@@ -8,7 +8,7 @@ export default function RegisterPage() {
         <p className="eyebrow">GigHub</p>
         <h1>Create your account</h1>
         <p className="muted">
-          Freelancer and company registration is open in Phase 1. Admin access stays seed-only.
+          Freelancer and company registration is open in Phase 1.
         </p>
         <RegisterForm />
         <p className="muted">

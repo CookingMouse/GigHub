@@ -160,9 +160,6 @@ export const DemoReadinessPage = () => {
               <Link className="button-primary" href="/login">
                 Start demo login
               </Link>
-              <Link className="button-secondary" href="/admin">
-                Admin queue
-              </Link>
             </div>
           </section>
         </>

@@ -1,8 +1,7 @@
 "use client";
 
-import type { JobRecord, JobStatus } from "@gighub/shared";
+import type { JobRecord } from "@gighub/shared";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { ApiRequestError, jobsApi } from "@/lib/api";
@@ -13,7 +12,9 @@ type JobsState =
   | { status: "error"; message: string }
   | { status: "ready"; jobs: JobRecord[] };
 
-type FilterStatus = "ALL" | "DRAFT" | "ACTIVE" | "COMPLETED";
+type JobFilter = "ALL" | "DRAFT" | "OPEN" | "ACTIVE" | "COMPLETED";
+
+const hiringAccent = "#1D4ED8";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-MY", {
@@ -32,38 +33,30 @@ const formatDate = (value: string | null) => {
   }).format(new Date(value));
 };
 
-const getJobStatusLabel = (status: JobStatus) => {
-  return status.replace(/_/g, " ");
-};
-
-const getStatusColor = (status: JobStatus) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case "DRAFT": return "#6B7280";
-    case "OPEN": return "#10B981";
+    case "OPEN": return hiringAccent;
     case "ASSIGNED":
     case "ESCROW_FUNDED":
-    case "IN_PROGRESS": return "#4F46E5";
-    case "COMPLETED": return "#059669";
+    case "IN_PROGRESS": return "#0F6E56";
+    case "COMPLETED": return "#0F6E56";
     case "DISPUTED": return "#DC2626";
-    case "CANCELLED": return "#9CA3AF";
     default: return "#6B7280";
   }
 };
 
+const toSentenceCase = (value: string) =>
+  value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 export const CompanyJobsPage = () => {
   const session = useProtectedUser("company");
-  const searchParams = useSearchParams();
-  const queryQ = searchParams.get("q");
-
   const [state, setState] = useState<JobsState>({ status: "loading" });
-  const [filter, setFilter] = useState<FilterStatus>("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    if (queryQ) {
-      setSearchQuery(queryQ);
-    }
-  }, [queryQ]);
+  const [filter, setFilter] = useState<JobFilter>("ALL");
 
   useEffect(() => {
     if (session.status !== "ready") {
@@ -106,55 +99,22 @@ export const CompanyJobsPage = () => {
 
   const filteredJobs = useMemo(() => {
     if (state.status !== "ready") return [];
-
-    return state.jobs.filter((job) => {
-      const matchesSearch = 
-        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        job.assignedFreelancer?.displayName.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      let matchesFilter = true;
-      if (filter === "DRAFT") {
-        matchesFilter = job.status === "DRAFT";
-      } else if (filter === "ACTIVE") {
-        matchesFilter = ["OPEN", "ASSIGNED", "ESCROW_FUNDED", "IN_PROGRESS", "DISPUTED"].includes(job.status);
-      } else if (filter === "COMPLETED") {
-        matchesFilter = job.status === "COMPLETED";
-      }
-
-      return matchesSearch && matchesFilter;
-    });
-  }, [state, filter, searchQuery]);
-
-  const stats = useMemo(() => {
-    if (state.status !== "ready") return { all: 0, drafts: 0, active: 0, completed: 0 };
     
-    return {
-      all: state.jobs.length,
-      drafts: state.jobs.filter(j => j.status === "DRAFT").length,
-      active: state.jobs.filter(j => ["OPEN", "ASSIGNED", "ESCROW_FUNDED", "IN_PROGRESS", "DISPUTED"].includes(j.status)).length,
-      completed: state.jobs.filter(j => j.status === "COMPLETED").length
-    };
-  }, [state]);
+    switch (filter) {
+      case "DRAFT": return state.jobs.filter(j => j.status === "DRAFT");
+      case "OPEN": return state.jobs.filter(j => j.status === "OPEN");
+      case "ACTIVE": return state.jobs.filter(j => ["ASSIGNED", "ESCROW_FUNDED", "IN_PROGRESS", "DISPUTED"].includes(j.status));
+      case "COMPLETED": return state.jobs.filter(j => j.status === "COMPLETED");
+      default: return state.jobs;
+    }
+  }, [state, filter]);
 
   if (session.status === "loading") {
     return (
       <section className="shell-card">
         <p className="eyebrow">GigHub</p>
         <h1>Loading company workspace</h1>
-        <p className="muted">Restoring your hiring dashboard and job history.</p>
-      </section>
-    );
-  }
-
-  if (session.status === "error") {
-    return (
-      <section className="shell-card">
-        <p className="eyebrow">GigHub</p>
-        <h1>Workspace unavailable</h1>
-        <p className="muted">{session.message}</p>
-        <Link className="button-secondary" href="/dashboard">
-          Back to dashboard
-        </Link>
+        <p className="muted">Restoring your hiring dashboard and job drafts.</p>
       </section>
     );
   }
@@ -167,61 +127,41 @@ export const CompanyJobsPage = () => {
             New job draft
           </Link>
           <Link className="button-secondary" href="/dashboard">
-            Dashboard
+            Back to dashboard
           </Link>
         </>
       }
       companyEmail={session.user.email}
       companyName={session.user.name}
-      description="Manage your entire job lifecycle from draft to completion. Track progress, review milestones, and manage payments in one place."
+      description="View and manage all your job listings, from drafts to completed projects."
       title="Job History"
     >
-      <div className="freelancer-dashboard-surface" style={{ marginBottom: 24, padding: "20px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              {(["ALL", "ACTIVE", "DRAFT", "COMPLETED"] as FilterStatus[]).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  style={{
-                    padding: "6px 16px",
-                    borderRadius: "20px",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    border: "1px solid #E5E7EB",
-                    backgroundColor: filter === f ? "#4F46E5" : "white",
-                    color: filter === f ? "white" : "#374151",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {f.charAt(0) + f.slice(1).toLowerCase()} ({stats[f.toLowerCase() as keyof typeof stats]})
-                </button>
-              ))}
-            </div>
-            <div style={{ flex: 1, maxWidth: "300px", position: "relative" }}>
-              <input
-                type="text"
-                placeholder="Search by job title or freelancer..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid #E5E7EB",
-                  fontSize: "14px"
-                }}
-              />
-            </div>
-          </div>
+      <div className="company-dashboard-surface" style={{ marginBottom: 24, padding: "8px 12px" }}>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "4px 0" }}>
+          {(["ALL", "DRAFT", "OPEN", "ACTIVE", "COMPLETED"] as JobFilter[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 99,
+                border: "none",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                background: filter === f ? hiringAccent : "transparent",
+                color: filter === f ? "#fff" : "#6B7280",
+                whiteSpace: "nowrap"
+              }}
+            >
+              {toSentenceCase(f)}
+            </button>
+          ))}
         </div>
       </div>
 
       {state.status === "loading" ? (
         <section className="inline-panel">
-          <h2>Loading jobs</h2>
           <p className="muted">Fetching your job history...</p>
         </section>
       ) : null}
@@ -234,91 +174,80 @@ export const CompanyJobsPage = () => {
       ) : null}
 
       {state.status === "ready" && filteredJobs.length === 0 ? (
-        <section className="inline-panel" style={{ textAlign: "center", padding: "48px 0" }}>
+        <section className="inline-panel" style={{ textAlign: "center", padding: "48px 24px" }}>
           <h2>No jobs found</h2>
           <p className="muted">
-            {searchQuery ? `No jobs matching "${searchQuery}" for the selected filter.` : "You haven't created any jobs yet."}
+            {filter === "ALL" 
+              ? "You haven't created any jobs yet." 
+              : `You don't have any jobs in the ${filter.toLowerCase()} stage.`}
           </p>
-          {!searchQuery && (
-            <Link className="button-primary" href="/jobs/new" style={{ marginTop: 16, display: "inline-block" }}>
-              Create your first job
-            </Link>
+          {filter === "ALL" && (
+            <div className="action-row" style={{ justifyContent: "center" }}>
+              <Link className="button-primary" href="/jobs/new">Create your first job</Link>
+            </div>
           )}
         </section>
       ) : null}
 
       {state.status === "ready" && filteredJobs.length > 0 ? (
-        <div style={{ maxHeight: "1000px", overflowY: "auto", paddingRight: "8px" }}>
-          <div className="card-stack">
-            {filteredJobs.map((job) => {
-              const statusColor = getStatusColor(job.status);
-              const completedMilestones = job.milestones.filter(m => m.status === "RELEASED" || m.status === "APPROVED").length;
-              const progress = job.milestones.length > 0 ? (completedMilestones / job.milestones.length) * 100 : 0;
-
-              return (
-                <article className="list-card" key={job.id} style={{ borderLeft: `4px solid ${statusColor}` }}>
-                  <div className="list-card-header">
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            padding: "2px 8px",
-                            borderRadius: "4px",
-                            backgroundColor: `${statusColor}15`,
-                            color: statusColor,
-                            letterSpacing: "0.05em"
-                          }}
-                        >
-                          {getJobStatusLabel(job.status)}
-                        </span>
-                        <span className="muted" style={{ fontSize: "12px" }}>
-                          Created {formatDate(job.createdAt)}
-                        </span>
-                      </div>
-                      <h2 style={{ fontSize: "18px", marginBottom: 4 }}>{job.title}</h2>
-                      {job.assignedFreelancer && (
-                        <p style={{ fontSize: "14px", color: "#4B5563" }}>
-                          Freelancer: <strong>{job.assignedFreelancer.displayName}</strong>
-                        </p>
-                      )}
-                    </div>
-                    <Link className="button-secondary" href={`/jobs/${job.id}`}>
-                      Manage Job
-                    </Link>
+        <div className="card-stack">
+          {filteredJobs.map((job) => (
+            <article className="list-card" key={job.id} style={{ borderLeft: `4px solid ${getStatusColor(job.status)}` }}>
+              <div className="list-card-header">
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span
+                      className="company-dashboard-badge"
+                      style={{
+                        backgroundColor: `${getStatusColor(job.status)}15`,
+                        color: getStatusColor(job.status)
+                      }}
+                    >
+                      {toSentenceCase(job.status)}
+                    </span>
+                    <span style={{ fontSize: 12, color: "#6B7280" }}>Created {formatDate(job.createdAt)}</span>
                   </div>
+                  <h2 style={{ margin: 0 }}>{job.title}</h2>
+                  {job.assignedFreelancer && (
+                    <p style={{ margin: "4px 0 0", fontSize: 14, color: "#4B5563" }}>
+                      Freelancer: <strong>{job.assignedFreelancer.displayName}</strong>
+                    </p>
+                  )}
+                </div>
+                <Link className="button-secondary" href={`/jobs/${job.id}`}>
+                  Manage Job
+                </Link>
+              </div>
 
-                  <div className="status-grid compact-grid" style={{ marginTop: 16 }}>
-                    <article className="status-panel">
-                      <span className="panel-label">Financials</span>
-                      <strong>{formatCurrency(job.budget)}</strong>
-                      <p>{job.milestoneCount} milestone(s)</p>
-                    </article>
-
-                    <article className="status-panel">
-                      <span className="panel-label">Progress</span>
-                      <strong>{Math.round(progress)}%</strong>
-                      <div style={{ width: "100%", height: "4px", backgroundColor: "#E5E7EB", borderRadius: "2px", marginTop: "4px" }}>
-                        <div style={{ width: `${progress}%`, height: "100%", backgroundColor: statusColor, borderRadius: "2px" }} />
-                      </div>
-                    </article>
-
-                    <article className="status-panel">
-                      <span className="panel-label">Latest Update</span>
-                      <strong>{formatDate(job.updatedAt)}</strong>
-                      <p>
-                        {job.status === "DRAFT" 
-                          ? (job.brief.validation.score ? `Brief Score: ${job.brief.validation.score}` : "Not validated")
-                          : (job.publishedAt ? `Published ${formatDate(job.publishedAt)}` : "In workflow")}
-                      </p>
-                    </article>
-                  </div>
+              <div className="status-grid compact-grid">
+                <article className="status-panel">
+                  <span className="panel-label">Budget</span>
+                  <strong>{formatCurrency(Number(job.budget))}</strong>
+                  <p>{job.milestoneCount} milestone(s)</p>
                 </article>
-              );
-            })}
-          </div>
+
+                <article className="status-panel">
+                  <span className="panel-label">Validation</span>
+                  <strong>
+                    {job.brief.validation.score === null
+                      ? "Pending"
+                      : `${job.brief.validation.score}/100`}
+                  </strong>
+                  <p>
+                    {job.brief.validation.isStale
+                      ? "Requires re-validation"
+                      : "Fresh brief"}
+                  </p>
+                </article>
+
+                <article className="status-panel">
+                  <span className="panel-label">Activity</span>
+                  <strong>{job.status === "DRAFT" ? "N/A" : formatDate(job.publishedAt || job.assignedAt)}</strong>
+                  <p>{job.status === "DRAFT" ? "Drafting phase" : "Last status update"}</p>
+                </article>
+              </div>
+            </article>
+          ))}
         </div>
       ) : null}
     </CompanyWorkspaceShell>

@@ -8,7 +8,7 @@ export default function LoginPage() {
         <p className="eyebrow">GigHub</p>
         <h1>Sign in</h1>
         <p className="muted">
-          Use your freelancer, company, or seeded admin account to enter the platform.
+          Use your freelancer or company account to enter the platform.
         </p>
         <LoginForm />
         <p className="muted">

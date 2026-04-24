@@ -57,7 +57,7 @@ const clearData = async () => {
   await prisma.incomeStatementLineItem.deleteMany();
   await prisma.incomeStatement.deleteMany();
   await prisma.notification.deleteMany();
-  await prisma.auditLog.deleteMany();
+  await prisma.activityLog.deleteMany();
   await prisma.gLMDecision.deleteMany();
   await prisma.dispute.deleteMany();
   await prisma.submission.deleteMany();
