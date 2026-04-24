@@ -256,15 +256,14 @@ export const getPublicFreelancerProfile = async (freelancerId: string): Promise<
     throw new HttpError(404, "PROFILE_NOT_FOUND", "Freelancer was not found.");
   }
 
-  // Return a default profile if they haven't filled it out yet instead of crashing
   return {
     id: user.id,
     name: user.name,
     displayName: user.freelancerProfile?.displayName ?? user.name,
     portfolioUrl: user.freelancerProfile?.portfolioUrl ?? null,
     skills: user.freelancerProfile ? normalizeStringArray(user.freelancerProfile.skills) : [],
-    headline: user.freelancerProfile?.headline ?? "New Freelancer",
-    bio: user.freelancerProfile?.bio ?? "This freelancer hasn't updated their biography yet.",
+    headline: user.freelancerProfile?.headline ?? "Professional Freelancer",
+    bio: user.freelancerProfile?.bio ?? "This freelancer hasn't updated their profile biography yet.",
     experienceYears: user.freelancerProfile?.experienceYears ?? null
   };
 };

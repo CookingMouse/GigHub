@@ -180,30 +180,34 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
         if (user.role === "company") {
           const { freelancers } = await freelancersApi.list();
           const filtered = freelancers
-            .filter(f => 
-              f.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-              f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              f.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
+            .filter(f => {
+              const query = searchQuery.toLowerCase();
+              const nameMatch = (f.displayName || "").toLowerCase().includes(query) || 
+                                (f.name || "").toLowerCase().includes(query);
+              const skillsMatch = Array.isArray(f.skills) && f.skills.some(s => (s || "").toLowerCase().includes(query));
+              return nameMatch || skillsMatch;
+            })
             .slice(0, 5)
             .map(f => ({ 
               id: f.id, 
-              name: f.displayName || f.name, 
+              name: f.displayName || f.name || "Unknown Worker", 
               type: "freelancer" as const, 
-              meta: f.skills.slice(0, 2).join(", ") || "No skills listed" 
+              meta: (Array.isArray(f.skills) ? f.skills.slice(0, 2).join(", ") : "") || "No skills listed" 
             }));
           setSearchResults(filtered);
         } else if (user.role === "freelancer") {
           const { companies } = await profileApi.listPublicCompanies();
           const filtered = companies
-            .filter(c => 
-              c.companyName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-              (c.industry && c.industry.toLowerCase().includes(searchQuery.toLowerCase()))
-            )
+            .filter(c => {
+              const query = searchQuery.toLowerCase();
+              const nameMatch = (c.companyName || "").toLowerCase().includes(query);
+              const industryMatch = (c.industry || "").toLowerCase().includes(query);
+              return nameMatch || industryMatch;
+            })
             .slice(0, 5)
             .map(c => ({ 
               id: c.id, 
-              name: c.companyName, 
+              name: c.companyName || "Unknown Company", 
               type: "company" as const, 
               meta: c.industry || "Industry unspecified" 
             }));
