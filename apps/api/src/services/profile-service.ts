@@ -38,7 +38,12 @@ export const getFreelancerProfile = async (userId: string): Promise<FreelancerPr
     experienceYears: user.freelancerProfile.experienceYears ?? null,
     pastProjects: normalizeStringArray(user.freelancerProfile.pastProjects),
     resumeFileName: user.freelancerProfile.resumeFileName ?? null,
-    resumeUploadedAt: user.freelancerProfile.resumeUploadedAt?.toISOString() ?? null
+    resumeUploadedAt: user.freelancerProfile.resumeUploadedAt?.toISOString() ?? null,
+    hourlyRate: null, // TODO: Add to schema when ready
+    experience: null, // TODO: Add to schema when ready
+    portfolio: null, // TODO: Add to schema when ready
+    languages: null, // TODO: Add to schema when ready
+    glmMatchScore: null // TODO: Add to schema when ready
   };
 };
 
