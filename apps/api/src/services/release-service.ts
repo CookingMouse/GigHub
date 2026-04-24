@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
 import { HttpError } from "../lib/http-error";
 
-type ReleaseTrigger = "CLIENT_APPROVAL" | "AUTO_RELEASE" | "ADMIN_RULING";
+type ReleaseTrigger = "CLIENT_APPROVAL" | "AUTO_RELEASE";
 
 type TransactionClient = Prisma.TransactionClient;
 
@@ -104,11 +104,7 @@ const reviewDecisionForTrigger = (trigger: ReleaseTrigger) => {
     return "COMPANY_APPROVED";
   }
 
-  if (trigger === "AUTO_RELEASE") {
-    return "AUTO_RELEASED";
-  }
-
-  return "ADMIN_RELEASED";
+  return "AUTO_RELEASED";
 };
 
 export const applyMilestoneRelease = async (
@@ -202,7 +198,7 @@ export const applyMilestoneRelease = async (
     }
   });
 
-  await client.auditLog.create({
+  await client.activityLog.create({
     data: {
       actorId,
       entityType: "milestone",

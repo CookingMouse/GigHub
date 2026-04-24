@@ -17,8 +17,6 @@ const envSchema = z.object({
     .transform((value) => value === "true"),
   COOKIE_SAME_SITE: z.enum(["lax", "strict", "none"]).default("lax"),
   COOKIE_DOMAIN: z.string().optional().transform((value) => value?.trim() || undefined),
-  ADMIN_EMAIL: z.string().email().default("admin@gighub.local"),
-  ADMIN_PASSWORD: z.string().min(8).default("Admin123!"),
   FILE_STORAGE_ROOT: z.string().min(1).default(".gighub-storage"),
   FILE_ENCRYPTION_SECRET: z
     .string()

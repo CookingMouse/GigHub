@@ -15,13 +15,13 @@ type RefreshTokenInput = AccessTokenInput & {
 
 const accessPayloadSchema = z.object({
   sub: z.string().min(1),
-  role: z.enum(["freelancer", "company", "admin"]),
+  role: z.enum(["freelancer", "company"]),
   kind: z.literal("access")
 });
 
 const refreshPayloadSchema = z.object({
   sub: z.string().min(1),
-  role: z.enum(["freelancer", "company", "admin"]),
+  role: z.enum(["freelancer", "company"]),
   kind: z.literal("refresh"),
   jti: z.string().uuid()
 });

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap");
 
 :root {
   color-scheme: light;
@@ -12,7 +12,311 @@
   --accent-light: #E1F5EE;
   --accent-text: #085041;
   --accent-ink: #ffffff;
+  --hiring: #1D4ED8;
+  --hiring-light: #EFF6FF;
+  --hiring-text: #1E40AF;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.company-dashboard {
+  display: grid;
+  gap: 28px;
+  color: #111827;
+  font-family: "DM Sans", "Trebuchet MS", sans-serif;
+}
+
+.company-dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.company-dashboard-stat-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+}
+
+.company-dashboard-stat-label {
+  margin: 0 0 6px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.company-dashboard-stat-value {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.company-dashboard-stat-note {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.company-dashboard-stat-note.is-positive {
+  color: var(--accent);
+}
+
+.company-dashboard-stat-note.is-hiring {
+  color: var(--hiring);
+}
+
+.company-dashboard-stat-note.is-neutral {
+  color: #6b7280;
+}
+
+.company-dashboard-stat-note.is-negative {
+  color: #dc2626;
+}
+
+.company-dashboard-surface {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.company-dashboard-section-header {
+  margin-bottom: 18px;
+}
+
+.company-dashboard-section-label {
+  margin: 0 0 4px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.company-dashboard-section-title {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.company-dashboard-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.company-dashboard-activity-card {
+  display: grid;
+  gap: 16px;
+  min-height: 240px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.company-dashboard-activity-card:hover {
+  border-color: var(--hiring);
+  box-shadow: 0 0 0 3px var(--hiring-light);
+}
+
+.company-dashboard-activity-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.company-dashboard-freelancer {
+  margin: 0 0 6px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.company-dashboard-activity-card h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.company-dashboard-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.company-dashboard-progress-block {
+  display: grid;
+  gap: 10px;
+}
+
+.company-dashboard-progress-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.company-dashboard-progress-row p,
+.company-dashboard-progress-copy,
+.company-dashboard-detail-grid dt,
+.company-dashboard-empty-copy,
+.company-dashboard-summary-copy {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.company-dashboard-progress-row strong {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.company-dashboard-progress-track {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+}
+
+.company-dashboard-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--hiring);
+}
+
+.company-dashboard-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.company-dashboard-detail-grid dt {
+  margin-bottom: 4px;
+}
+
+.company-dashboard-detail-grid dd {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.company-dashboard-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  min-height: 36px;
+  border-radius: 9px;
+  background: var(--hiring);
+  color: #fff;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.company-dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.company-dashboard-empty-state {
+  display: grid;
+  gap: 6px;
+  min-height: 160px;
+  border: 1px dashed #d1d5db;
+  border-radius: 14px;
+  background: #fff;
+  place-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.company-dashboard-empty-title {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.company-dashboard-skeleton {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: company-dashboard-shimmer 1.5s infinite linear;
+}
+
+.company-dashboard-skeleton-stat {
+  width: 60%;
+  height: 28px;
+  margin-bottom: 8px;
+}
+
+.company-dashboard-skeleton-text {
+  width: 72%;
+  height: 14px;
+}
+
+@keyframes company-dashboard-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 1100px) {
+  .company-dashboard-stat-grid,
+  .company-dashboard-activity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .company-dashboard-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .company-dashboard-stat-grid,
+  .company-dashboard-activity-grid,
+  .company-dashboard-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .company-dashboard-activity-card {
+    min-height: auto;
+  }
+
+  .company-dashboard-activity-header,
+  .company-dashboard-progress-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 * {
@@ -36,16 +340,179 @@ a {
   text-decoration: none;
 }
 
+.landing-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(163, 72%, 40%, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(224, 76%, 48%, 0.08) 0px, transparent 50%);
+}
+
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 40px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.logo-icon {
+  background: var(--accent);
+  color: white;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 1.2rem;
+}
+
+.landing-hero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.hero-content {
+  max-width: 800px;
+}
+
+.hero-headline {
+  margin: 0 0 24px;
+  font-size: clamp(2.5rem, 9vw, 5.2rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-weight: 900;
+  white-space: normal;
+}
+
+.part-black {
+  color: #000000;
+}
+
+.part-green {
+  color: var(--accent);
+}
+
+.bubble-wrapper {
+  margin-bottom: 24px;
+}
+
+.hero-bubble {
+  display: inline-block;
+  padding: 8px 20px;
+  background: var(--accent-light);
+  color: var(--accent-text);
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.hero-sentence {
+  font-size: 1.25rem;
+  color: var(--muted);
+  max-width: 640px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+
+.create-account-btn {
+  padding: 16px 40px;
+  font-size: 1.1rem;
+  box-shadow: 0 10px 20px rgba(15, 110, 86, 0.2);
+}
+
+.sign-in-btn {
+  padding: 10px 28px;
+  font-size: 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.landing-advantages-small {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto 60px;
+  padding: 0 40px;
+}
+
+.advantage-card-small {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  text-align: left;
+  transition: transform 0.2s ease;
+}
+
+.advantage-card-small:hover {
+  transform: translateY(-2px);
+}
+
+.advantage-icon-small {
+  width: 36px;
+  height: 36px;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.advantage-card-small h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: #111827;
+}
+
+.advantage-card-small p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .landing-advantages-small {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin-bottom: 40px;
+  }
+}
+
 .page-shell {
   display: flex;
   min-height: 100vh;
   align-items: center;
   justify-content: center;
   padding: 32px 20px;
-}
-
-.page-shell-top {
-  align-items: flex-start;
 }
 
 .shell-card {
@@ -56,52 +523,6 @@ a {
   box-shadow: var(--shadow);
   padding: 28px;
   backdrop-filter: blur(10px);
-}
-
-.hero-card {
-  width: min(100%, 760px);
-  border: 1px solid var(--border);
-  border-radius: 32px;
-  background: var(--panel-strong);
-  box-shadow: var(--shadow);
-  padding: 32px;
-}
-
-.eyebrow {
-  margin: 0 0 12px;
-  color: var(--accent);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0 0 12px;
-  font-size: clamp(2rem, 6vw, 3.4rem);
-  line-height: 1;
-}
-
-h2 {
-  margin: 0 0 12px;
-  font-size: 1.6rem;
-}
-
-p {
-  line-height: 1.6;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.cta-row,
-.meta-row,
-.action-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
 }
 
 .button-primary,
@@ -135,12 +556,6 @@ p {
   transform: translateY(-1px);
 }
 
-.auth-grid {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-
 .auth-form {
   display: grid;
   gap: 16px;
@@ -171,54 +586,6 @@ p {
   font: inherit;
 }
 
-.field textarea {
-  resize: vertical;
-  min-height: 128px;
-}
-
-.field input:focus,
-.field textarea:focus,
-.field-select:focus {
-  outline: 2px solid rgba(11, 110, 79, 0.2);
-  border-color: rgba(11, 110, 79, 0.35);
-}
-
-.role-switch {
-  display: flex;
-  gap: 12px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 12px;
-}
-
-.role-switch legend {
-  padding: 0 6px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.role-switch label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.form-error {
-  margin: 0;
-  color: #b42318;
-  font-weight: 600;
-}
-
-.shell-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
 .status-grid {
   display: grid;
   gap: 16px;
@@ -239,24 +606,6 @@ p {
   font-size: 1.15rem;
 }
 
-.shell-card-wide {
-  width: min(100%, 1080px);
-}
-
-.header-action-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.workspace-history-button {
-  min-width: 44px;
-  padding: 10px 12px;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
 .inline-panel,
 .list-card {
   border: 1px solid var(--border);
@@ -268,1116 +617,4 @@ p {
 .card-stack {
   display: grid;
   gap: 18px;
-}
-
-.transaction-stack,
-.directory-grid {
-  display: grid;
-  gap: 18px;
-}
-
-.list-card-header,
-.panel-heading-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.compact-grid {
-  margin-top: 18px;
-}
-
-.job-form {
-  display: grid;
-  gap: 18px;
-}
-
-.job-form-grid,
-.workspace-grid,
-.feedback-grid,
-.validation-meta {
-  display: grid;
-  gap: 16px;
-}
-
-.job-form-grid,
-.workspace-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-
-.workspace-grid {
-  align-items: start;
-}
-
-.validation-meta {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  margin: 20px 0;
-}
-
-.job-form-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.helper-copy {
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  background: rgba(11, 110, 79, 0.12);
-  color: var(--accent);
-  padding: 8px 12px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.callout-warning {
-  margin: 18px 0;
-  border: 1px solid rgba(180, 35, 24, 0.18);
-  border-radius: 18px;
-  background: rgba(180, 35, 24, 0.06);
-  padding: 14px 16px;
-  color: #7a271a;
-  font-weight: 600;
-}
-
-.feedback-list {
-  margin: 10px 0 0;
-  padding-left: 20px;
-  color: var(--muted);
-}
-
-.feedback-list li + li {
-  margin-top: 8px;
-}
-
-.directory-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  margin-top: 18px;
-}
-
-.directory-card {
-  display: grid;
-  gap: 12px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.78);
-  padding: 18px;
-}
-
-.directory-card h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.directory-card p {
-  margin: 0;
-}
-
-.status-panel p {
-  margin-bottom: 0;
-}
-
-.workspace-shell {
-  display: flex;
-  height: 100vh;
-  background: #F9FAFB;
-}
-
-.workspace-sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #E5E7EB;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-.workspace-nav-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 400;
-  color: #374151;
-  text-decoration: none;
-  transition: background 0.12s;
-}
-
-.workspace-nav-link:hover {
-  background: #F3F4F6;
-}
-
-.workspace-nav-link.active {
-  font-weight: 600;
-}
-
-.workspace-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.browse-job-layout {
-  display: grid;
-  gap: 16px;
-  color: #111827;
-  font-family: "DM Sans", "Trebuchet MS", sans-serif;
-}
-
-.browse-job-layout .field span {
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.browse-job-section-label {
-  margin: 0 0 4px;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.browse-job-section-title {
-  margin: 0;
-  color: #111827;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-}
-
-.browse-job-result-count,
-.browse-job-supporting-copy,
-.browse-job-company,
-.browse-job-card-meta,
-.browse-job-description {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.browse-job-company,
-.browse-job-card-meta,
-.browse-job-description {
-  line-height: 1.5;
-}
-
-.browse-job-filter-grid,
-.browse-job-meta {
-  display: grid;
-  gap: 16px;
-}
-
-.browse-job-filter-grid {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
-.browse-job-card {
-  display: grid;
-  gap: 16px;
-}
-
-.browse-job-description-wrapper {
-  margin-bottom: 16px;
-}
-
-.browse-job-card-title {
-  margin: 0;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.browse-job-description-toggle {
-  margin-left: 4px;
-  border: none;
-  background: none;
-  color: #0f6e56;
-  cursor: pointer;
-  padding: 0;
-  font: inherit;
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.browse-job-application-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  border-radius: 999px;
-  padding: 3px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  background: rgba(75, 85, 99, 0.12);
-  color: #4b5563;
-  white-space: nowrap;
-}
-
-.browse-job-application-status[data-status="PENDING"] {
-  background: rgba(180, 83, 9, 0.12);
-  color: #b45309;
-}
-
-.browse-job-application-status[data-status="ACCEPTED"] {
-  background: rgba(11, 110, 79, 0.12);
-  color: var(--accent);
-}
-
-.browse-job-application-status[data-status="REJECTED"] {
-  background: rgba(180, 35, 24, 0.12);
-  color: #b42318;
-}
-
-.browse-job-application-status[data-status="WITHDRAWN"] {
-  background: rgba(75, 85, 99, 0.12);
-  color: #4b5563;
-}
-
-.browse-job-meta {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-.browse-job-meta p {
-  margin: 0;
-}
-
-.browse-job-meta-label {
-  display: block;
-  margin: 0 0 4px;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 1.5;
-}
-
-.browse-job-meta-value {
-  display: block;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.browse-job-open-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  padding: 3px 10px;
-  border-radius: 9px;
-  background: rgba(11, 110, 79, 0.12);
-  color: #0f6e56;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.freelancer-requests-layout {
-  color: #111827;
-  font-family: "DM Sans", "Trebuchet MS", sans-serif;
-}
-
-.freelancer-requests-section-label {
-  margin: 0 0 4px;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.freelancer-requests-section-title {
-  margin: 0 0 12px;
-  color: #111827;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-}
-
-.freelancer-requests-card-title {
-  display: block;
-  margin: 0 0 6px;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.freelancer-requests-card-meta,
-.freelancer-requests-card-body,
-.freelancer-requests-supporting-copy {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.freelancer-milestone-detail-layout {
-  display: grid;
-  gap: 24px;
-  color: #111827;
-  font-family: "DM Sans", "Trebuchet MS", sans-serif;
-}
-
-.freelancer-milestone-detail-layout .eyebrow,
-.freelancer-milestone-detail-layout .panel-label,
-.freelancer-milestone-detail-layout .field span {
-  margin: 0 0 4px;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.freelancer-milestone-detail-layout .inline-panel h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-}
-
-.freelancer-milestone-detail-meta,
-.freelancer-milestone-detail-body,
-.freelancer-milestone-detail-supporting-copy,
-.freelancer-milestone-detail-layout .helper-copy,
-.freelancer-milestone-detail-layout .feedback-list,
-.freelancer-milestone-detail-layout .feedback-list li,
-.freelancer-milestone-detail-layout .job-form input,
-.freelancer-milestone-detail-layout .job-form textarea,
-.freelancer-milestone-detail-layout .job-form input::placeholder,
-.freelancer-milestone-detail-layout .job-form textarea::placeholder,
-.freelancer-milestone-detail-layout .callout-warning,
-.freelancer-milestone-detail-layout .form-error {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.freelancer-milestone-detail-meta,
-.freelancer-milestone-detail-supporting-copy,
-.freelancer-milestone-detail-layout .helper-copy {
-  color: #6b7280;
-}
-
-.freelancer-milestone-detail-body {
-  margin: 0;
-}
-
-.freelancer-milestone-detail-meta {
-  margin: 0 0 10px;
-}
-
-.freelancer-milestone-detail-card-title {
-  display: block;
-  margin: 8px 0 6px;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.freelancer-milestone-detail-metric-value {
-  display: block;
-  margin-top: 8px;
-  color: #111827;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.freelancer-milestone-detail-layout .status-chip {
-  font-size: 11px;
-  font-weight: 600;
-}
-
-@media (max-width: 640px) {
-  .hero-card,
-  .shell-card {
-    padding: 22px;
-  }
-
-  .inline-panel,
-  .list-card {
-    padding: 18px;
-  }
-
-  .browse-job-filter-grid,
-  .browse-job-meta {
-    grid-template-columns: 1fr;
-  }
-}
-
-.freelancer-dashboard {
-  display: grid;
-  gap: 28px;
-  color: #111827;
-  font-family: "DM Sans", "Trebuchet MS", sans-serif;
-}
-
-.dashboard-mono {
-  font-family: "DM Mono", "Courier New", monospace;
-}
-
-.freelancer-dashboard-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.freelancer-dashboard-stat-card,
-.freelancer-dashboard-surface,
-.freelancer-dashboard-summary-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: #fff;
-}
-
-.freelancer-dashboard-stat-card {
-  padding: 18px 20px;
-}
-
-.freelancer-dashboard-stat-label,
-.freelancer-dashboard-summary-label {
-  margin: 0 0 6px;
-  color: #9ca3af;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.freelancer-dashboard-stat-value {
-  margin: 0 0 4px;
-  color: #111827;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-}
-
-.freelancer-dashboard-stat-note {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.freelancer-dashboard-stat-note.is-positive {
-  color: #0f6e56;
-}
-
-.freelancer-dashboard-stat-note.is-neutral {
-  color: #6b7280;
-}
-
-.freelancer-dashboard-stat-note.is-negative {
-  color: #dc2626;
-}
-
-.freelancer-dashboard-surface {
-  padding: 20px;
-}
-
-.freelancer-dashboard-section-header {
-  margin-bottom: 18px;
-}
-
-.freelancer-dashboard-section-label {
-  margin: 0 0 4px;
-  color: #374151;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.freelancer-dashboard-section-title {
-  margin: 0;
-  color: #111827;
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.3px;
-}
-
-.freelancer-dashboard-activity-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.freelancer-dashboard-activity-card {
-  display: grid;
-  gap: 16px;
-  min-height: 280px;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: #fff;
-  padding: 18px 20px;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
-}
-
-.freelancer-dashboard-activity-card:hover {
-  border-color: #0f6e56;
-  box-shadow: 0 0 0 3px #e1f5ee;
-}
-
-.freelancer-dashboard-activity-header,
-.freelancer-dashboard-progress-row,
-.freelancer-dashboard-upcoming-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.freelancer-dashboard-company {
-  margin: 0 0 6px;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.freelancer-dashboard-activity-card h3,
-.freelancer-dashboard-upcoming-title {
-  margin: 0;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.freelancer-dashboard-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  padding: 3px 10px;
-  border-radius: 9px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.freelancer-dashboard-progress-block {
-  display: grid;
-  gap: 10px;
-}
-
-.freelancer-dashboard-progress-row p,
-.freelancer-dashboard-progress-copy,
-.freelancer-dashboard-detail-grid dt,
-.freelancer-dashboard-empty-copy,
-.freelancer-dashboard-upcoming-meta,
-.freelancer-dashboard-upcoming-date,
-.freelancer-dashboard-summary-copy {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.freelancer-dashboard-progress-row strong {
-  color: #111827;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.freelancer-dashboard-progress-track {
-  overflow: hidden;
-  height: 10px;
-  border-radius: 999px;
-  background: #f3f4f6;
-}
-
-.freelancer-dashboard-progress-fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #0f6e56;
-}
-
-.freelancer-dashboard-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin: 0;
-}
-
-.freelancer-dashboard-detail-grid dt {
-  margin-bottom: 4px;
-}
-
-.freelancer-dashboard-detail-grid dd {
-  margin: 0;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.freelancer-dashboard-primary-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: end;
-  min-height: 36px;
-  border-radius: 9px;
-  background: #0f6e56;
-  color: #fff;
-  padding: 0 16px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.freelancer-dashboard-bottom-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.freelancer-dashboard-deadline-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.freelancer-dashboard-calendar-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: #fff;
-  padding: 16px;
-}
-
-.freelancer-dashboard-calendar-header {
-  margin-bottom: 14px;
-}
-
-.freelancer-dashboard-calendar-header p {
-  margin: 0;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.freelancer-dashboard-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.freelancer-dashboard-calendar-grid.is-weekdays {
-  margin-bottom: 8px;
-}
-
-.freelancer-dashboard-calendar-grid.is-weekdays span {
-  color: #9ca3af;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.freelancer-dashboard-calendar-day {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 1;
-  border-radius: 9px;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.freelancer-dashboard-calendar-day.is-highlighted {
-  background: #e1f5ee;
-  color: #085041;
-}
-
-.freelancer-dashboard-calendar-day.is-today {
-  border: 1px solid #0f6e56;
-}
-
-.freelancer-dashboard-upcoming-list {
-  display: grid;
-  gap: 12px;
-}
-
-.freelancer-dashboard-upcoming-item {
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: #fff;
-  padding: 16px;
-}
-
-.freelancer-dashboard-upcoming-meta,
-.freelancer-dashboard-upcoming-date {
-  line-height: 1.5;
-}
-
-.freelancer-dashboard-upcoming-date {
-  margin-top: 10px;
-  color: #111827;
-  font-weight: 500;
-}
-
-.freelancer-dashboard-income-shell {
-  display: grid;
-  gap: 18px;
-}
-
-.freelancer-dashboard-income-chart {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 14px;
-  align-items: end;
-  min-height: 260px;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  background: #fff;
-  padding: 18px 16px 16px;
-}
-
-.freelancer-dashboard-income-bar-column {
-  display: grid;
-  gap: 10px;
-  align-items: end;
-}
-
-.freelancer-dashboard-income-bar-value {
-  display: block;
-  min-height: 32px;
-  color: #111827;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.freelancer-dashboard-income-bar-track {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  height: 150px;
-  border-radius: 12px;
-  background: #f3f4f6;
-}
-
-.freelancer-dashboard-income-bar-fill {
-  display: block;
-  width: 100%;
-  max-width: 34px;
-  border-radius: 10px 10px 6px 6px;
-  background: #0f6e56;
-}
-
-.freelancer-dashboard-income-bar-label {
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-}
-
-.freelancer-dashboard-income-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.freelancer-dashboard-summary-card {
-  padding: 16px;
-}
-
-.freelancer-dashboard-summary-card strong {
-  display: block;
-  margin-bottom: 6px;
-  color: #111827;
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.freelancer-dashboard-empty-state {
-  display: grid;
-  gap: 6px;
-  min-height: 180px;
-  border: 1px dashed #d1d5db;
-  border-radius: 14px;
-  background: #fff;
-  place-content: center;
-  padding: 24px;
-  text-align: center;
-}
-
-.freelancer-dashboard-empty-title {
-  margin: 0;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.freelancer-dashboard-skeleton {
-  display: block;
-  border-radius: 9px;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
-  background-size: 200% 100%;
-  animation: freelancer-dashboard-shimmer 1.5s infinite linear;
-}
-
-.freelancer-dashboard-skeleton-stat {
-  width: 60%;
-  height: 28px;
-  margin-bottom: 8px;
-}
-
-.freelancer-dashboard-skeleton-text {
-  width: 72%;
-  height: 14px;
-}
-
-.freelancer-dashboard-skeleton-heading {
-  width: 80%;
-  height: 18px;
-}
-
-.freelancer-dashboard-skeleton-pill {
-  width: 96px;
-  height: 28px;
-}
-
-.freelancer-dashboard-skeleton-bar,
-.freelancer-dashboard-skeleton-button {
-  width: 100%;
-  height: 36px;
-}
-
-.freelancer-dashboard-skeleton-day {
-  width: 100%;
-  aspect-ratio: 1;
-}
-
-.freelancer-dashboard-skeleton-bar-vertical {
-  width: 100%;
-  max-width: 28px;
-  height: 72%;
-}
-
-.freelancer-dashboard-calendar-skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-}
-
-@keyframes freelancer-dashboard-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@media (max-width: 1100px) {
-  .freelancer-dashboard-stat-grid,
-  .freelancer-dashboard-activity-grid,
-  .freelancer-dashboard-income-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .freelancer-dashboard-bottom-grid,
-  .freelancer-dashboard-deadline-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 720px) {
-  .freelancer-dashboard-stat-grid,
-  .freelancer-dashboard-activity-grid,
-  .freelancer-dashboard-detail-grid,
-  .freelancer-dashboard-income-summary-grid,
-  .freelancer-dashboard-income-chart {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .freelancer-dashboard-activity-card {
-    min-height: auto;
-  }
-
-  .freelancer-dashboard-activity-header,
-  .freelancer-dashboard-progress-row,
-  .freelancer-dashboard-upcoming-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
-
-/* ── Active Work Page Styles ─────────────────────────────────────────────────────*/
-
-.active-job-card {
-  border: 1px solid #E5E7EB;
-  border-radius: 16px;
-  background: #fff;
-  margin-bottom: 20px;
-  overflow: hidden;
-}
-
-.active-job-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 22px;
-  border-bottom: 1px solid #E5E7EB;
-  background: #F9FAFB;
-}
-
-.active-job-milestones {
-  padding: 22px;
-}
-
-/* ── Milestone Timeline ────────────────────────────────────────────────────────*/
-
-.milestone-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.milestone-row {
-  display: flex;
-  gap: 0;
-  margin-bottom: 0;
-}
-
-.milestone-spine {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 32px;
-  flex-shrink: 0;
-}
-
-.milestone-node {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2.5px solid #E5E7EB;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: border-color 0.15s, background-color 0.15s;
-}
-
-.spine-connector {
-  flex: 1;
-  width: 2px;
-  background: rgba(15, 110, 86, 0.25);
-  margin-top: 2px;
-}
-
-.milestone-card {
-  flex: 1;
-  margin-left: 14px;
-  border: 1px solid #E5E7EB;
-  border-radius: 14px;
-  background: #fff;
-  margin-bottom: 16px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.milestone-card.expanded {
-  border-color: #0F6E56;
-  box-shadow: 0 0 0 3px #E1F5EE;
-}
-
-.milestone-card.locked {
-  background: #FAFAFA;
-  opacity: 0.65;
-}
-
-.milestone-card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
-  cursor: pointer;
-}
-
-.milestone-card-title-section {
-  flex: 1;
-  min-width: 0;
-}
-
-.milestone-card-amount-section {
-  flex-shrink: 0;
-  margin-right: 12px;
-}
-
-.milestone-card-status-section {
-  flex-shrink: 0;
-  margin-right: 12px;
-}
-
-.milestone-card-details {
-  border-top: 1px solid #E5E7EB;
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.detail-section {
-  border-radius: 10px;
-  padding: 12px 14px;
-  border-left: 3px solid;
-}
-
-@media (max-width: 640px) {
-  .active-job-header {
-    padding: 14px 16px;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .milestone-card-header {
-    padding: 12px 14px;
-    flex-wrap: wrap;
-  }
-
-  .milestone-card-title-section {
-    width: 100%;
-    margin-bottom: 8px;
-  }
-
-  .milestone-card-amount-section {
-    order: 3;
-    width: 50%;
-    margin-right: 0;
-  }
-
-  .milestone-card-status-section {
-    order: 4;
-    width: 50%;
-    text-align: right;
-    margin-right: 0;
-  }
 }

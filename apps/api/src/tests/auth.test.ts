@@ -1,24 +1,7 @@
-import bcrypt from "bcryptjs";
 import request from "supertest";
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
 import { app } from "../app";
-
-const adminEmail = process.env.ADMIN_EMAIL ?? "admin@gighub.local";
-const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin123!";
-
-const seedAdmin = async () => {
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
-
-  await prisma.user.create({
-    data: {
-      email: adminEmail.toLowerCase(),
-      name: "GigHub Admin",
-      passwordHash,
-      role: "admin"
-    }
-  });
-};
 
 describe("auth routes", () => {
   beforeAll(async () => {
@@ -39,8 +22,6 @@ describe("auth routes", () => {
     await prisma.companyProfile.deleteMany();
     await prisma.freelancerProfile.deleteMany();
     await prisma.user.deleteMany();
-
-    await seedAdmin();
   });
 
   afterAll(async () => {
@@ -180,32 +161,5 @@ describe("auth routes", () => {
 
     expect(response.status).toBe(401);
     expect(response.body.code).toBe("AUTH_REQUIRED");
-  });
-
-  it("enforces the admin guard", async () => {
-    const freelancer = request.agent(app);
-
-    await freelancer.post("/api/v1/auth/register").send({
-      name: "Aina Musa",
-      email: "aina@example.com",
-      password: "StrongPass123",
-      role: "freelancer"
-    });
-
-    const freelancerResponse = await freelancer.get("/api/v1/admin/ping");
-
-    expect(freelancerResponse.status).toBe(403);
-
-    const admin = request.agent(app);
-
-    await admin.post("/api/v1/auth/login").send({
-      email: adminEmail,
-      password: adminPassword
-    });
-
-    const adminResponse = await admin.get("/api/v1/admin/ping");
-
-    expect(adminResponse.status).toBe(200);
-    expect(adminResponse.body.data.message).toBe("admin-ok");
   });
 });
