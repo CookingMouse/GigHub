@@ -131,7 +131,11 @@ export const updateFreelancerProfileSchema = z.object({
   bio: z.string().trim().max(4000).optional(),
   experienceYears: z.coerce.number().int().min(0).max(80).optional(),
   pastProjects: z.array(z.string().trim().min(1).max(500)).max(100).optional(),
-  skills: z.array(z.string().trim().min(1).max(120)).max(50).optional()
+  skills: z.array(z.string().trim().min(1).max(120)).max(50).optional(),
+  hourlyRate: z.coerce.number().positive().optional(),
+  experience: z.array(z.object({ role: z.string(), company: z.string(), period: z.string(), desc: z.string() })).optional(),
+  portfolio: z.array(z.object({ title: z.string(), category: z.string(), deliverable: z.string() })).optional(),
+  languages: z.array(z.object({ lang: z.string(), level: z.string() })).optional()
 });
 
 export const updateCompanyProfileSchema = z.object({
@@ -584,6 +588,11 @@ export type FreelancerProfileRecord = {
   pastProjects: string[];
   resumeFileName: string | null;
   resumeUploadedAt: string | null;
+  hourlyRate: number | null;
+  experience: Array<{ role: string; company: string; period: string; desc: string }> | null;
+  portfolio: Array<{ title: string; category: string; deliverable: string }> | null;
+  languages: Array<{ lang: string; level: string }> | null;
+  glmMatchScore: number | null;
 };
 
 export type CompanyProfileRecord = {
