@@ -91,25 +91,37 @@ export const FreelancerRequestsPage = () => {
       user={session.user}
     >
       {error ? <p className="form-error">{error}</p> : null}
-      {state.status === "loading" ? <p className="muted">Loading requests...</p> : null}
+      {state.status === "loading" ? (
+        <p className="freelancer-requests-supporting-copy">Loading requests...</p>
+      ) : null}
       {state.status === "error" ? <p className="form-error">{state.message}</p> : null}
 
       {state.status === "ready" ? (
-        <div className="workspace-grid">
+        <div className="workspace-grid freelancer-requests-layout">
           <section className="inline-panel">
-            <p className="eyebrow">Your applications</p>
-            <h2>Submitted requests</h2>
+            <p className="freelancer-requests-section-label">Your applications</p>
+            <h2 className="freelancer-requests-section-title">Submitted requests</h2>
             <div className="card-stack">
               {state.applications.length === 0 ? (
-                <p className="muted">You have not applied to any jobs yet.</p>
+                <p className="freelancer-requests-supporting-copy">
+                  You have not applied to any jobs yet.
+                </p>
               ) : (
                 state.applications.map((application) => (
-                  <article className="status-panel" key={application.id}>
-                    <strong>{application.jobTitle}</strong>
-                    <p className="muted">Status: {toSentenceCase(application.status)}</p>
-                    <p className="helper-copy">Applied: {formatDate(application.appliedAt)}</p>
-                    <p className="helper-copy">Last updated: {formatDate(application.updatedAt)}</p>
-                    {application.coverNote ? <p className="muted">{application.coverNote}</p> : null}
+                  <article className="status-panel freelancer-requests-card" key={application.id}>
+                    <strong className="freelancer-requests-card-title">{application.jobTitle}</strong>
+                    <p className="freelancer-requests-card-meta">
+                      Status: {toSentenceCase(application.status)}
+                    </p>
+                    <p className="freelancer-requests-supporting-copy">
+                      Applied: {formatDate(application.appliedAt)}
+                    </p>
+                    <p className="freelancer-requests-supporting-copy">
+                      Last updated: {formatDate(application.updatedAt)}
+                    </p>
+                    {application.coverNote ? (
+                      <p className="freelancer-requests-card-body">{application.coverNote}</p>
+                    ) : null}
                   </article>
                 ))
               )}
@@ -117,18 +129,20 @@ export const FreelancerRequestsPage = () => {
           </section>
 
           <section className="inline-panel">
-            <p className="eyebrow">Company invitations</p>
-            <h2>Invitations from companies</h2>
+            <p className="freelancer-requests-section-label">Company invitations</p>
+            <h2 className="freelancer-requests-section-title">Invitations from companies</h2>
             <div className="card-stack">
               {state.invitations.length === 0 ? (
-                <p className="muted">No company requests yet.</p>
+                <p className="freelancer-requests-supporting-copy">No company requests yet.</p>
               ) : (
                 state.invitations.map((invitation) => (
-                  <article className="status-panel" key={invitation.id}>
-                    <strong>{invitation.jobTitle}</strong>
-                    <p>{invitation.companyName}</p>
-                    <p className="muted">{invitation.note ?? "No note."}</p>
-                    <p className="muted">Status: {toSentenceCase(invitation.status)}</p>
+                  <article className="status-panel freelancer-requests-card" key={invitation.id}>
+                    <strong className="freelancer-requests-card-title">{invitation.jobTitle}</strong>
+                    <p className="freelancer-requests-card-meta">{invitation.companyName}</p>
+                    <p className="freelancer-requests-card-body">{invitation.note ?? "No note."}</p>
+                    <p className="freelancer-requests-card-meta">
+                      Status: {toSentenceCase(invitation.status)}
+                    </p>
                     <div className="action-row">
                       <Link className="button-secondary" href={`/companies/${invitation.companyId}`}>
                         View company page

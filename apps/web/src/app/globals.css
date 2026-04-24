@@ -436,6 +436,48 @@ p {
 .browse-job-layout {
   display: grid;
   gap: 16px;
+  color: #111827;
+  font-family: "DM Sans", "Trebuchet MS", sans-serif;
+}
+
+.browse-job-layout .field span {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.browse-job-section-label {
+  margin: 0 0 4px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.browse-job-section-title {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.browse-job-result-count,
+.browse-job-supporting-copy,
+.browse-job-company,
+.browse-job-card-meta,
+.browse-job-description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.browse-job-company,
+.browse-job-card-meta,
+.browse-job-description {
+  line-height: 1.5;
 }
 
 .browse-job-filter-grid,
@@ -453,22 +495,43 @@ p {
   gap: 16px;
 }
 
+.browse-job-description-wrapper {
+  margin-bottom: 16px;
+}
+
 .browse-job-card-title {
-  margin: 8px 0 0;
-  font-size: 1.15rem;
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.browse-job-description-toggle {
+  margin-left: 4px;
+  border: none;
+  background: none;
+  color: #0f6e56;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
 }
 
 .browse-job-application-status {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-height: 28px;
   border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 0.84rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
   background: rgba(75, 85, 99, 0.12);
   color: #4b5563;
+  white-space: nowrap;
 }
 
 .browse-job-application-status[data-status="PENDING"] {
@@ -499,9 +562,154 @@ p {
   margin: 0;
 }
 
-.browse-job-meta strong {
+.browse-job-meta-label {
+  display: block;
+  margin: 0 0 4px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.browse-job-meta-value {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.browse-job-open-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: 9px;
+  background: rgba(11, 110, 79, 0.12);
+  color: #0f6e56;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.freelancer-requests-layout {
+  color: #111827;
+  font-family: "DM Sans", "Trebuchet MS", sans-serif;
+}
+
+.freelancer-requests-section-label {
+  margin: 0 0 4px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.freelancer-requests-section-title {
+  margin: 0 0 12px;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.freelancer-requests-card-title {
+  display: block;
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.freelancer-requests-card-meta,
+.freelancer-requests-card-body,
+.freelancer-requests-supporting-copy {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.freelancer-milestone-detail-layout {
+  display: grid;
+  gap: 24px;
+  color: #111827;
+  font-family: "DM Sans", "Trebuchet MS", sans-serif;
+}
+
+.freelancer-milestone-detail-layout .eyebrow,
+.freelancer-milestone-detail-layout .panel-label,
+.freelancer-milestone-detail-layout .field span {
+  margin: 0 0 4px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.freelancer-milestone-detail-layout .inline-panel h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.freelancer-milestone-detail-meta,
+.freelancer-milestone-detail-body,
+.freelancer-milestone-detail-supporting-copy,
+.freelancer-milestone-detail-layout .helper-copy,
+.freelancer-milestone-detail-layout .feedback-list,
+.freelancer-milestone-detail-layout .feedback-list li,
+.freelancer-milestone-detail-layout .job-form input,
+.freelancer-milestone-detail-layout .job-form textarea,
+.freelancer-milestone-detail-layout .job-form input::placeholder,
+.freelancer-milestone-detail-layout .job-form textarea::placeholder,
+.freelancer-milestone-detail-layout .callout-warning,
+.freelancer-milestone-detail-layout .form-error {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.freelancer-milestone-detail-meta,
+.freelancer-milestone-detail-supporting-copy,
+.freelancer-milestone-detail-layout .helper-copy {
+  color: #6b7280;
+}
+
+.freelancer-milestone-detail-body {
+  margin: 0;
+}
+
+.freelancer-milestone-detail-meta {
+  margin: 0 0 10px;
+}
+
+.freelancer-milestone-detail-card-title {
+  display: block;
+  margin: 8px 0 6px;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.freelancer-milestone-detail-metric-value {
   display: block;
   margin-top: 8px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.freelancer-milestone-detail-layout .status-chip {
+  font-size: 11px;
+  font-weight: 600;
 }
 
 @media (max-width: 640px) {

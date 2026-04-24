@@ -14,8 +14,8 @@ export interface MilestoneTimelineItem {
   sequence: number;
   title: string;
   description?: string;
-  amount: number;
-  dueAt: string;
+  amount?: number | null;
+  dueAt: string | null;
   status: string;
   revisions?: {
     used: number;
@@ -36,10 +36,9 @@ export interface MilestoneTimelineItem {
 
 interface MilestoneTimelineProps {
   milestones: MilestoneTimelineItem[];
-  jobId: string;
 }
 
-const MilestoneStatus = ({ status, value }: { status: string; value: number }) => {
+const MilestoneStatus = ({ status }: { status: string }) => {
   const config = milestoneStatusConfig[status as keyof typeof milestoneStatusConfig];
   if (!config) return null;
 
@@ -63,7 +62,7 @@ const MilestoneStatus = ({ status, value }: { status: string; value: number }) =
   );
 };
 
-export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps) => {
+export const MilestoneTimeline = ({ milestones }: MilestoneTimelineProps) => {
   const [expandedId, setExpandedId] = useState<string | null>(milestones[0]?.id);
   const locked = (m: MilestoneTimelineItem) => isMilestoneLocked(m.status as any, m.revisions);
 
@@ -75,14 +74,12 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
         const isExpanded = expandedId === m.id;
         const config = milestoneStatusConfig[m.status as keyof typeof milestoneStatusConfig];
 
-        // Calculate time remaining for SUBMITTED status
-        const timeInfo = m.status === "SUBMITTED" && m.submission
+        const timeInfo = (m.status === "SUBMITTED" || m.status === "UNDER_REVIEW") && m.submission
           ? calculateTimeRemaining(m.submission.submittedAt)
           : null;
 
         return (
           <div key={m.id} className="milestone-row">
-            {/* Timeline spine */}
             <div className="milestone-spine">
               <div
                 className="milestone-node"
@@ -97,12 +94,10 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
               {!isLast && <div className="spine-connector" />}
             </div>
 
-            {/* Milestone card */}
             <div
               className={`milestone-card ${isExpanded ? "expanded" : ""} ${isLocked ? "locked" : ""}`}
               onClick={() => !isLocked && setExpandedId(isExpanded ? null : m.id)}
             >
-              {/* Header */}
               <div className="milestone-card-header">
                 <div className="milestone-card-title-section">
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -126,19 +121,21 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
                   </div>
                 </div>
 
-                <div className="milestone-card-amount-section">
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: "15px", fontWeight: "700", margin: 0, fontFamily: "'DM Mono', monospace" }}>
-                      RM {m.amount.toLocaleString()}
-                    </p>
-                    <p style={{ fontSize: "11px", color: "#9CA3AF", margin: "2px 0 0" }}>
-                      {m.status === "RELEASED" ? "Released ✓" : "In escrow"}
-                    </p>
+                {m.amount !== null && m.amount !== undefined ? (
+                  <div className="milestone-card-amount-section">
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ fontSize: "15px", fontWeight: "700", margin: 0, fontFamily: "'DM Mono', monospace" }}>
+                        RM {m.amount.toLocaleString()}
+                      </p>
+                      <p style={{ fontSize: "11px", color: "#9CA3AF", margin: "2px 0 0" }}>
+                        {m.status === "RELEASED" ? "Released ✓" : "In escrow"}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 <div className="milestone-card-status-section">
-                  <MilestoneStatus status={m.status} value={0} />
+                  <MilestoneStatus status={m.status} />
                 </div>
 
                 {!isLocked && (
@@ -148,10 +145,8 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
                 )}
               </div>
 
-              {/* Expanded details */}
               {isExpanded && !isLocked && (
                 <div className="milestone-card-details">
-                  {/* Submission status row */}
                   {(m.status === "SUBMITTED" || m.status === "UNDER_REVIEW") && m.submission && (
                     <div className="detail-section" style={{ backgroundColor: "#EFF6FF", borderColor: "#3B82F6" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
@@ -160,10 +155,12 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
                             ⏳ Awaiting Company Review
                           </p>
                           <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#1e40af" }}>
-                            Auto-release: {timeInfo?.expiresAt.toLocaleString("en-MY")}
+                            {timeInfo
+                              ? `Auto-release: ${timeInfo.expiresAt.toLocaleString("en-MY")}`
+                              : "Auto-release timing is based on the latest submission window."}
                           </p>
                           <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#3B82F6" }}>
-                            {timeInfo?.formattedTime} remaining
+                            {timeInfo ? `${timeInfo.formattedTime} remaining` : "Review window in progress"}
                           </p>
                         </div>
                         <div style={{ textAlign: "right" }}>
@@ -178,7 +175,6 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
                     </div>
                   )}
 
-                  {/* Revision info */}
                   {m.revisions && m.status === "IN_PROGRESS" && (
                     <div className="detail-section">
                       <p style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#6B7280", textTransform: "uppercase" }}>
@@ -193,7 +189,6 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
                     </div>
                   )}
 
-                  {/* Rejection details */}
                   {m.rejection && m.status === "REVISION_REQUESTED" && (
                     <div className="detail-section" style={{ backgroundColor: "#FEF3C7", borderColor: "#FBBF24" }}>
                       <p style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#B45309", textTransform: "uppercase" }}>
@@ -208,19 +203,19 @@ export const MilestoneTimeline = ({ milestones, jobId }: MilestoneTimelineProps)
                     </div>
                   )}
 
-                  {/* Released confirmation */}
                   {m.status === "RELEASED" && (
                     <div className="detail-section" style={{ backgroundColor: "#E1F5EE", borderColor: "#10B981" }}>
                       <p style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#0F6E56", textTransform: "uppercase" }}>
                         ✅ Payment Released
                       </p>
                       <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#085041" }}>
-                        RM {m.amount.toLocaleString()} transferred to your wallet
+                        {m.amount !== null && m.amount !== undefined
+                          ? `RM ${m.amount.toLocaleString()} transferred to your wallet`
+                          : "This milestone has been approved and released in the workflow."}
                       </p>
                     </div>
                   )}
 
-                  {/* Action buttons */}
                   {m.status === "IN_PROGRESS" && (
                     <Link
                       href={`/freelancer/milestones/${m.id}`}

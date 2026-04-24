@@ -8,6 +8,11 @@ import { FreelancerActiveWorkStats, ActiveWorkStats } from "./freelancer-active-
 import { FreelancerActiveJobCard, ActiveWorkJobCard } from "./freelancer-active-job-card";
 import { MilestoneTimelineItem } from "./freelancer-milestone-timeline";
 
+const completedMilestoneStatuses = new Set(["APPROVED", "RELEASED"]);
+const readyForSubmissionStatuses = new Set(["IN_PROGRESS", "REVISION_REQUESTED"]);
+const reviewStatuses = new Set(["SUBMITTED", "UNDER_REVIEW"]);
+const millisecondsPerDay = 86_400_000;
+
 export const FreelancerActiveJobsPage = () => {
   const session = useProtectedUser("freelancer");
   const [jobs, setJobs] = useState<Awaited<ReturnType<typeof freelancerWorkspaceApi.listJobs>>["jobs"]>([]);
@@ -34,57 +39,61 @@ export const FreelancerActiveJobsPage = () => {
     return null;
   }
 
-  // Calculate stats based on available data
-  const totalJobs = jobs.length;
-  const allMilestones = jobs.flatMap(j => j.milestones);
-  
-  // TODO: Get actual amounts from API when available
-  const estimatedTotalAmount = totalJobs * 5000; // Placeholder
-  const earnedSoFar = allMilestones
-    .filter(m => m.status === "RELEASED" || m.status === "APPROVED").length * 1500; // Placeholder
-  const inEscrow = estimatedTotalAmount - earnedSoFar;
-  const pendingReview = allMilestones.filter(m => m.status === "SUBMITTED" || m.status === "UNDER_REVIEW").length;
+  const activeJobs = jobs.filter((job) => job.status !== "COMPLETED");
+  const totalJobs = activeJobs.length;
+  const allMilestones = activeJobs.flatMap((job) => job.milestones);
+  const readyToSubmit = allMilestones.filter((milestone) =>
+    readyForSubmissionStatuses.has(milestone.status)
+  ).length;
+  const pendingReview = allMilestones.filter((milestone) => reviewStatuses.has(milestone.status)).length;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueThisWeek = allMilestones.filter((milestone) => {
+    if (!milestone.dueAt || completedMilestoneStatuses.has(milestone.status)) {
+      return false;
+    }
+
+    const dueDate = new Date(milestone.dueAt);
+    dueDate.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.round((dueDate.getTime() - today.getTime()) / millisecondsPerDay);
+    return diffDays >= 0 && diffDays <= 7;
+  }).length;
 
   const stats: ActiveWorkStats = {
     activeJobs: totalJobs,
-    earnedSoFar,
-    totalContracted: estimatedTotalAmount,
+    totalMilestones: allMilestones.length,
+    readyToSubmit,
     pendingReview,
-    inEscrow
+    dueThisWeek
   };
 
-  // Transform jobs to card format
-  const jobCards: ActiveWorkJobCard[] = jobs.map(job => ({
+  const jobCards: ActiveWorkJobCard[] = activeJobs.map(job => ({
     id: job.id,
     title: job.title,
     companyName: job.companyName,
-    category: "Development", // TODO: get from API
-    totalAmount: 5000 * job.milestones.length, // Placeholder calculation
-    escrowStatus: "FUNDED",
     milestones: job.milestones.map((m) => ({
       id: m.id,
       sequence: m.sequence,
       title: m.title,
       description: m.description,
-      amount: 5000, // Placeholder amount - TODO: get from API
-      dueAt: m.dueAt || "",
+      amount: null,
+      dueAt: m.dueAt,
       status: m.status,
       revisions: {
         used: m.revisionCount,
         remaining: m.remainingRevisions,
         limit: 3
       }
-    } as MilestoneTimelineItem))
+    }))
   }));
 
   return (
     <WorkspaceLayout title="Active Work" subtitle="Track your milestones, submissions, and escrow releases." user={session.user}>
       {error ? <p className="form-error">{error}</p> : null}
 
-      {/* Stats Dashboard */}
       <FreelancerActiveWorkStats stats={stats} />
 
-      {/* Section label */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
         <p style={{
           fontSize: "13px",
@@ -101,11 +110,18 @@ export const FreelancerActiveJobsPage = () => {
         </span>
       </div>
 
-      {/* Job Cards */}
       <div style={{ display: "grid", gap: "20px" }}>
-        {jobCards.map(job => (
-          <FreelancerActiveJobCard key={job.id} job={job} />
-        ))}
+        {jobCards.length > 0 ? (
+          jobCards.map(job => (
+            <FreelancerActiveJobCard key={job.id} job={job} />
+          ))
+        ) : (
+          <div className="inline-panel">
+            <p className="eyebrow">Active work</p>
+            <h2>No active jobs yet</h2>
+            <p className="muted">Milestones will appear here once a company assigns work to you.</p>
+          </div>
+        )}
       </div>
     </WorkspaceLayout>
   );

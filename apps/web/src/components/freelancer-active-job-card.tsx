@@ -7,10 +7,7 @@ export interface ActiveWorkJobCard {
   id: string;
   title: string;
   companyName: string;
-  category?: string;
-  totalAmount: number;
   milestones: MilestoneTimelineItem[];
-  escrowStatus: string;
 }
 
 interface FreelancerActiveJobCardProps {
@@ -18,7 +15,7 @@ interface FreelancerActiveJobCardProps {
 }
 
 const ProgressBar = ({ completed, total }: { completed: number; total: number }) => {
-  const percentage = (completed / total) * 100;
+  const percentage = total > 0 ? (completed / total) * 100 : 0;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
       <div
@@ -58,19 +55,20 @@ const ProgressBar = ({ completed, total }: { completed: number; total: number })
 export const FreelancerActiveJobCard = ({ job }: FreelancerActiveJobCardProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const completedMilestones = job.milestones.filter(m => m.status === "RELEASED" || m.status === "APPROVED").length;
-  const earnedAmount = job.milestones
-    .filter(m => m.status === "RELEASED" || m.status === "APPROVED")
-    .reduce((sum, m) => sum + m.amount, 0);
+  const pendingReviewCount = job.milestones.filter(
+    m => m.status === "SUBMITTED" || m.status === "UNDER_REVIEW"
+  ).length;
+  const readyForActionCount = job.milestones.filter(
+    m => m.status === "IN_PROGRESS" || m.status === "REVISION_REQUESTED"
+  ).length;
 
   return (
     <div className="active-job-card">
-      {/* Job header - clickable to expand/collapse */}
       <div
         className="active-job-header"
         onClick={() => setIsOpen(!isOpen)}
         style={{ cursor: "pointer" }}
       >
-        {/* Icon/category */}
         <div
           style={{
             width: "42px",
@@ -84,29 +82,14 @@ export const FreelancerActiveJobCard = ({ job }: FreelancerActiveJobCardProps) =
             fontSize: "18px"
           }}
         >
-          {job.category === "Design" ? "🎨" : "💻"}
+          💻
         </div>
 
-        {/* Title and company */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
             <p style={{ fontSize: "15px", fontWeight: "700", color: "#111827", margin: 0 }}>
               {job.title}
             </p>
-            {job.category && (
-              <span
-                style={{
-                  fontSize: "10px",
-                  fontWeight: "700",
-                  padding: "2px 8px",
-                  borderRadius: "999px",
-                  backgroundColor: "#E1F5EE",
-                  color: "#085041"
-                }}
-              >
-                {job.category}
-              </span>
-            )}
           </div>
           <p style={{ fontSize: "13px", color: "#6B7280", margin: "0 0 8px" }}>
             {job.companyName}
@@ -114,20 +97,22 @@ export const FreelancerActiveJobCard = ({ job }: FreelancerActiveJobCardProps) =
           <ProgressBar completed={completedMilestones} total={job.milestones.length} />
         </div>
 
-        {/* Amount summary */}
         <div style={{ textAlign: "right", flexShrink: 0, marginRight: "12px" }}>
           <p style={{ fontSize: "16px", fontWeight: "700", color: "#111827", margin: "0 0 2px", fontFamily: "'DM Mono', monospace" }}>
-            RM {earnedAmount.toLocaleString()}
+            {completedMilestones}/{job.milestones.length}
             <span style={{ fontSize: "12px", fontWeight: "400", color: "#9CA3AF" }}>
-              {" "}/ {job.totalAmount.toLocaleString()}
+              {" "}completed
             </span>
           </p>
           <p style={{ fontSize: "11px", color: "#9CA3AF", margin: 0 }}>
-            Escrow: <span style={{ color: "#0F6E56", fontWeight: "600" }}>FUNDED</span>
+            {pendingReviewCount > 0
+              ? `${pendingReviewCount} awaiting review`
+              : readyForActionCount > 0
+                ? `${readyForActionCount} ready for action`
+                : "Milestone flow active"}
           </p>
         </div>
 
-        {/* Chevron */}
         <div
           style={{
             fontSize: "14px",
@@ -140,10 +125,9 @@ export const FreelancerActiveJobCard = ({ job }: FreelancerActiveJobCardProps) =
         </div>
       </div>
 
-      {/* Expanded content - milestones */}
       {isOpen && (
         <div className="active-job-milestones">
-          <MilestoneTimeline milestones={job.milestones} jobId={job.id} />
+          <MilestoneTimeline milestones={job.milestones} />
         </div>
       )}
     </div>

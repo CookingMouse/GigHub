@@ -616,9 +616,7 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
                     ? Math.round((completedMilestones / job.milestones.length) * 100)
                     : 0;
                 const statusTone = getStatusTone(currentMilestone?.status ?? null);
-                const openHref = currentMilestone
-                  ? `/freelancer/milestones/${currentMilestone.id}`
-                  : "/freelancer/active-jobs";
+                const openHref = "/freelancer/active-jobs";
 
                 return (
                   <article className="freelancer-dashboard-activity-card" key={job.id}>
@@ -666,7 +664,7 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
                     </dl>
 
                     <Link className="freelancer-dashboard-primary-action" href={openHref}>
-                      {currentMilestone ? "Open current milestone" : "View active work"}
+                      View active work
                     </Link>
                   </article>
                 );
