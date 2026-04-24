@@ -64,8 +64,7 @@ const freelancerMilestoneInclude = {
           companyProfile: true
         }
       },
-      brief: true,
-      escrow: true
+      brief: true
     }
   },
   submissions: {
@@ -81,20 +80,20 @@ const freelancerMilestoneInclude = {
             },
             orderBy: {
               createdAt: "desc"
-                }
-              }
-            }
-          },
-          glmDecisions: {
-            where: {
-              decisionType: "MILESTONE_SCORING"
-            },
-            orderBy: {
-              createdAt: "desc"
             }
           }
         }
+      },
+      glmDecisions: {
+        where: {
+          decisionType: "MILESTONE_SCORING"
+        },
+        orderBy: {
+          createdAt: "desc"
+        }
       }
+    }
+  }
 } satisfies Prisma.MilestoneInclude;
 
 type FreelancerJob = Prisma.JobGetPayload<{
@@ -239,19 +238,7 @@ const toFreelancerMilestoneDetailRecord = (
   job: {
     id: milestone.job.id,
     title: milestone.job.title,
-    companyName: companyNameForJob(milestone.job),
-    budget: Number(milestone.job.budget),
-    escrow: milestone.job.escrow
-      ? {
-          status: milestone.job.escrow.status,
-          fundedAmount: Number(milestone.job.escrow.fundedAmount),
-          releasedAmount: Number(milestone.job.escrow.releasedAmount),
-          provider: milestone.job.escrow.provider,
-          providerReference: milestone.job.escrow.providerReference,
-          fundedAt: milestone.job.escrow.fundedAt?.toISOString() ?? null,
-          releasedAt: milestone.job.escrow.releasedAt?.toISOString() ?? null
-        }
-      : null
+    companyName: companyNameForJob(milestone.job)
   },
   brief: {
     overview: milestone.job.brief?.overview ?? "",
