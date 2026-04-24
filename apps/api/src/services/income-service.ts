@@ -112,6 +112,12 @@ const toStatementRecord = (statement: NonNullable<IncomeStatementWithItems>): In
   verifyToken: statement.verifyToken,
   glmNarrative: statement.glmNarrative ?? null,
   status: statement.status,
+  platformServiceFee: Number(statement.platformServiceFee),
+  estimatedOperatingExpenses: Number(statement.estimatedOperatingExpenses),
+  netIncome: Number(statement.netIncome),
+  socsoProvisioning: Number(statement.socsoProvisioning),
+  epfProvisioning: Number(statement.epfProvisioning),
+  amountAfterStatutory: Number(statement.amountAfterStatutory),
   lineItems: statement.lineItems.map((lineItem) => ({
     id: lineItem.id,
     milestoneId: lineItem.milestoneId,
@@ -147,6 +153,12 @@ const buildStatementPdfLines = (
   totalJobs: number,
   totalMilestones: number,
   avgMonthlyIncome: number,
+  platformServiceFee: number,
+  estimatedOperatingExpenses: number,
+  netIncome: number,
+  socsoProvisioning: number,
+  epfProvisioning: number,
+  amountAfterStatutory: number,
   narrative: string,
   lineItems: IncomeStatementRecord["lineItems"]
 ) => [
@@ -159,10 +171,21 @@ const buildStatementPdfLines = (
   { text: `Email: ${freelancerEmail}` },
   { text: `Covered period: ${statementDate(periodStart)} to ${statementDate(periodEnd)}` },
   { text: "" },
+  { text: "Gross vs. Net Income Breakdown", size: 12 },
+  { text: `Gross Escrow Revenue: ${formatAmount(totalEarned)}` },
+  { text: `Platform Service Fee (-5%): -${formatAmount(platformServiceFee)}` },
+  { text: `Estimated Operating Expenses (-3%): -${formatAmount(estimatedOperatingExpenses)}` },
+  { text: `Net Income: ${formatAmount(netIncome)}` },
+  { text: "" },
   { text: `Total earned: ${formatAmount(totalEarned)}`, size: 12 },
   { text: `Total jobs completed in period: ${totalJobs}` },
   { text: `Total released milestones: ${totalMilestones}` },
   { text: `Average monthly income: ${formatAmount(avgMonthlyIncome)}` },
+  { text: "" },
+  { text: "Statutory Provisions & Trust Signals", size: 12 },
+  { text: `SOCSO Provisioning (~0.8%): -${formatAmount(socsoProvisioning)}` },
+  { text: `EPF Provisioning (~8%): -${formatAmount(epfProvisioning)}` },
+  { text: `Amount After Statutory: ${formatAmount(amountAfterStatutory)}` },
   { text: "" },
   { text: "Income narrative" },
   { text: narrative },
@@ -175,7 +198,8 @@ const buildStatementPdfLines = (
   })),
   { text: "" },
   { text: `Verification token: ${verifyToken}` },
-  { text: "This statement reflects released escrow milestones recorded on GigHub." }
+  { text: "This statement reflects released escrow milestones recorded on GigHub." },
+  { text: "This income statement is generated for financial and formal purposes." }
 ];
 
 const writeStatementPdf = async (statementId: string, lines: Array<{ text: string; size?: number }>) => {
@@ -307,6 +331,15 @@ export const generateFreelancerIncomeStatement = async (
   const totalEarned = milestones.reduce((sum, milestone) => sum + Number(milestone.amount), 0);
   const totalJobs = new Set(milestones.map((milestone) => milestone.jobId)).size;
   const avgMonthlyIncome = totalEarned / monthSpan(periodStart, periodEnd);
+  
+  // Calculate financial breakdown
+  const platformServiceFee = totalEarned * 0.05;
+  const estimatedOperatingExpenses = (totalEarned - platformServiceFee) * 0.03;
+  const netIncome = totalEarned - platformServiceFee - estimatedOperatingExpenses;
+  const socsoProvisioning = netIncome * 0.008;
+  const epfProvisioning = netIncome * 0.08;
+  const amountAfterStatutory = netIncome - socsoProvisioning - epfProvisioning;
+  
   const categories = Array.from(
     new Set(milestones.map((milestone) => inferCategory(milestone.title, milestone.description)))
   );
@@ -342,6 +375,12 @@ export const generateFreelancerIncomeStatement = async (
       currency,
       verifyToken: randomUUID(),
       glmNarrative: narrative,
+      platformServiceFee,
+      estimatedOperatingExpenses,
+      netIncome,
+      socsoProvisioning,
+      epfProvisioning,
+      amountAfterStatutory,
       lineItems: {
         create: milestones.map((milestone) => ({
           milestoneId: milestone.id,
@@ -369,6 +408,12 @@ export const generateFreelancerIncomeStatement = async (
       totalJobs,
       milestones.length,
       avgMonthlyIncome,
+      platformServiceFee,
+      estimatedOperatingExpenses,
+      netIncome,
+      socsoProvisioning,
+      epfProvisioning,
+      amountAfterStatutory,
       narrative,
       statement.lineItems.map((lineItem) => ({
         id: lineItem.id,

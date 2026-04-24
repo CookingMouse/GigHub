@@ -140,42 +140,63 @@ export const FreelancerIncomePanel = () => {
       </form>
 
       {statement ? (
-        <article className="status-panel">
-          <span className="panel-label">
+        <article className="status-panel" style={{ padding: "14px 16px" }}>
+          <span className="panel-label" style={{ fontSize: "10px" }}>
             {formatDate(statement.periodStart)} - {formatDate(statement.periodEnd)}
           </span>
-          <strong>{formatCurrency(statement.totalEarned)}</strong>
-          <p>
+          <strong style={{ fontSize: "18px", margin: "4px 0" }}>{formatCurrency(statement.totalEarned)}</strong>
+          <p style={{ fontSize: "12px", margin: "4px 0", color: "#6B7280" }}>
             {statement.totalJobs} job(s), {statement.totalMilestones} milestone(s), generated{" "}
             {formatDate(statement.generatedAt)}
           </p>
-          <p className="muted">
+          <p className="muted" style={{ fontSize: "11px", margin: "4px 0" }}>
             Verification token: <code>{statement.verifyToken}</code>
           </p>
-          {statement.glmNarrative ? <p className="muted">{statement.glmNarrative}</p> : null}
+          {statement.glmNarrative ? (
+            <p className="muted" style={{ fontSize: "11px", margin: "4px 0" }}>
+              {statement.glmNarrative}
+            </p>
+          ) : null}
 
-          <div className="action-row">
+          <div className="action-row" style={{ marginTop: "12px" }}>
             <button
               className="button-secondary"
               disabled={isDownloading}
               onClick={handleDownloadPdf}
               type="button"
+              style={{ fontSize: "12px", padding: "8px 14px" }}
             >
               {isDownloading ? "Preparing PDF..." : "Download PDF"}
             </button>
           </div>
 
-          {downloadError ? <p className="form-error">{downloadError}</p> : null}
+          {downloadError ? <p className="form-error" style={{ fontSize: "12px" }}>{downloadError}</p> : null}
 
-          <div className="card-stack">
+          <div style={{ marginTop: "16px", padding: "12px", backgroundColor: "#F9FAFB", borderRadius: "8px", fontSize: "11px", lineHeight: "1.6" }}>
+            <strong style={{ display: "block", marginBottom: "8px", fontSize: "12px" }}>Financial Breakdown</strong>
+            <p style={{ margin: "4px 0" }}>Gross Escrow Revenue: <strong>{formatCurrency(statement.totalEarned)}</strong></p>
+            <p style={{ margin: "4px 0", color: "#DC2626" }}>Platform Service Fee (-5%): <strong>-{formatCurrency(statement.platformServiceFee)}</strong></p>
+            <p style={{ margin: "4px 0", color: "#DC2626" }}>Operating Expenses (-3%): <strong>-{formatCurrency(statement.estimatedOperatingExpenses)}</strong></p>
+            <div style={{ borderTop: "1px solid #E5E7EB", margin: "8px 0", paddingTop: "8px" }} />
+            <p style={{ margin: "4px 0" }}>Net Income: <strong style={{ color: "#0F6E56" }}>{formatCurrency(statement.netIncome)}</strong></p>
+            
+            <div style={{ borderTop: "1px solid #E5E7EB", margin: "8px 0", paddingTop: "8px", marginBottom: "8px" }} />
+            <p style={{ margin: "4px 0", fontSize: "10px", color: "#6B7280", fontStyle: "italic" }}>Statutory Provisions (Malaysia):</p>
+            <p style={{ margin: "4px 0", color: "#B45309" }}>SOCSO Provisioning (~0.8%): <strong>-{formatCurrency(statement.socsoProvisioning)}</strong></p>
+            <p style={{ margin: "4px 0", color: "#B45309" }}>EPF Provisioning (~8%): <strong>-{formatCurrency(statement.epfProvisioning)}</strong></p>
+            <div style={{ borderTop: "1px solid #E5E7EB", margin: "8px 0", paddingTop: "8px" }} />
+            <p style={{ margin: "4px 0" }}>Amount After Statutory: <strong style={{ color: "#0F6E56" }}>{formatCurrency(statement.amountAfterStatutory)}</strong></p>
+          </div>
+
+          <div className="card-stack" style={{ marginTop: "12px", gap: "8px" }}>
             {statement.lineItems.map((lineItem) => (
-              <article className="status-panel" key={lineItem.id}>
-                <span className="panel-label">{formatDate(lineItem.releasedAt)}</span>
-                <strong>{lineItem.jobTitle}</strong>
-                <p>
+              <article className="status-panel" key={lineItem.id} style={{ padding: "10px 12px" }}>
+                <span className="panel-label" style={{ fontSize: "10px" }}>{formatDate(lineItem.releasedAt)}</span>
+                <strong style={{ fontSize: "13px", display: "block", margin: "3px 0" }}>{lineItem.jobTitle}</strong>
+                <p style={{ fontSize: "11px", margin: "2px 0", color: "#6B7280" }}>
                   {lineItem.companyName} • {formatCurrency(lineItem.amount)}
                 </p>
-                {lineItem.category ? <p className="muted">{lineItem.category}</p> : null}
+                {lineItem.category ? <p className="muted" style={{ fontSize: "10px", margin: "2px 0" }}>{lineItem.category}</p> : null}
               </article>
             ))}
           </div>
