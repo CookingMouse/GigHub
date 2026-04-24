@@ -16,22 +16,34 @@ const currency = "MYR";
 const escapePdfText = (value: string) =>
   value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 
-const buildSimplePdf = (title: string, lines: Array<{ text: string; size?: number }>) => {
-  const contentLines = [{ text: title, size: 18 }, ...lines].slice(0, 44);
-  let y = 790;
+const buildSimplePdf = (title: string, lines: Array<{ text: string; size?: number; bold?: boolean }>) => {
+  const contentLines = lines.slice(0, 50);
+  let y = 800;
+  const margin = 50;
+  
   const textCommands = contentLines
     .map((line) => {
-      const command = `BT /F1 ${line.size ?? 10} Tf 50 ${y} Td (${escapePdfText(line.text)}) Tj ET`;
-      y -= line.size && line.size >= 16 ? 24 : 16;
+      const fontSize = line.size ?? 10;
+      const font = line.bold ? "/F2" : "/F1";
+      
+      // Use "Fill then Stroke" (2 Tr) for bold text to make it appear thicker
+      // and set a small line width (0.3) for the stroke.
+      const renderMode = line.bold ? "2 Tr 0.3 w" : "0 Tr";
+      
+      const command = `BT ${renderMode} ${font} ${fontSize} Tf ${margin} ${y} Td (${escapePdfText(line.text)}) Tj ET`;
+      
+      y -= (fontSize >= 14 ? fontSize * 1.6 : 16);
       return command;
     })
     .join("\n");
+
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>",
     `<< /Length ${Buffer.byteLength(textCommands, "utf8")} >>\nstream\n${textCommands}\nendstream`,
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"
   ];
 
   let document = "%PDF-1.4\n";
@@ -162,47 +174,55 @@ const buildStatementPdfLines = (
   narrative: string,
   lineItems: IncomeStatementRecord["lineItems"]
 ) => [
-  { text: "Formal Income Statement", size: 14 },
-  { text: "GigHub Freelancer Earnings Verification" },
+  { text: "FORMAL INCOME STATEMENT", size: 22, bold: true },
+  { text: "GIGHUB EARNINGS VERIFICATION", size: 10, bold: true },
+  { text: `Document Generated: ${statementDate(new Date())}`, size: 8 },
+  { text: "------------------------------------------------------------------------------------------------------------------------", size: 8 },
   { text: "" },
-  { text: `Statement ID: ${statementId}` },
-  { text: `Generated on: ${statementDate(new Date())}` },
-  { text: `Freelancer: ${freelancerName}` },
+  
+  { text: "SECTION I: FREELANCER PROFILE", size: 13, bold: true },
+  { text: `Name: ${freelancerName}`, bold: true },
   { text: `Email: ${freelancerEmail}` },
-  { text: `Covered period: ${statementDate(periodStart)} to ${statementDate(periodEnd)}` },
+  { text: `Coverage Period: ${statementDate(periodStart)} to ${statementDate(periodEnd)}` },
   { text: "" },
-  { text: "Gross vs. Net Income Breakdown", size: 12 },
-  { text: `Gross Escrow Revenue: ${formatAmount(totalEarned)}` },
-  { text: `Platform Service Fee (-5%): -${formatAmount(platformServiceFee)}` },
-  { text: `Estimated Operating Expenses (-3%): -${formatAmount(estimatedOperatingExpenses)}` },
-  { text: `Net Income: ${formatAmount(netIncome)}` },
+
+  { text: "SECTION II: FINANCIAL PERFORMANCE (MYR)", size: 13, bold: true },
+  { text: `Gross Escrow Revenue: ${formatAmount(totalEarned)}`, bold: true },
+  { text: `  - Platform Service Fee (5%): -${formatAmount(platformServiceFee)}` },
+  { text: `  - Estimated Operating Expenses (3%): -${formatAmount(estimatedOperatingExpenses)}` },
+  { text: `Net Freelancer Income: ${formatAmount(netIncome)}`, size: 11, bold: true },
   { text: "" },
-  { text: `Total earned: ${formatAmount(totalEarned)}`, size: 12 },
-  { text: `Total jobs completed in period: ${totalJobs}` },
-  { text: `Total released milestones: ${totalMilestones}` },
-  { text: `Average monthly income: ${formatAmount(avgMonthlyIncome)}` },
+  
+  { text: "SECTION III: STATUTORY PROVISIONS", size: 13, bold: true },
+  { text: `  - SOCSO Provisioning (~0.8%): -${formatAmount(socsoProvisioning)}` },
+  { text: `  - EPF Provisioning (~8.0%): -${formatAmount(epfProvisioning)}` },
+  { text: `ESTIMATED TAKE-HOME PAY: ${formatAmount(amountAfterStatutory)}`, size: 12, bold: true },
   { text: "" },
-  { text: "Statutory Provisions & Trust Signals", size: 12 },
-  { text: `SOCSO Provisioning (~0.8%): -${formatAmount(socsoProvisioning)}` },
-  { text: `EPF Provisioning (~8%): -${formatAmount(epfProvisioning)}` },
-  { text: `Amount After Statutory: ${formatAmount(amountAfterStatutory)}` },
+
+  { text: "SECTION IV: ACTIVITY SUMMARY", size: 13, bold: true },
+  { text: `Jobs Completed: ${totalJobs} | Milestones Released: ${totalMilestones}` },
+  { text: `Avg. Monthly Revenue: ${formatAmount(avgMonthlyIncome)}`, bold: true },
   { text: "" },
-  { text: "Income narrative" },
-  { text: narrative },
+
+  { text: "SECTION V: AI INSIGHTS & NARRATIVE", size: 13, bold: true },
+  { text: narrative.length > 250 ? narrative.slice(0, 247) + "..." : narrative },
   { text: "" },
-  { text: "Released line items" },
-  ...lineItems.map((lineItem) => ({
-    text: `${statementDate(new Date(lineItem.releasedAt))} | ${lineItem.jobTitle} | ${
-      lineItem.companyName
-    } | ${formatAmount(lineItem.amount)}`
+
+  { text: "SECTION VI: TRANSACTION LOG (LATEST 15)", size: 13, bold: true },
+  ...lineItems.slice(0, 15).map((lineItem) => ({
+    text: `${statementDate(new Date(lineItem.releasedAt))} | ${formatAmount(lineItem.amount)} | ${lineItem.jobTitle.slice(0, 25)}... | ${lineItem.companyName.slice(0, 20)}`
   })),
   { text: "" },
-  { text: `Verification token: ${verifyToken}` },
-  { text: "This statement reflects released escrow milestones recorded on GigHub." },
-  { text: "This income statement is generated for financial and formal purposes." }
+
+  { text: "SECTION VII: AUTHENTICITY", size: 13, bold: true },
+  { text: `Verification Token: ${verifyToken}`, size: 10, bold: true },
+  { text: "Verify this document online at: https://gighub.my/verify", size: 9 },
+  { text: "" },
+  { text: "------------------------------------------------------------------------------------------------------------------------", size: 8 },
+  { text: "GigHub Computer-Generated Income Statement - No Signature Required", size: 8, bold: true }
 ];
 
-const writeStatementPdf = async (statementId: string, lines: Array<{ text: string; size?: number }>) => {
+const writeStatementPdf = async (statementId: string, lines: Array<{ text: string; size?: number; bold?: boolean }>) => {
   const generatedAt = new Date();
   const storageKey = path
     .join(
@@ -217,7 +237,7 @@ const writeStatementPdf = async (statementId: string, lines: Array<{ text: strin
   await mkdir(path.dirname(destination), {
     recursive: true
   });
-  await writeFile(destination, buildSimplePdf("GigHub Formal Income Statement", lines));
+  await writeFile(destination, buildSimplePdf("", lines));
 
   return storageKey;
 };
