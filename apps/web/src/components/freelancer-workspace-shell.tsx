@@ -10,6 +10,8 @@ type FreelancerWorkspaceShellProps = {
   freelancerName: string;
   freelancerEmail: string;
   actions?: ReactNode;
+  hideFreelancerCard?: boolean;
+  hideWorkflowCard?: boolean;
 };
 
 export const FreelancerWorkspaceShell = ({
@@ -18,7 +20,9 @@ export const FreelancerWorkspaceShell = ({
   children,
   freelancerName,
   freelancerEmail,
-  actions
+  actions,
+  hideFreelancerCard = false,
+  hideWorkflowCard = false
 }: FreelancerWorkspaceShellProps) => {
   return (
     <WorkspaceLayout
@@ -26,19 +30,25 @@ export const FreelancerWorkspaceShell = ({
       subtitle={description}
       user={{ id: "freelancer-shell", email: freelancerEmail, name: freelancerName, role: "freelancer" }}
     >
-      <div className="status-grid">
-        <article className="status-panel">
-          <span className="panel-label">Freelancer</span>
-          <strong>{freelancerName}</strong>
-          <p>{freelancerEmail}</p>
-        </article>
+      {hideFreelancerCard && hideWorkflowCard ? null : (
+        <div className="status-grid">
+          {!hideFreelancerCard && (
+            <article className="status-panel">
+              <span className="panel-label">Freelancer</span>
+              <strong>{freelancerName}</strong>
+              <p>{freelancerEmail}</p>
+            </article>
+          )}
 
-        <article className="status-panel">
-          <span className="panel-label">Workflow</span>
-          <strong>Review milestones - Upload - Submit</strong>
-          <p>Each milestone supports one primary file per revision, up to three revisions.</p>
-        </article>
-      </div>
+          {!hideWorkflowCard && (
+            <article className="status-panel">
+              <span className="panel-label">Workflow</span>
+              <strong>Review milestones - Upload - Submit</strong>
+              <p>Each milestone supports one primary file per revision, up to three revisions.</p>
+            </article>
+          )}
+        </div>
+      )}
 
       {actions ? <div className="action-row">{actions}</div> : null}
 

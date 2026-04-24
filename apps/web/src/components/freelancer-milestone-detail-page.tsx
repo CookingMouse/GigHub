@@ -160,7 +160,9 @@ const FreelancerMilestoneDetailContent = ({
         description="Loading the brief summary, milestone requirements, and current submission history."
         freelancerEmail={user.email}
         freelancerName={user.name}
-        title="Milestone detail"
+        hideFreelancerCard
+        hideWorkflowCard
+        title="Milestone and submission"
       >
         <section className="inline-panel">
           <h2>Loading milestone</h2>
@@ -174,14 +176,16 @@ const FreelancerMilestoneDetailContent = ({
     return (
       <FreelancerWorkspaceShell
         actions={
-          <Link className="button-secondary" href="/freelancer/active-jobs">
+          <Link className="button-primary" href="/freelancer/active-jobs">
             Back to active work
           </Link>
         }
         description="The requested milestone could not be loaded."
         freelancerEmail={user.email}
         freelancerName={user.name}
-        title="Milestone detail"
+        hideFreelancerCard
+        hideWorkflowCard
+        title="Milestone and submission"
       >
         <section className="inline-panel">
           <h2>Milestone unavailable</h2>
@@ -232,15 +236,21 @@ const FreelancerMilestoneDetailContent = ({
   return (
     <FreelancerWorkspaceShell
       actions={
-        <Link className="button-secondary" href="/freelancer/active-jobs">
+        <Link className="button-primary" href="/freelancer/active-jobs">
           Back to active work
         </Link>
       }
       description="Review the accepted brief, upload one confidential file, and keep the submission history attached to the milestone."
       freelancerEmail={user.email}
       freelancerName={user.name}
-      title={milestone.title}
+      hideFreelancerCard
+      hideWorkflowCard
+      title="Milestone and submission"
     >
+      <p className="muted" style={{ fontSize: "13px", marginBottom: "24px", fontStyle: "italic" }}>
+        Each milestone supports one primary file per revision, up to three revisions. Review, upload, and submit.
+      </p>
+
       <div className="freelancer-milestone-detail-layout">
         <div className="workspace-grid">
           <section className="inline-panel">
