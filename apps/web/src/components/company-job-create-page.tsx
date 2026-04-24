@@ -7,7 +7,7 @@ import React, { startTransition, useState } from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { ApiRequestError, jobsApi } from "@/lib/api";
 import { emptyJobFormValues, jobFormValuesToInput, type JobFormValues } from "@/lib/job-form";
-import { CompanyWorkspaceShell } from "./company-workspace-shell";
+import { WorkspaceLayout } from "./workspace-layout";
 import { JobDraftForm } from "./job-draft-form";
 
 export const CompanyJobCreatePage = () => {
@@ -85,35 +85,33 @@ export const CompanyJobCreatePage = () => {
   };
 
   return (
-    <CompanyWorkspaceShell
-      actions={
-        <>
-          <Link className="button-secondary" href="/jobs">
-            Back to jobs
-          </Link>
-        </>
-      }
-      companyEmail={session.user.email}
-      companyName={session.user.name}
-      description="Capture the project in a structured format so later validation, milestone checks, and dispute handling all reference the same source of truth."
-      title="New job draft"
+    <WorkspaceLayout
+      user={session.user}
+      title="Create New Project"
+      subtitle="Define your project requirements to find the best talent match."
     >
-      <section className="inline-panel">
-        <h2>Draft requirements</h2>
-        <p className="muted">
-          Save the draft first. Validation comes next and will score the brief against the sections
-          below.
-        </p>
-      </section>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24 }}>New Job Draft</h1>
+          <p className="muted" style={{ margin: "4px 0 0" }}>
+            Draft your requirements first. You can run AI validation once the draft is saved.
+          </p>
+        </div>
+        <Link className="button-secondary" href="/jobs">
+          Cancel & Exit
+        </Link>
+      </div>
 
-      <JobDraftForm
-        errorMessage={errorMessage}
-        isSubmitting={isSubmitting}
-        onChange={updateField}
-        onSubmit={handleSubmit}
-        submitLabel="Save draft"
-        values={values}
-      />
-    </CompanyWorkspaceShell>
+      <div style={{ maxWidth: "1000px" }}>
+        <JobDraftForm
+          errorMessage={errorMessage}
+          isSubmitting={isSubmitting}
+          onChange={updateField}
+          onSubmit={handleSubmit}
+          submitLabel="Save Draft & Continue"
+          values={values}
+        />
+      </div>
+    </WorkspaceLayout>
   );
 };
