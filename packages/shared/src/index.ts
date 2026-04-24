@@ -366,6 +366,8 @@ export type FreelancerMilestoneDetailRecord = {
     id: string;
     title: string;
     companyName: string;
+    budget: number;
+    escrow: EscrowRecord | null;
   };
   brief: {
     overview: string;

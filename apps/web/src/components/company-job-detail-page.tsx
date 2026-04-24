@@ -1,10 +1,10 @@
 "use client";
 
-import type { FreelancerDirectoryRecord, JobRecord, MockPaymentIntentRecord, MilestoneStatus, AppRole } from "@gighub/shared";
+import type { FreelancerDirectoryRecord, JobRecord, MockPaymentIntentRecord } from "@gighub/shared";
 import { ZodError } from "zod";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import React, { startTransition, useEffect, useState, useMemo } from "react";
+import React, { startTransition, useEffect, useState } from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { ApiRequestError, freelancersApi, jobsApi, paymentsApi, profileApi } from "@/lib/api";
 import {
@@ -20,9 +20,10 @@ import {
   milestoneRecordsToFormValues,
   type MilestoneFormValue
 } from "@/lib/milestone-plan";
+import { CompanyWorkspaceShell } from "./company-workspace-shell";
 import { JobDraftForm } from "./job-draft-form";
 import { MilestonePlanForm } from "./milestone-plan-form";
-import { WorkspaceLayout } from "./workspace-layout";
+import { EscrowStatusHeader } from "./escrow-status-header";
 
 type DetailState =
   | { status: "loading" }
@@ -33,8 +34,6 @@ type FreelancerState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; freelancers: FreelancerDirectoryRecord[] };
-
-type ActiveTab = "overview" | "milestones" | "review";
 
 const formatDate = (value: string | null) => {
   if (!value) {
@@ -55,70 +54,6 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 2
   }).format(value);
 
-const companyAccent = "#1D4ED8";
-
-// ── Components ────────────────────────────────────────────────────────────────
-
-const EscrowMonitor = ({ job }: { job: JobRecord }) => {
-  const fundedAmount = job.escrow?.fundedAmount ?? 0;
-  const releasedAmount = job.escrow?.releasedAmount ?? 0;
-  const lockedAmount = fundedAmount - releasedAmount;
-  const totalBudget = job.budget;
-  const fundedPercent = totalBudget > 0 ? (fundedAmount / totalBudget) * 100 : 0;
-  const releasedPercent = totalBudget > 0 ? (releasedAmount / totalBudget) * 100 : 0;
-
-  return (
-    <section className="inline-panel" style={{ marginBottom: 24, borderTop: `4px solid ${companyAccent}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 18 }}>Escrow Monitor</h2>
-        <span style={{ 
-          fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 6,
-          backgroundColor: job.escrow?.status === "FUNDED" ? "#ECFDF5" : "#FFFBEB",
-          color: job.escrow?.status === "FUNDED" ? "#059669" : "#D97706"
-        }}>
-          {job.escrow?.status || "UNFUNDED"}
-        </span>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 20 }}>
-        <article>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Total Budget</span>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700 }}>{formatCurrency(totalBudget)}</p>
-        </article>
-        <article>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Funded in Escrow</span>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700, color: companyAccent }}>{formatCurrency(fundedAmount)}</p>
-        </article>
-        <article>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Locked (In-Progress)</span>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700, color: "#D97706" }}>{formatCurrency(lockedAmount)}</p>
-        </article>
-        <article>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Released to Worker</span>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700, color: "#059669" }}>{formatCurrency(releasedAmount)}</p>
-        </article>
-      </div>
-
-      <div style={{ height: 12, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden", position: "relative" }}>
-        <div style={{ 
-          position: "absolute", left: 0, top: 0, bottom: 0, 
-          width: `${releasedPercent}%`, backgroundColor: "#059669", transition: "width 0.6s ease", zIndex: 2
-        }} />
-        <div style={{ 
-          position: "absolute", left: 0, top: 0, bottom: 0, 
-          width: `${fundedPercent}%`, backgroundColor: companyAccent + "40", transition: "width 0.6s ease", zIndex: 1
-        }} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        <span style={{ fontSize: 12, color: "#6B7280" }}>Progress: {Math.round(releasedPercent)}% released</span>
-        <span style={{ fontSize: 12, color: "#6B7280" }}>Coverage: {Math.round(fundedPercent)}% funded</span>
-      </div>
-    </section>
-  );
-};
-
-// ── Main Page Component ──────────────────────────────────────────────────────
-
 export const CompanyJobDetailPage = () => {
   const session = useProtectedUser("company");
   const params = useParams<{ jobId: string }>();
@@ -130,17 +65,11 @@ export const CompanyJobDetailPage = () => {
   const [savedSnapshot, setSavedSnapshot] = useState("");
   const [latestIntent, setLatestIntent] = useState<MockPaymentIntentRecord | null>(null);
   const [milestoneValues, setMilestoneValues] = useState<MilestoneFormValue[]>([]);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
-  
-  // Errors
   const [saveError, setSaveError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [fundingError, setFundingError] = useState<string | null>(null);
   const [milestoneError, setMilestoneError] = useState<string | null>(null);
-  const [reviewError, setReviewError] = useState<string | null>(null);
-
-  // Loading states
   const [isSaving, setIsSaving] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -148,49 +77,112 @@ export const CompanyJobDetailPage = () => {
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
   const [isSavingMilestones, setIsSavingMilestones] = useState(false);
-
-  // Review states
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
   const [actingReviewMilestoneId, setActingReviewMilestoneId] = useState<string | null>(null);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | "auto-release" | null>(null);
 
+  const handleDownloadResume = async (freelancerId: string) => {
+    try {
+      const { blob, fileName } = await profileApi.downloadFreelancerResume(freelancerId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      setAssignmentError(
+        error instanceof ApiRequestError ? error.message : "Unable to download resume right now."
+      );
+    }
+  };
+
   useEffect(() => {
-    if (session.status !== "ready") return;
+    if (session.status !== "ready") {
+      return;
+    }
+
     let isMounted = true;
+
     const loadJob = async () => {
       try {
         const response = await jobsApi.get(jobId);
-        if (!isMounted) return;
+
+        if (!isMounted) {
+          return;
+        }
+
         syncJob(response.job);
       } catch (error) {
-        if (!isMounted) return;
-        setDetailState({ status: "error", message: error instanceof ApiRequestError ? error.message : "Unable to load the job." });
+        if (!isMounted) {
+          return;
+        }
+
+        setDetailState({
+          status: "error",
+          message: error instanceof ApiRequestError ? error.message : "Unable to load the job."
+        });
       }
     };
+
     void loadJob();
-    return () => { isMounted = false; };
+
+    return () => {
+      isMounted = false;
+    };
   }, [jobId, session.status]);
 
   useEffect(() => {
-    if (session.status !== "ready") return;
+    if (session.status !== "ready") {
+      return;
+    }
+
     let isMounted = true;
+
     const loadFreelancers = async () => {
       try {
         const response = await freelancersApi.list();
-        if (!isMounted) return;
-        setFreelancerState({ status: "ready", freelancers: response.freelancers });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setFreelancerState({
+          status: "ready",
+          freelancers: response.freelancers
+        });
       } catch (error) {
-        if (!isMounted) return;
-        setFreelancerState({ status: "error", message: error instanceof ApiRequestError ? error.message : "Unable to load freelancer profiles." });
+        if (!isMounted) {
+          return;
+        }
+
+        setFreelancerState({
+          status: "error",
+          message:
+            error instanceof ApiRequestError
+              ? error.message
+              : "Unable to load freelancer profiles right now."
+        });
       }
     };
+
     void loadFreelancers();
-    return () => { isMounted = false; };
+
+    return () => {
+      isMounted = false;
+    };
   }, [session.status]);
 
   const syncJob = (job: JobRecord) => {
     const formValues = jobRecordToFormValues(job);
-    setDetailState({ status: "ready", job });
+
+    setDetailState({
+      status: "ready",
+      job
+    });
     setValues(formValues);
     setSavedSnapshot(serializeJobFormValues(formValues));
     setMilestoneValues(milestoneRecordsToFormValues(job.milestones, job.milestoneCount));
@@ -207,47 +199,63 @@ export const CompanyJobDetailPage = () => {
     );
   };
 
-  const handleDownloadResume = async (freelancerId: string) => {
-    try {
-      const { blob, fileName } = await profileApi.downloadFreelancerResume(freelancerId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.body.appendChild(document.createElement("a"));
-      a.href = url; a.download = fileName; a.click();
-      window.URL.revokeObjectURL(url); document.body.removeChild(a);
-    } catch (error) {
-      setAssignmentError(error instanceof ApiRequestError ? error.message : "Unable to download resume.");
-    }
-  };
-
   if (session.status === "loading") {
     return (
       <section className="shell-card">
         <p className="eyebrow">GigHub</p>
-        <h1>Loading workspace</h1>
-        <p className="muted">Organizing your job workflow and escrow state...</p>
+        <h1>Loading company workspace</h1>
+        <p className="muted">Restoring the job workflow and transaction state.</p>
       </section>
     );
   }
 
-  if (session.status === "error" || detailState.status === "error") {
-    const msg = session.status === "error" ? session.message : (detailState as any).message;
+  if (session.status === "error") {
     return (
       <section className="shell-card">
         <p className="eyebrow">GigHub</p>
-        <h1>Unable to load job</h1>
-        <p className="muted">{msg}</p>
-        <Link className="button-secondary" href="/dashboard">Back to Dashboard</Link>
+        <h1>Workspace unavailable</h1>
+        <p className="muted">{session.message}</p>
+        <Link className="button-secondary" href="/dashboard">
+          Back to dashboard
+        </Link>
       </section>
     );
   }
 
   if (detailState.status === "loading" || !values) {
     return (
-      <WorkspaceLayout user={session.user} title="Loading Job..." subtitle="Pulling the latest workflow data.">
+      <CompanyWorkspaceShell
+        companyEmail={session.user.email}
+        companyName={session.user.name}
+        description="Loading the job, the validation state, and the current transaction progress."
+        title="Job details"
+      >
         <section className="inline-panel">
-          <h2 className="muted">Refreshing job state...</h2>
+          <h2>Loading job</h2>
+          <p className="muted">Pulling the current draft, escrow state, and milestone plan.</p>
         </section>
-      </WorkspaceLayout>
+      </CompanyWorkspaceShell>
+    );
+  }
+
+  if (detailState.status === "error") {
+    return (
+      <CompanyWorkspaceShell
+        actions={
+          <Link className="button-secondary" href="/jobs">
+            Back to jobs
+          </Link>
+        }
+        companyEmail={session.user.email}
+        companyName={session.user.name}
+        description="The job could not be loaded."
+        title="Job details"
+      >
+        <section className="inline-panel">
+          <h2>Job unavailable</h2>
+          <p className="muted">{detailState.message}</p>
+        </section>
+      </CompanyWorkspaceShell>
     );
   }
 
@@ -255,344 +263,638 @@ export const CompanyJobDetailPage = () => {
   const isDraft = job.status === "DRAFT";
   const isDirty = serializeJobFormValues(values) !== savedSnapshot;
   const validation = job.brief.validation;
+  const publishBlockedReason = !isDraft
+    ? "Published jobs are locked in this phase."
+    : isDirty
+      ? "Save the latest edits before validating or publishing."
+      : validation.score === null
+        ? "Run validation before publishing."
+        : validation.isStale
+          ? "Validation is outdated after recent edits."
+          : !validation.canPublish
+            ? "Resolve the flagged gaps until the score reaches the publish threshold."
+            : null;
+
   const escrowIntentId = latestIntent?.intentId ?? job.escrow?.providerReference ?? null;
   const canAssignFreelancer = job.status === "OPEN";
   const canCreateEscrowIntent = job.status === "ASSIGNED" && !escrowIntentId;
   const canSimulateFunding = job.status === "ASSIGNED" && Boolean(escrowIntentId);
   const canEditMilestones = job.status === "ESCROW_FUNDED";
-  const showMilestones = job.status === "ESCROW_FUNDED" || job.status === "IN_PROGRESS" || job.status === "COMPLETED" || job.status === "DISPUTED";
+  const showMilestones = job.status === "ESCROW_FUNDED" || job.status === "IN_PROGRESS";
 
-  // Handlers
   const updateField = (field: keyof JobFormValues, value: string) => {
-    setSaveError(null); setValidationError(null);
-    setValues(curr => curr ? { ...curr, [field]: value } : curr);
+    setSaveError(null);
+    setValidationError(null);
+    setValues((current) =>
+      current
+        ? {
+            ...current,
+            [field]: value
+          }
+        : current
+    );
   };
 
-  const updateMilestoneField = (index: number, field: keyof MilestoneFormValue, value: string) => {
+  const updateMilestoneField = (
+    index: number,
+    field: keyof MilestoneFormValue,
+    value: string
+  ) => {
     setMilestoneError(null);
-    setMilestoneValues(curr => curr.map((m, i) => i === index ? { ...m, [field]: value } : m));
+    setMilestoneValues((current) =>
+      current.map((milestone, milestoneIndex) =>
+        milestoneIndex === index
+          ? {
+              ...milestone,
+              [field]: value
+            }
+          : milestone
+      )
+    );
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault(); setIsSaving(true);
+  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaveError(null);
+    setValidationError(null);
+
+    let payload;
+
+    try {
+      payload = jobFormValuesToInput(values);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        setSaveError(error.issues[0]?.message ?? "Check the draft fields before saving.");
+        return;
+      }
+
+      setSaveError("Unable to prepare the draft payload.");
+      return;
+    }
+
+    setIsSaving(true);
+
     startTransition(async () => {
       try {
-        const response = await jobsApi.update(job.id, jobFormValuesToInput(values));
+        const response = await jobsApi.update(job.id, payload);
         syncJob(response.job);
-      } catch (err: any) { setSaveError(err.message || "Failed to save."); } finally { setIsSaving(false); }
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setSaveError(error.message);
+        } else {
+          setSaveError("Unable to save the draft right now.");
+        }
+      } finally {
+        setIsSaving(false);
+      }
     });
   };
 
   const handleValidate = () => {
+    setValidationError(null);
+    setSaveError(null);
     setIsValidating(true);
+
     startTransition(async () => {
-      try { const r = await jobsApi.validate(job.id); syncJob(r.job); } 
-      catch (err: any) { setValidationError(err.message); } finally { setIsValidating(false); }
+      try {
+        const response = await jobsApi.validate(job.id);
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setValidationError(error.message);
+        } else {
+          setValidationError("Unable to validate the brief right now.");
+        }
+      } finally {
+        setIsValidating(false);
+      }
     });
   };
 
   const handlePublish = () => {
+    setValidationError(null);
+    setSaveError(null);
     setIsPublishing(true);
+
     startTransition(async () => {
-      try { const r = await jobsApi.publish(job.id); syncJob(r.job); setActiveTab("overview"); } 
-      catch (err: any) { setValidationError(err.message); } finally { setIsPublishing(false); }
+      try {
+        const response = await jobsApi.publish(job.id);
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setValidationError(error.message);
+        } else {
+          setValidationError("Unable to publish the job right now.");
+        }
+      } finally {
+        setIsPublishing(false);
+      }
     });
   };
 
-  const handleAssignFreelancer = (id: string) => {
-    setAssigningFreelancerId(id);
+  const handleAssignFreelancer = (freelancerId: string) => {
+    setAssignmentError(null);
+    setAssigningFreelancerId(freelancerId);
+
     startTransition(async () => {
-      try { const r = await jobsApi.assign(job.id, { freelancerId: id }); syncJob(r.job); } 
-      catch (err: any) { setAssignmentError(err.message); } finally { setAssigningFreelancerId(null); }
+      try {
+        const response = await jobsApi.assign(job.id, {
+          freelancerId
+        });
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setAssignmentError(error.message);
+        } else {
+          setAssignmentError("Unable to assign the freelancer right now.");
+        }
+      } finally {
+        setAssigningFreelancerId(null);
+      }
     });
   };
 
   const handleCreateEscrowIntent = () => {
+    setFundingError(null);
     setIsCreatingIntent(true);
+
     startTransition(async () => {
-      try { const r = await jobsApi.createEscrowIntent(job.id); setLatestIntent(r.intent); } 
-      catch (err: any) { setFundingError(err.message); } finally { setIsCreatingIntent(false); }
+      try {
+        const response = await jobsApi.createEscrowIntent(job.id);
+        setLatestIntent(response.intent);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setFundingError(error.message);
+        } else {
+          setFundingError("Unable to create the mock payment intent right now.");
+        }
+      } finally {
+        setIsCreatingIntent(false);
+      }
     });
   };
 
   const handleSimulateFunding = () => {
+    if (!escrowIntentId) {
+      setFundingError("Create a mock payment intent before simulating payment success.");
+      return;
+    }
+
+    setFundingError(null);
     setIsSimulatingPayment(true);
+
     startTransition(async () => {
       try {
-        const r = await paymentsApi.simulateSuccess(escrowIntentId!, `mock_evt_${crypto.randomUUID()}`);
-        syncJob(r.job);
-        setLatestIntent(curr => curr ? { ...curr, status: "succeeded" } : null);
-      } catch (err: any) { setFundingError(err.message); } finally { setIsSimulatingPayment(false); }
+        const response = await paymentsApi.simulateSuccess(
+          escrowIntentId,
+          `mock_evt_${crypto.randomUUID()}`
+        );
+        syncJob(response.job);
+        setLatestIntent((current) =>
+          current
+            ? {
+                ...current,
+                status: "succeeded"
+              }
+            : current
+        );
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setFundingError(error.message);
+        } else {
+          setFundingError("Unable to simulate payment success right now.");
+        }
+      } finally {
+        setIsSimulatingPayment(false);
+      }
     });
   };
 
-  const handleSaveMilestones = (e: React.FormEvent) => {
-    e.preventDefault(); setIsSavingMilestones(true);
+  const handleApplyHalfSplit = () => {
+    setMilestoneError(null);
+    setMilestoneValues((current) => applyHalfSplit(job.budget, current));
+  };
+
+  const handleSaveMilestones = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMilestoneError(null);
+
+    let payload;
+
+    try {
+      payload = milestoneFormValuesToInput(milestoneValues);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        setMilestoneError(error.issues[0]?.message ?? "Check the milestone plan before saving.");
+        return;
+      }
+
+      setMilestoneError("Unable to prepare the milestone plan.");
+      return;
+    }
+
+    setIsSavingMilestones(true);
+
     startTransition(async () => {
-      try { const r = await jobsApi.saveMilestones(job.id, milestoneFormValuesToInput(milestoneValues)); syncJob(r.job); } 
-      catch (err: any) { setMilestoneError(err.message); } finally { setIsSavingMilestones(false); }
+      try {
+        const response = await jobsApi.saveMilestones(job.id, payload);
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setMilestoneError(error.message);
+        } else {
+          setMilestoneError("Unable to save the milestones right now.");
+        }
+      } finally {
+        setIsSavingMilestones(false);
+      }
     });
   };
 
-  const handleApproveMilestone = (id: string) => {
-    setActingReviewMilestoneId(id); setReviewAction("approve");
+  const updateRejectReason = (milestoneId: string, value: string) => {
+    setReviewError(null);
+    setRejectReasons((current) => ({
+      ...current,
+      [milestoneId]: value
+    }));
+  };
+
+  const handleApproveMilestone = (milestoneId: string) => {
+    setReviewError(null);
+    setActingReviewMilestoneId(milestoneId);
+    setReviewAction("approve");
+
     startTransition(async () => {
-      try { const r = await jobsApi.approveMilestone(job.id, id); syncJob(r.job); } 
-      catch (err: any) { setReviewError(err.message); } finally { setActingReviewMilestoneId(null); setReviewAction(null); }
+      try {
+        const response = await jobsApi.approveMilestone(job.id, milestoneId);
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setReviewError(error.message);
+        } else {
+          setReviewError("Unable to approve the milestone right now.");
+        }
+      } finally {
+        setActingReviewMilestoneId(null);
+        setReviewAction(null);
+      }
     });
   };
 
-  const handleRejectMilestone = (id: string) => {
-    const reason = rejectReasons[id]?.trim() ?? "";
-    if (reason.length < 10) { setReviewError("Add a specific rejection reason."); return; }
-    setActingReviewMilestoneId(id); setReviewAction("reject");
+  const handleRejectMilestone = (milestoneId: string) => {
+    const rejectionReason = rejectReasons[milestoneId]?.trim() ?? "";
+
+    if (rejectionReason.length < 10) {
+      setReviewError("Add a specific rejection reason before opening a dispute.");
+      return;
+    }
+
+    setReviewError(null);
+    setActingReviewMilestoneId(milestoneId);
+    setReviewAction("reject");
+
     startTransition(async () => {
-      try { const r = await jobsApi.rejectMilestone(job.id, id, { rejectionReason: reason }); syncJob(r.job); } 
-      catch (err: any) { setReviewError(err.message); } finally { setActingReviewMilestoneId(null); setReviewAction(null); }
+      try {
+        const response = await jobsApi.rejectMilestone(job.id, milestoneId, {
+          rejectionReason
+        });
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setReviewError(error.message);
+        } else {
+          setReviewError("Unable to reject the milestone right now.");
+        }
+      } finally {
+        setActingReviewMilestoneId(null);
+        setReviewAction(null);
+      }
+    });
+  };
+
+  const handleAutoReleaseCheck = (milestoneId: string) => {
+    setReviewError(null);
+    setActingReviewMilestoneId(milestoneId);
+    setReviewAction("auto-release");
+
+    startTransition(async () => {
+      try {
+        const response = await jobsApi.runAutoReleaseCheck(job.id, milestoneId);
+        syncJob(response.job);
+      } catch (error) {
+        if (error instanceof ApiRequestError) {
+          setReviewError(error.message);
+        } else {
+          setReviewError("Unable to run the auto-release check right now.");
+        }
+      } finally {
+        setActingReviewMilestoneId(null);
+        setReviewAction(null);
+      }
     });
   };
 
   return (
-    <WorkspaceLayout
-      user={session.user}
+    <CompanyWorkspaceShell
+      actions={
+        <>
+          <Link className="button-secondary" href="/jobs">
+            Back to jobs
+          </Link>
+          <Link className="button-secondary" href="/jobs/new">
+            New draft
+          </Link>
+        </>
+      }
+      companyEmail={session.user.email}
+      companyName={session.user.name}
+      description="Move the job from publish to assignment, escrow funding, and milestone setup in one controlled company workflow."
       title={job.title}
-      subtitle={`Manage your project workflow and escrow state.`}
     >
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginBottom: 24 }}>
-        <Link className="button-secondary" href="/jobs">Back to History</Link>
-        <Link className="button-primary" style={{ backgroundColor: companyAccent }} href="/jobs/new">Post New Job</Link>
-      </div>
+      <EscrowStatusHeader budget={job.budget} escrow={job.escrow} role="company" />
 
-      <EscrowMonitor job={job} />
-
-      <nav style={{ display: "flex", gap: 24, marginBottom: 32, borderBottom: "1px solid #E5E7EB", paddingBottom: 2 }}>
-        {(["overview", "milestones", "review"] as ActiveTab[]).map(tab => (
-          <button 
-            key={tab} 
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: "8px 4px", border: "none", background: "none", cursor: "pointer",
-              fontSize: 14, fontWeight: 600, color: activeTab === tab ? companyAccent : "#9CA3AF",
-              borderBottom: activeTab === tab ? `2px solid ${companyAccent}` : "2px solid transparent",
-              textTransform: "capitalize", transition: "all 0.2s"
-            }}
-          >
-            {tab}
-            {tab === "review" && job.milestones.filter(m => m.status === "SUBMITTED" || m.status === "UNDER_REVIEW").length > 0 && (
-              <span style={{ marginLeft: 6, background: "#EF4444", color: "white", padding: "1px 6px", borderRadius: 10, fontSize: 10 }}>
-                {job.milestones.filter(m => m.status === "SUBMITTED" || m.status === "UNDER_REVIEW").length}
-              </span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      <div style={{ minHeight: 400 }}>
-        {/* ── OVERVIEW TAB ── */}
-        {activeTab === "overview" && (
-          <div className="workspace-grid">
-            <section className="inline-panel">
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                <h3 style={{ margin: 0 }}>Project Brief</h3>
-                <span style={{ fontSize: 12, color: "#6B7280" }}>Status: <strong>{job.status}</strong></span>
+      <div className="workspace-grid">
+        <div className="workspace-column-main">
+          <section className="inline-panel">
+            <div className="panel-heading-row">
+              <div>
+                <p className="eyebrow">Brief source</p>
+                <h2>{isDraft ? "Edit draft" : "Published brief"}</h2>
               </div>
-              <JobDraftForm
-                disabled={!isDraft} errorMessage={saveError} isSubmitting={isSaving}
-                onChange={updateField} onSubmit={handleSave} submitLabel="Save Project Brief" values={values}
-                footer={isDraft ? <span className="helper-copy">Edits require re-validation before publishing.</span> : null}
+              {isDirty ? <span className="status-chip">Unsaved changes</span> : null}
+            </div>
+
+            {!isDraft ? (
+              <p className="muted">
+                This job is already published. The brief stays locked so assignment and funding happen
+                against the same validated posting.
+              </p>
+            ) : null}
+
+            <JobDraftForm
+              disabled={!isDraft}
+              errorMessage={saveError}
+              footer={
+                isDraft ? (
+                  <span className="helper-copy">
+                    Saving after validation will mark the existing validation as outdated.
+                  </span>
+                ) : (
+                  <span className="helper-copy">
+                    The brief is now read-only while the company completes assignment and funding.
+                  </span>
+                )
+              }
+              isSubmitting={isSaving}
+              onChange={updateField}
+              onSubmit={handleSave}
+              submitLabel="Save draft"
+              values={values}
+            />
+          </section>
+
+          {job.milestones.length > 0 ? (
+            <section className="inline-panel">
+              <div className="panel-heading-row">
+                <div>
+                  <p className="eyebrow">Milestone Progress</p>
+                  <h2>Vertical Timeline</h2>
+                </div>
+              </div>
+              <div className="card-stack">
+                {job.milestones.map((milestone) => (
+                  <article className="list-card" key={milestone.id}>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "50%",
+                          backgroundColor: milestone.status === "RELEASED" ? "#0F6E56" : "#E5E7EB",
+                          color: milestone.status === "RELEASED" ? "#fff" : "#6B7280",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        {milestone.sequence}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <h3 style={{ margin: 0, fontSize: "14px" }}>{milestone.title}</h3>
+                          <span className="status-chip">{milestone.status}</span>
+                        </div>
+                        <p className="muted" style={{ margin: "2px 0 0 0", fontSize: "12px" }}>
+                          {formatCurrency(milestone.amount)} · Due {formatDate(milestone.dueAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+
+        <div className="workspace-column-sidebar">
+          <aside className="inline-panel validation-panel">
+            <p className="eyebrow">Validation</p>
+            <h2>
+              {validation.score === null ? "Not validated yet" : `${validation.score}/100 brief score`}
+            </h2>
+            <p className="muted">
+              {validation.summary ?? "Run validation to see the brief score and feedback."}
+            </p>
+
+            <div className="validation-meta">
+              <div>
+                <span className="panel-label">Last validated</span>
+                <strong>{formatDate(validation.lastValidatedAt)}</strong>
+              </div>
+              <div>
+                <span className="panel-label">State</span>
+                <strong>{validation.isStale ? "Outdated" : "Fresh"}</strong>
+              </div>
+            </div>
+
+            {publishBlockedReason ? <p className="callout-warning">{publishBlockedReason}</p> : null}
+            {validationError ? <p className="form-error">{validationError}</p> : null}
+
+            <div className="action-row">
+              <button
+                className="button-secondary"
+                disabled={!isDraft || isDirty || isSaving || isValidating || isPublishing}
+                onClick={handleValidate}
+                type="button"
+              >
+                {isValidating ? "Validating..." : "Validate brief"}
+              </button>
+              <button
+                className="button-primary"
+                disabled={Boolean(publishBlockedReason) || isSaving || isValidating || isPublishing}
+                onClick={handlePublish}
+                type="button"
+              >
+                {isPublishing ? "Publishing..." : "Publish job"}
+              </button>
+            </div>
+          </aside>
+
+          {/* Step 1: Assignment */}
+          <section className="inline-panel">
+            <div className="panel-heading-row">
+              <div>
+                <p className="eyebrow">Step 1</p>
+                <h2>Assign freelancer</h2>
+              </div>
+            </div>
+
+            {job.assignedFreelancer ? (
+              <div className="status-panel">
+                <span className="panel-label">Assigned to</span>
+                <strong>{job.assignedFreelancer.displayName}</strong>
+                <p className="muted" style={{ fontSize: "12px" }}>
+                  {job.assignedFreelancer.email}
+                </p>
+              </div>
+            ) : canAssignFreelancer ? (
+              <div className="card-stack">
+                {freelancerState.status === "ready" ? (
+                  freelancerState.freelancers.map((f) => (
+                    <article className="status-panel" key={f.id} style={{ padding: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <strong>{f.displayName}</strong>
+                          <p className="muted" style={{ fontSize: "11px", margin: 0 }}>{f.skills.slice(0, 3).join(", ")}</p>
+                        </div>
+                        <button
+                          className="button-primary"
+                          disabled={assigningFreelancerId !== null}
+                          onClick={() => handleAssignFreelancer(f.id)}
+                          style={{ padding: "4px 10px", fontSize: "12px" }}
+                          type="button"
+                        >
+                          Assign
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <p className="muted">Loading freelancers...</p>
+                )}
+              </div>
+            ) : (
+              <p className="muted">Complete validation to assign.</p>
+            )}
+            {assignmentError ? <p className="form-error">{assignmentError}</p> : null}
+          </section>
+
+          {/* Step 2: Escrow */}
+          <section className="inline-panel">
+            <div className="panel-heading-row">
+              <div>
+                <p className="eyebrow">Step 2</p>
+                <h2>Escrow Funding</h2>
+              </div>
+            </div>
+            
+            <div className="status-panel">
+              <span className="panel-label">Status</span>
+              <strong>{job.escrow?.status ?? "UNFUNDED"}</strong>
+            </div>
+
+            {job.status === "ASSIGNED" && (
+              <div className="action-row" style={{ marginTop: "12px" }}>
+                <button
+                  className="button-secondary"
+                  disabled={!canCreateEscrowIntent || isCreatingIntent}
+                  onClick={handleCreateEscrowIntent}
+                  style={{ flex: 1 }}
+                  type="button"
+                >
+                  {isCreatingIntent ? "..." : "Setup Payment"}
+                </button>
+                <button
+                  className="button-primary"
+                  disabled={!canSimulateFunding || isSimulatingPayment}
+                  onClick={handleSimulateFunding}
+                  style={{ flex: 1 }}
+                  type="button"
+                >
+                  {isSimulatingPayment ? "Funding..." : "Simulate Pay"}
+                </button>
+              </div>
+            )}
+            {fundingError ? <p className="form-error">{fundingError}</p> : null}
+          </section>
+
+          {/* Step 3: Milestones */}
+          {showMilestones && (
+            <section className="inline-panel">
+              <div className="panel-heading-row">
+                <div>
+                  <p className="eyebrow">Step 3</p>
+                  <h2>Milestone Setup</h2>
+                </div>
+              </div>
+              <MilestonePlanForm
+                disabled={!canEditMilestones}
+                errorMessage={milestoneError}
+                isSubmitting={isSavingMilestones}
+                milestones={milestoneValues}
+                onChange={updateMilestoneField}
+                onSubmit={handleSaveMilestones}
+                totalBudget={job.budget}
               />
             </section>
+          )}
 
-            <aside>
-              <section className="inline-panel" style={{ marginBottom: 24 }}>
-                <p className="eyebrow">Brief Validation</p>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-                  <h2 style={{ margin: 0 }}>{validation.score === null ? "--" : `${validation.score}%`}</h2>
-                  <span style={{ fontSize: 14, color: "#6B7280" }}>Quality Score</span>
-                </div>
-                {validation.summary && <p style={{ fontSize: 14, lineHeight: 1.5, color: "#4B5563", marginBottom: 16 }}>{validation.summary}</p>}
-                
-                <div className="action-row" style={{ marginTop: 20 }}>
-                  <button className="button-secondary" disabled={!isDraft || isSaving || isValidating} onClick={handleValidate} style={{ flex: 1 }}>
-                    {isValidating ? "Analyzing..." : "Run AI Validation"}
-                  </button>
-                  {isDraft && (
-                    <button className="button-primary" style={{ backgroundColor: companyAccent, flex: 1 }} 
-                            disabled={!validation.canPublish || isSaving || isPublishing} onClick={handlePublish}>
-                      {isPublishing ? "Publishing..." : "Go Live"}
-                    </button>
-                  )}
-                </div>
-                {!validation.canPublish && isDraft && validation.score !== null && (
-                  <p style={{ fontSize: 12, color: "#DC2626", marginTop: 12, background: "#FEF2F2", padding: 10, borderRadius: 8 }}>
-                    Score must be at least 70% to publish. Address the gaps below.
-                  </p>
-                )}
-              </section>
-
-              {job.assignedFreelancer ? (
-                <section className="inline-panel">
-                  <h3 style={{ fontSize: 16, marginBottom: 16 }}>Assigned Talent</h3>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 48, height: 48, borderRadius: 12, background: companyAccent + "15", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>👤</div>
-                    <div>
-                      <strong style={{ display: "block" }}>{job.assignedFreelancer.displayName}</strong>
-                      <span style={{ fontSize: 13, color: "#6B7280" }}>Assigned on {formatDate(job.assignedAt)}</span>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: 16, padding: "10px", background: "#F9FAFB", borderRadius: 8, fontSize: 13 }}>
-                    {job.assignedFreelancer.skills.slice(0, 3).join(", ")}
-                  </div>
-                </section>
-              ) : job.status === "OPEN" ? (
-                <section className="inline-panel">
-                  <h3 style={{ fontSize: 16, marginBottom: 12 }}>Pending Assignment</h3>
-                  <p className="muted" style={{ fontSize: 14, marginBottom: 16 }}>Candidates will appear here after they apply or are invited.</p>
-                  <Link href="/company/requests" className="button-secondary" style={{ width: "100%", textAlign: "center", display: "block" }}>Review Applications</Link>
-                </section>
-              ) : null}
-            </aside>
-          </div>
-        )}
-
-        {/* ── MILESTONES TAB ── */}
-        {activeTab === "milestones" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Step 4: Reviews */}
+          {job.milestones.some(m => m.latestSubmission) && (
             <section className="inline-panel">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div className="panel-heading-row">
                 <div>
-                  <h2 style={{ margin: 0 }}>Payment & Escrow Setup</h2>
-                  <p className="muted" style={{ fontSize: 14 }}>Fund the project and define the payment release schedule.</p>
+                  <p className="eyebrow">Step 4</p>
+                  <h2>Active Reviews</h2>
                 </div>
-                {job.status === "ASSIGNED" && (
-                  <div style={{ background: "#EFF6FF", border: "1px solid #DBEAFE", padding: "12px 16px", borderRadius: 12 }}>
-                    <p style={{ margin: "0 0 8px", fontSize: 13, color: "#1E40AF", fontWeight: 600 }}>Action Required: Fund Escrow</p>
-                    <div className="action-row" style={{ marginBottom: 0 }}>
-                      <button className="button-secondary" disabled={!canCreateEscrowIntent || isCreatingIntent} onClick={handleCreateEscrowIntent}>
-                        {isCreatingIntent ? "Preparing..." : "Setup Payment"}
-                      </button>
-                      <button className="button-primary" style={{ backgroundColor: companyAccent }} 
-                              disabled={!canSimulateFunding || isSimulatingPayment} onClick={handleSimulateFunding}>
-                        {isSimulatingPayment ? "Funding..." : "Confirm Funding"}
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-
-              {showMilestones ? (
-                <MilestonePlanForm
-                  disabled={!canEditMilestones} errorMessage={milestoneError}
-                  isSubmitting={isSavingMilestones} milestones={milestoneValues}
-                  onChange={updateMilestoneField} onSubmit={handleSaveMilestones} totalBudget={job.budget}
-                  onApplyHalfSplit={job.milestoneCount === 2 && canEditMilestones ? () => setMilestoneValues(curr => applyHalfSplit(job.budget, curr)) : undefined}
-                />
-              ) : (
-                <div style={{ textAlign: "center", padding: "60px 20px", background: "#F9FAFB", borderRadius: 16 }}>
-                  <p style={{ color: "#6B7280" }}>Escrow must be fully funded before you can define the milestone schedule.</p>
-                </div>
-              )}
-            </section>
-          </div>
-        )}
-
-        {/* ── REVIEW TAB ── */}
-        {activeTab === "review" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            <section className="inline-panel">
-              <h2 style={{ marginBottom: 8 }}>Deliverable Management</h2>
-              <p className="muted" style={{ fontSize: 14, marginBottom: 24 }}>Approve submissions to release funds or request revisions.</p>
-              
-              {reviewError && <p className="form-error">{reviewError}</p>}
-              
+              {reviewError ? <p className="form-error">{reviewError}</p> : null}
               <div className="card-stack">
-                {job.milestones.length === 0 ? (
-                  <p className="muted">No milestones defined yet.</p>
-                ) : (
-                  job.milestones.map((m) => {
-                    const submission = m.latestSubmission;
-                    const isActing = actingReviewMilestoneId === m.id;
-                    
-                    return (
-                      <article key={m.id} className="list-card" style={{ 
-                        borderLeft: `4px solid ${m.status === "RELEASED" ? "#059669" : m.status === "UNDER_REVIEW" ? companyAccent : "#E5E7EB"}`,
-                        padding: 20
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: companyAccent, textTransform: "uppercase" }}>Milestone {m.sequence}</span>
-                              <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 4, background: "#F3F4F6", color: "#4B5563", fontWeight: 600 }}>{m.status}</span>
-                            </div>
-                            <h3 style={{ margin: "0 0 4px" }}>{m.title}</h3>
-                            <p style={{ margin: 0, fontSize: 14, color: "#6B7280" }}>{formatCurrency(m.amount)} · Due {formatDate(m.dueAt)}</p>
-                          </div>
-
-                          <div style={{ textAlign: "right" }}>
-                            {m.status === "UNDER_REVIEW" && (
-                              <div style={{ display: "flex", gap: 10 }}>
-                                <button className="button-secondary" disabled={isActing} onClick={() => { /* scroll to reject section */ }}>Reject</button>
-                                <button className="button-primary" style={{ backgroundColor: companyAccent }} disabled={isActing} 
-                                        onClick={() => handleApproveMilestone(m.id)}>
-                                  {isActing && reviewAction === "approve" ? "Releasing..." : "Approve & Pay"}
-                                </button>
-                              </div>
-                            )}
-                            {m.status === "RELEASED" && (
-                              <span style={{ color: "#059669", fontWeight: 600, fontSize: 14 }}>✓ Funds Released</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{ marginTop: 20, padding: 16, background: "#F9FAFB", borderRadius: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                          <div>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Submission</span>
-                            {submission ? (
-                              <div>
-                                <strong style={{ display: "block", fontSize: 14 }}>{submission.fileName}</strong>
-                                <span style={{ fontSize: 12, color: "#6B7280" }}>{submission.fileFormat?.toUpperCase()} · Revision {submission.revision}</span>
-                              </div>
-                            ) : (
-                              <p style={{ margin: 0, fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>No work submitted yet.</p>
-                            )}
-                          </div>
-                          <div>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Review Deadline</span>
-                            <strong style={{ display: "block", fontSize: 14 }}>{m.reviewDueAt ? formatDate(m.reviewDueAt) : "N/A"}</strong>
-                            <span style={{ fontSize: 12, color: "#6B7280" }}>Auto-releases if not reviewed</span>
-                          </div>
-                        </div>
-
-                        {m.status === "UNDER_REVIEW" && (
-                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px dashed #E5E7EB" }}>
-                            <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Rejection Reason (only if rejecting)</label>
-                            <textarea 
-                              placeholder="Provide detailed feedback on what needs to be changed..."
-                              style={{ width: "100%", minHeight: 80, padding: 12, borderRadius: 8, border: "1px solid #D1D5DB", fontSize: 14 }}
-                              value={rejectReasons[m.id] ?? ""}
-                              onChange={(e) =>
-                                setRejectReasons((previous) => ({
-                                  ...previous,
-                                  [m.id]: e.target.value
-                                }))
-                              }
-                            />
-                            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-                              <button className="button-secondary" style={{ color: "#DC2626", borderColor: "#DC2626" }} 
-                                      disabled={isActing} onClick={() => handleRejectMilestone(m.id)}>
-                                {isActing && reviewAction === "reject" ? "Processing..." : "Reject Submission"}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })
-                )}
+                {job.milestones.filter(m => m.status === "UNDER_REVIEW").map(m => {
+                   const isActing = actingReviewMilestoneId === m.id;
+                   return (
+                    <article className="list-card" key={m.id} style={{ padding: "12px" }}>
+                      <strong>{m.title}</strong>
+                      <p className="muted" style={{ fontSize: "12px", marginBottom: "10px" }}>{m.latestSubmission?.fileName}</p>
+                      <div className="action-row">
+                        <button
+                          className="button-primary"
+                          disabled={isActing}
+                          onClick={() => handleApproveMilestone(m.id)}
+                          style={{ padding: "6px 10px", fontSize: "12px" }}
+                          type="button"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="button-secondary"
+                          disabled={isActing}
+                          onClick={() => handleAutoReleaseCheck(m.id)}
+                          style={{ padding: "6px 10px", fontSize: "12px" }}
+                          type="button"
+                        >
+                          Auto
+                        </button>
+                      </div>
+                    </article>
+                   );
+                })}
               </div>
             </section>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </WorkspaceLayout>
   );
