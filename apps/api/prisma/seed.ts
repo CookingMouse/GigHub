@@ -464,6 +464,12 @@ const createDemoCompletedJob = async (companyId: string, freelancerId: string) =
       glmNarrative:
         "Demo mock GLM summary: Aina Musa earned RM2,400.00 from one released escrow milestone in April 2026.",
       status: "GENERATED",
+      platformServiceFee: "0",
+      estimatedOperatingExpenses: "0",
+      netIncome: "2400.00",
+      socsoProvisioning: "0",
+      epfProvisioning: "0",
+      amountAfterStatutory: "2400.00",
       lineItems: {
         create: {
           milestoneId: job.milestones[0].id,

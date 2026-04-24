@@ -11,14 +11,29 @@ import {
   getCompanyProfile,
   getPublicCompanyProfile,
   getFreelancerProfile,
+  getFreelancerResume,
   updateCompanyProfile,
   updateFreelancerProfile,
-  uploadFreelancerResume
+  uploadFreelancerResume,
+  listPublicCompanies
 } from "../services/profile-service";
 
 export const profileRouter = Router();
 
 profileRouter.use(requireAuth);
+
+profileRouter.get(
+  "/companies",
+  asyncHandler(async (request, response) => {
+    const companies = await listPublicCompanies();
+
+    response.json({
+      data: {
+        companies
+      }
+    });
+  })
+);
 
 profileRouter.get(
   "/freelancer",
@@ -64,6 +79,21 @@ profileRouter.get(
   })
 );
 
+profileRouter.get(
+  "/freelancers/:freelancerId",
+  asyncHandler(async (request, response) => {
+    const profile = await getPublicFreelancerProfile(
+      Array.isArray(request.params.freelancerId) ? request.params.freelancerId[0] : request.params.freelancerId
+    );
+
+    response.json({
+      data: {
+        profile
+      }
+    });
+  })
+);
+
 profileRouter.post(
   "/freelancer/resume",
   requireRole("freelancer"),
@@ -76,6 +106,29 @@ profileRouter.post(
         profile
       }
     });
+  })
+);
+
+profileRouter.get(
+  "/freelancers/:freelancerId/resume",
+  asyncHandler(async (request, response) => {
+    const freelancerId = Array.isArray(request.params.freelancerId)
+      ? request.params.freelancerId[0]
+      : request.params.freelancerId;
+
+    // Authorization: Only freelancer or company can view resumes
+    if (request.auth?.role !== "freelancer" && request.auth?.role !== "company") {
+      return response.status(403).json({
+        code: "FORBIDDEN",
+        message: "Only freelancers and companies can view resumes."
+      });
+    }
+
+    const { buffer, fileName } = await getFreelancerResume(freelancerId);
+
+    response.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    response.setHeader("Content-Type", "application/pdf");
+    response.send(buffer);
   })
 );
 

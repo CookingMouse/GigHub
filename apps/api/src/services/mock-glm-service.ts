@@ -54,6 +54,13 @@ export type IncomeNarrativeResult = {
   narrative: string;
 };
 
+export type ResumeParsingResult = {
+  skills: string[];
+  experienceYears: number;
+  headline: string;
+  bio: string;
+};
+
 const clampScore = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
 
 const readForceOutcome = (fileName: string, notes: string | null) => {
@@ -222,6 +229,20 @@ export const mockGLMProvider = {
       } completed job(s). Estimated average monthly income is ${formatter.format(
         input.avgMonthlyIncome
       )}.${categories} This statement is generated from released escrow records and is suitable for income review workflows.`
+    };
+  },
+
+  parseResume(text: string): ResumeParsingResult {
+    // Mock parsing logic based on text content
+    const lowerText = text.toLowerCase();
+    const skills = ["TypeScript", "React", "Node.js", "SQL", "Project Management", "UI/UX Design"];
+    const foundSkills = skills.filter((skill) => lowerText.includes(skill.toLowerCase()));
+
+    return {
+      skills: foundSkills.length > 0 ? foundSkills : ["General Freelancing"],
+      experienceYears: lowerText.includes("senior") ? 8 : lowerText.includes("junior") ? 1 : 4,
+      headline: "Professional Freelancer",
+      bio: "An experienced freelancer with a passion for delivering high-quality work."
     };
   }
 };

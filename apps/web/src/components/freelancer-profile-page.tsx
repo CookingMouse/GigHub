@@ -48,7 +48,10 @@ const icons = {
   briefcase: "M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0-2 2v16",
   globe: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z",
   mail: "M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M22 6l-10 7L2 6",
-  copy: "M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+  copy: "M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1",
+  file: "M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z M13 2v7h7",
+  download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+  loader: "M12 2v4 M12 18v4 M4.93 4.93l2.83 2.83l14.14 14.14 M18.36 5.64l-2.82 2.82"
 };
 
 // ── Mock data for fields not yet in API ──────────────────────────────────────
@@ -382,6 +385,7 @@ export const FreelancerProfilePage = () => {
   const [modal, setModal] = useState<"bio" | "skills" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const loadProfile = async () => {
     try {
@@ -439,6 +443,38 @@ export const FreelancerProfilePage = () => {
   const handleUpdateProfile = (field: string, value: unknown) => {
     // TODO: Wire up API PATCH call here when ready
     console.log(`Update ${field}:`, value);
+  };
+
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const response = await profileApi.uploadFreelancerResume(file);
+      setState({ status: "ready", profile: response.profile });
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : "Failed to upload resume.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownloadResume = async () => {
+    if (state.status !== "ready") return;
+    try {
+      const { blob, fileName } = await profileApi.downloadFreelancerResume(session.user.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : "Failed to download resume.");
+    }
   };
 
   return (
@@ -628,6 +664,122 @@ export const FreelancerProfilePage = () => {
                         {session.user.email}
                       </span>
                     </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Resume */}
+              <Card>
+                <div style={{ padding: "18px 20px" }}>
+                  <SectionLabel>Resume</SectionLabel>
+                  {state.profile.resumeFileName ? (
+                    <div
+                      style={{
+                        background: T.bg,
+                        border: `1px solid ${T.border}`,
+                        borderRadius: 12,
+                        padding: "12px 14px",
+                        marginBottom: 12
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <div style={{ color: T.accent }}>
+                          <Icon d={icons.file} size={20} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: T.text,
+                              margin: 0,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis"
+                            }}
+                          >
+                            {state.profile.resumeFileName}
+                          </p>
+                          <p style={{ fontSize: 11, color: T.muted, margin: 0 }}>
+                            Uploaded{" "}
+                            {state.profile.resumeUploadedAt
+                              ? new Date(state.profile.resumeUploadedAt).toLocaleDateString()
+                              : "Recently"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleDownloadResume}
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: T.accent,
+                          background: "#fff",
+                          border: `1px solid ${T.accent}30`,
+                          borderRadius: 8,
+                          padding: "6px 0",
+                          cursor: "pointer"
+                        }}
+                      >
+                        <Icon d={icons.download} size={14} />
+                        Download
+                      </button>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 12, color: T.muted, marginBottom: 12 }}>
+                      No resume uploaded yet. GLM can help fill your profile if you upload one.
+                    </p>
+                  )}
+
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="file"
+                      accept=".pdf,.docx"
+                      onChange={handleResumeUpload}
+                      disabled={isUploading}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        opacity: 0,
+                        cursor: isUploading ? "not-allowed" : "pointer"
+                      }}
+                    />
+                    <button
+                      disabled={isUploading}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#fff",
+                        background: isUploading ? T.muted : T.accent,
+                        border: "none",
+                        borderRadius: 10,
+                        padding: "10px 0",
+                        cursor: isUploading ? "not-allowed" : "pointer",
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Icon d={icons.loader} size={14} />
+                          GLM is reading...
+                        </>
+                      ) : (
+                        <>
+                          <Icon d={icons.edit} size={14} />
+                          {state.profile.resumeFileName ? "Replace Resume" : "Upload Resume"}
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               </Card>

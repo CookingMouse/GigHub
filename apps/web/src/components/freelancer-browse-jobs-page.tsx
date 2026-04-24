@@ -177,29 +177,31 @@ export const FreelancerBrowseJobsPage = () => {
                 <p className="browse-job-section-label">Browse controls</p>
                 <h2 className="browse-job-section-title">Search, sort, and filter</h2>
               </div>
-              <button className="button-secondary" onClick={clearFilters} type="button">
+              <button className="button-secondary" onClick={clearFilters} type="button" style={{ fontSize: "12px", padding: "6px 14px" }}>
                 Clear filters
               </button>
             </div>
 
-            <div className="browse-job-filter-grid">
-              <label className="field" htmlFor="browse-job-search">
-                <span>Search</span>
+            <div className="browse-job-filter-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
+              <label className="field" htmlFor="browse-job-search" style={{ marginBottom: 0 }}>
+                <span style={{ fontSize: "11px" }}>Search</span>
                 <input
                   id="browse-job-search"
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder="Search job title or company"
                   value={searchTerm}
+                  style={{ fontSize: "13px", padding: "8px 12px", minHeight: "36px" }}
                 />
               </label>
 
-              <label className="field" htmlFor="browse-job-sort">
-                <span>Sort</span>
+              <label className="field" htmlFor="browse-job-sort" style={{ marginBottom: 0 }}>
+                <span style={{ fontSize: "11px" }}>Sort</span>
                 <select
                   className="field-select"
                   id="browse-job-sort"
                   onChange={(event) => setSortValue(event.target.value as SortValue)}
                   value={sortValue}
+                  style={{ fontSize: "13px", padding: "8px 12px", minHeight: "36px" }}
                 >
                   <option value="newest">Newest</option>
                   <option value="budget-desc">Highest wages</option>
@@ -207,8 +209,8 @@ export const FreelancerBrowseJobsPage = () => {
                 </select>
               </label>
 
-              <label className="field" htmlFor="browse-job-min-budget">
-                <span>Min wages</span>
+              <label className="field" htmlFor="browse-job-min-budget" style={{ marginBottom: 0 }}>
+                <span style={{ fontSize: "11px" }}>Min wages</span>
                 <input
                   id="browse-job-min-budget"
                   inputMode="numeric"
@@ -217,11 +219,12 @@ export const FreelancerBrowseJobsPage = () => {
                   placeholder="0"
                   type="number"
                   value={minBudget}
+                  style={{ fontSize: "13px", padding: "8px 12px", minHeight: "36px" }}
                 />
               </label>
 
-              <label className="field" htmlFor="browse-job-max-budget">
-                <span>Max wages</span>
+              <label className="field" htmlFor="browse-job-max-budget" style={{ marginBottom: 0 }}>
+                <span style={{ fontSize: "11px" }}>Max wages</span>
                 <input
                   id="browse-job-max-budget"
                   inputMode="numeric"
@@ -230,6 +233,7 @@ export const FreelancerBrowseJobsPage = () => {
                   placeholder="No limit"
                   type="number"
                   value={maxBudget}
+                  style={{ fontSize: "13px", padding: "8px 12px", minHeight: "36px" }}
                 />
               </label>
             </div>
@@ -255,18 +259,18 @@ export const FreelancerBrowseJobsPage = () => {
             ) : null}
 
             {filteredJobs.length > 0 ? (
-              <div className="card-stack">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
                 {filteredJobs.map((job) => {
                   const application = applicationByJobId.get(job.id);
                   const isApplied = Boolean(application);
 
                   return (
-                    <article className="status-panel browse-job-card" key={job.id}>
-                      <div className="list-card-header">
-                        <div>
-                          <p className="browse-job-company">{job.companyName}</p>
-                          <h3 className="browse-job-card-title">{job.title}</h3>
-                          <p className="browse-job-card-meta">
+                    <article className="status-panel browse-job-card" key={job.id} style={{ display: "flex", flexDirection: "column", padding: "16px", borderRadius: "12px" }}>
+                      <div className="list-card-header" style={{ marginBottom: "12px" }}>
+                        <div style={{ flex: 1 }}>
+                          <p className="browse-job-company" style={{ fontSize: "12px", margin: "0 0 4px 0" }}>{job.companyName}</p>
+                          <h3 className="browse-job-card-title" style={{ fontSize: "15px", fontWeight: 600, margin: "0 0 4px 0", lineHeight: 1.3 }}>{job.title}</h3>
+                          <p className="browse-job-card-meta" style={{ fontSize: "11px", color: "#9CA3AF", margin: 0 }}>
                             {job.publishedAt ? `Published ${formatDate(job.publishedAt)}` : "Published recently"}
                           </p>
                         </div>
@@ -275,23 +279,24 @@ export const FreelancerBrowseJobsPage = () => {
                           <span
                             className="browse-job-application-status"
                             data-status={application?.status}
+                            style={{ fontSize: "11px", whiteSpace: "nowrap", marginLeft: "12px" }}
                           >
                             Application {toSentenceCase(application!.status)}
                           </span>
                         ) : (
-                          <span className="browse-job-open-status">Open now</span>
+                          <span className="browse-job-open-status" style={{ fontSize: "11px", whiteSpace: "nowrap", marginLeft: "12px" }}>Open now</span>
                         )}
                       </div>
 
                       {job.description && (
-                        <div className="browse-job-description-wrapper">
-                          <p className="browse-job-description">
+                        <div className="browse-job-description-wrapper" style={{ marginBottom: "12px" }}>
+                          <p className="browse-job-description" style={{ fontSize: "12px", color: "#6B7280", lineHeight: 1.5, margin: 0 }}>
                             {expandedDescriptions.has(job.id)
                               ? job.description
-                              : job.description.length > 150
-                                ? `${job.description.substring(0, 150)}...`
+                              : job.description.length > 100
+                                ? `${job.description.substring(0, 100)}...`
                                 : job.description}
-                            {job.description.length > 150 && (
+                            {job.description.length > 100 && (
                               <button
                                 className="browse-job-description-toggle"
                                 type="button"
@@ -306,43 +311,45 @@ export const FreelancerBrowseJobsPage = () => {
                                     return next;
                                   });
                                 }}
+                                style={{ fontSize: "11px", fontWeight: 600, color: "#0F6E56", background: "none", border: "none", cursor: "pointer", padding: "2px 4px", marginLeft: "4px" }}
                               >
-                                {expandedDescriptions.has(job.id) ? "See less" : "See more"}
+                                {expandedDescriptions.has(job.id) ? "less" : "more"}
                               </button>
                             )}
                           </p>
                         </div>
                       )}
 
-                      <div className="browse-job-meta">
-                        <p>
-                          <span className="browse-job-meta-label">Wages</span>
-                          <strong className="browse-job-meta-value dashboard-mono">{formatCurrency(job.budget)}</strong>
+                      <div className="browse-job-meta" style={{ display: "flex", gap: "16px", fontSize: "12px", marginBottom: "12px", paddingBottom: "12px", borderBottom: "1px solid #E5E7EB" }}>
+                        <p style={{ margin: 0 }}>
+                          <span className="browse-job-meta-label" style={{ color: "#9CA3AF", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Wages</span>
+                          <strong className="browse-job-meta-value dashboard-mono" style={{ fontSize: "14px", fontFamily: "'DM Mono', monospace" }}>{formatCurrency(job.budget)}</strong>
                         </p>
-                        <p>
-                          <span className="browse-job-meta-label">Milestones</span>
-                          <strong className="browse-job-meta-value">{job.milestoneCount}</strong>
+                        <p style={{ margin: 0 }}>
+                          <span className="browse-job-meta-label" style={{ color: "#9CA3AF", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Milestones</span>
+                          <strong className="browse-job-meta-value" style={{ fontSize: "14px" }}>{job.milestoneCount}</strong>
                         </p>
                         {application ? (
-                          <p>
-                            <span className="browse-job-meta-label">Applied</span>
-                            <strong className="browse-job-meta-value">{formatDate(application.appliedAt)}</strong>
+                          <p style={{ margin: 0 }}>
+                            <span className="browse-job-meta-label" style={{ color: "#9CA3AF", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", display: "block" }}>Applied</span>
+                            <strong className="browse-job-meta-value" style={{ fontSize: "14px" }}>{formatDate(application.appliedAt)}</strong>
                           </p>
                         ) : null}
                       </div>
 
-                      <p className="browse-job-supporting-copy">
+                      <p className="browse-job-supporting-copy" style={{ fontSize: "12px", color: "#6B7280", marginBottom: "12px", margin: 0 }}>
                         {application
-                          ? `Your current application status is ${toSentenceCase(application.status)}.`
-                          : "Apply directly from this browse page."}
+                          ? `Your application status is ${toSentenceCase(application.status)}.`
+                          : "Apply to this job."}
                       </p>
 
-                      <div className="action-row">
+                      <div className="action-row" style={{ marginTop: "auto" }}>
                         <button
                           className="button-primary"
                           disabled={isApplied || applyingJobId !== null}
                           onClick={() => handleApply(job.id)}
                           type="button"
+                          style={{ width: "100%", fontSize: "13px", padding: "10px" }}
                         >
                           {applyingJobId === job.id
                             ? "Applying..."

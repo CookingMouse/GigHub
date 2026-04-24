@@ -223,6 +223,10 @@ export const requestsApi = {
     requestJson<{ success: boolean }>(`/requests/company/jobs/${jobId}/invitations`, {
       method: "POST",
       json: input
+    }),
+  listWorkerRecommendations: () =>
+    requestJson<{ recommendations: WorkerRecommendationRecord[] }>("/requests/company/recommendations", {
+      method: "GET"
     })
 };
 
@@ -281,12 +285,24 @@ export const profileApi = {
       }
     );
   },
+  downloadFreelancerResume: (freelancerId: string) =>
+    requestBlob(`/profile/freelancers/${freelancerId}/resume`, {
+      method: "GET"
+    }),
   getCompanyProfile: () =>
     requestJson<{ profile: CompanyProfileRecord }>("/profile/company", {
       method: "GET"
     }),
+  listPublicCompanies: () =>
+    requestJson<{ companies: PublicCompanyProfileRecord[] }>("/profile/companies", {
+      method: "GET"
+    }),
   getPublicCompanyProfile: (companyId: string) =>
     requestJson<{ company: PublicCompanyProfileRecord }>(`/profile/companies/${companyId}`, {
+      method: "GET"
+    }),
+  getPublicFreelancerProfile: (freelancerId: string) =>
+    requestJson<{ profile: PublicFreelancerProfileRecord }>(`/profile/freelancers/${freelancerId}`, {
       method: "GET"
     }),
   updateCompanyProfile: (input: UpdateCompanyProfileInput) =>

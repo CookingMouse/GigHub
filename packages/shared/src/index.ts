@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const appRoles = ["freelancer", "company"] as const;
+export const appRoles = ["freelancer", "company", "admin"] as const;
 export const registrationRoles = ["freelancer", "company"] as const;
 export const jobStatuses = [
   "DRAFT",
@@ -190,7 +190,8 @@ export const rejectMilestoneSchema = z.object({
 
 export const resolveDisputeSchema = z.object({
   outcome: z.enum(disputeResolutionOutcomes),
-  resolutionSummary: z.string().trim().min(10).max(2000)
+  resolutionSummary: z.string().trim().min(10).max(2000),
+  adminNote: z.string().trim().max(2000).optional().default("")
 });
 
 export const generateIncomeStatementSchema = z.object({
@@ -255,6 +256,7 @@ export type FreelancerDirectoryRecord = {
   skills: string[];
   hourlyRate: number | null;
   ratingAverage: number | null;
+  hasResume: boolean;
 };
 
 export type EscrowRecord = {
@@ -326,6 +328,7 @@ export type DisputeRecord = {
   rejectionReason: string;
   resolutionType: string | null;
   resolutionSummary: string | null;
+  adminNote: string | null;
   openedAt: string;
   resolvedAt: string | null;
   latestDecision: GLMDecisionRecord | null;
@@ -400,6 +403,42 @@ export type JobRecord = {
   brief: JobBriefRecord;
 };
 
+export type AdminDisputeListRecord = {
+  id: string;
+  status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
+  jobId: string;
+  jobTitle: string;
+  milestoneId: string;
+  milestoneTitle: string;
+  companyName: string;
+  freelancerName: string;
+  rejectionReason: string;
+  recommendation: string | null;
+  badFaithFlags: string[];
+  openedAt: string;
+};
+
+export type AdminDisputeDetailRecord = {
+  id: string;
+  status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "CLOSED";
+  rejectionReason: string;
+  resolutionType: string | null;
+  resolutionSummary: string | null;
+  adminNote: string | null;
+  openedAt: string;
+  resolvedAt: string | null;
+  job: {
+    id: string;
+    title: string;
+    companyName: string;
+    freelancerName: string;
+  };
+  milestone: MilestoneRecord;
+  submission: SubmissionRecord;
+  milestoneDecision: GLMDecisionRecord | null;
+  disputeDecision: GLMDecisionRecord | null;
+};
+
 export type IncomeStatementLineItemRecord = {
   id: string;
   milestoneId: string;
@@ -425,6 +464,12 @@ export type IncomeStatementRecord = {
   verifyToken: string;
   glmNarrative: string | null;
   status: StatementStatus;
+  platformServiceFee: number;
+  estimatedOperatingExpenses: number;
+  netIncome: number;
+  socsoProvisioning: number;
+  epfProvisioning: number;
+  amountAfterStatutory: number;
   lineItems: IncomeStatementLineItemRecord[];
 };
 
@@ -446,6 +491,17 @@ export type JobMatchRecord = {
   matchScore: number;
   reasons: string[];
   requiredSkills: string[];
+};
+
+export type WorkerRecommendationRecord = {
+  freelancerId: string;
+  name: string;
+  displayName: string;
+  headline: string | null;
+  skills: string[];
+  matchScore: number;
+  reasons: string[];
+  bestMatchJobTitle: string;
 };
 
 export type JobAvailabilityRecord = {
@@ -576,6 +632,80 @@ export type PublicCompanyProfileRecord = {
   website: string | null;
   industry: string | null;
   about: string | null;
+};
+
+export type PublicFreelancerProfileRecord = {
+  id: string;
+  name: string;
+  displayName: string;
+  portfolioUrl: string | null;
+  skills: string[];
+  headline: string | null;
+  bio: string | null;
+  experienceYears: number | null;
+};
+
+export type AdminAuditLogRecord = {
+  id: string;
+  actorName: string | null;
+  actorEmail: string | null;
+  entityType: string;
+  entityId: string;
+  eventType: string;
+  payload: unknown;
+  createdAt: string;
+};
+
+export type AdminIncomeStatementRecord = {
+  id: string;
+  freelancerName: string;
+  freelancerEmail: string;
+  periodStart: string;
+  periodEnd: string;
+  totalEarned: number;
+  totalJobs: number;
+  totalMilestones: number;
+  generatedAt: string;
+  verifyToken: string;
+  status: StatementStatus;
+};
+
+export type AdminJobTraceRecord = {
+  id: string;
+  title: string;
+  status: JobStatus;
+  companyName: string;
+  freelancerName: string | null;
+  escrow: EscrowRecord | null;
+  milestones: MilestoneRecord[];
+  glmDecisions: GLMDecisionRecord[];
+  auditLogs: AdminAuditLogRecord[];
+};
+
+export type DemoAccountRecord = {
+  role: AppRole;
+  email: string;
+  password: string;
+  label: string;
+};
+
+export type ReadinessCheckRecord = {
+  name: string;
+  status: "pass" | "warn" | "fail";
+  detail: string;
+};
+
+export type DemoReadinessRecord = {
+  status: "ready" | "needs_seed" | "degraded";
+  generatedAt: string;
+  providers: {
+    glm: "mock" | "live";
+    payments: string;
+    storage: string;
+  };
+  checks: ReadinessCheckRecord[];
+  demoAccounts: DemoAccountRecord[];
+  demoFlow: string[];
 };
 
 export type ApiSuccess<T> = {
