@@ -1,10 +1,10 @@
 "use client";
 
-import type { FreelancerDirectoryRecord, JobRecord, MockPaymentIntentRecord, MilestoneStatus, AppRole } from "@gighub/shared";
+import type { FreelancerDirectoryRecord, JobRecord, MockPaymentIntentRecord } from "@gighub/shared";
 import { ZodError } from "zod";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import React, { startTransition, useEffect, useState, useMemo } from "react";
+import React, { startTransition, useEffect, useState } from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { ApiRequestError, freelancersApi, jobsApi, paymentsApi, profileApi } from "@/lib/api";
 import {
@@ -15,7 +15,6 @@ import {
 } from "@/lib/job-form";
 import {
   applyHalfSplit,
-  createDefaultMilestonePlanValues,
   milestoneFormValuesToInput,
   milestoneRecordsToFormValues,
   type MilestoneFormValue

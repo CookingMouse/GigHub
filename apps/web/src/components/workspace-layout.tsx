@@ -74,7 +74,7 @@ const roleNavSections: Record<AppRole, NavSection[]> = {
       group: null,
       items: [
         { href: "/dashboard",          label: "Dashboard",   icon: "dashboard" },
-        { href: "/company/jobs",       label: "Job History", icon: "layers"    },
+        { href: "/company/active-jobs", label: "Job History", icon: "layers"    },
         { href: "/company/requests",   label: "Requests",    icon: "fileText"  },
       ],
     },
@@ -222,7 +222,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
                 </p>
               )}
               {section.items.map(item => {
-                const active = isActive(pathname, item.href, user.role);
+                const active = isActive(pathname, item.href);
                 return (
                   <Link
                     key={item.href}

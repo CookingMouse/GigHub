@@ -325,7 +325,7 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
                 When you hire a freelancer and fund escrow, progress tracking will appear here.
               </p>
               <div className="action-row" style={{ justifyContent: "center" }}>
-                <Link href="/company/jobs" className="button-primary">Create a job</Link>
+                <Link href="/company/active-jobs" className="button-primary">Create a job</Link>
               </div>
             </div>
           ) : null}
@@ -384,7 +384,7 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
             <DashboardSectionHeader
               label="Pipeline"
               title="Drafts and Pending"
-              actionHref="/company/jobs"
+              actionHref="/company/active-jobs"
             />
 
             {jobsState.status === "ready" && draftJobs.length === 0 ? (

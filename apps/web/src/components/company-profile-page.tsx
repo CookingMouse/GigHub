@@ -98,7 +98,7 @@ export const CompanyProfilePage = () => {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 12 }}>
-                  <Link href={`/company/public/${session.user.id}`} className="button-secondary">
+                  <Link href={`/companies/${session.user.id}`} className="button-secondary">
                     View Public Profile
                   </Link>
                   <button className="button-primary" style={{ backgroundColor: companyAccent }} onClick={save} disabled={saving}>
