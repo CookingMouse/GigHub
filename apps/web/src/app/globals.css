@@ -618,3 +618,827 @@ a {
   display: grid;
   gap: 18px;
 }
+
+/* ── Shared workspace utilities ───────────────────────────────────────────── */
+
+.dashboard-mono {
+  font-family: "DM Mono", "Courier New", monospace;
+  letter-spacing: -0.02em;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.muted {
+  color: #6b7280;
+  margin: 0;
+}
+
+.helper-copy {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.callout-warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #92400e;
+  margin: 12px 0;
+}
+
+.callout-warning strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #78350f;
+}
+
+.callout-warning p {
+  margin: 0;
+}
+
+.form-error {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+.panel-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.panel-heading-row h2,
+.panel-heading-row h3 {
+  margin: 0;
+}
+
+.list-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.validation-panel {
+  border-top: 3px solid #1d4ed8;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.workspace-column-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.workspace-column-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Freelancer dashboard (also used by company dashboard stat cards) ──────── */
+
+.freelancer-dashboard {
+  display: grid;
+  gap: 28px;
+  color: #111827;
+}
+
+.freelancer-dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.freelancer-dashboard-stat-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+}
+
+.freelancer-dashboard-stat-label {
+  margin: 0 0 6px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.freelancer-dashboard-stat-value {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.freelancer-dashboard-stat-note {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.freelancer-dashboard-stat-note.is-positive { color: #0f6e56; }
+.freelancer-dashboard-stat-note.is-neutral  { color: #6b7280; }
+.freelancer-dashboard-stat-note.is-negative { color: #dc2626; }
+.freelancer-dashboard-stat-note.is-hiring   { color: #1d4ed8; }
+
+.freelancer-dashboard-surface {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.freelancer-dashboard-section-header {
+  margin-bottom: 18px;
+}
+
+.freelancer-dashboard-section-label {
+  margin: 0 0 4px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.freelancer-dashboard-section-title {
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.freelancer-dashboard-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.freelancer-dashboard-activity-card {
+  display: grid;
+  gap: 14px;
+  min-height: 220px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.freelancer-dashboard-activity-card:hover {
+  border-color: #0f6e56;
+  box-shadow: 0 0 0 3px #e1f5ee;
+}
+
+.freelancer-dashboard-activity-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.freelancer-dashboard-company {
+  margin: 0 0 4px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.freelancer-dashboard-activity-card h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.freelancer-dashboard-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.freelancer-dashboard-progress-block {
+  display: grid;
+  gap: 8px;
+}
+
+.freelancer-dashboard-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.freelancer-dashboard-progress-row p,
+.freelancer-dashboard-progress-copy {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.freelancer-dashboard-progress-row strong {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.freelancer-dashboard-progress-track {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+}
+
+.freelancer-dashboard-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #0f6e56;
+  transition: width 0.4s ease;
+}
+
+.freelancer-dashboard-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.freelancer-dashboard-detail-grid dt {
+  margin: 0 0 2px;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.freelancer-dashboard-detail-grid dd {
+  margin: 0;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.freelancer-dashboard-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  min-height: 34px;
+  border-radius: 9px;
+  background: #0f6e56;
+  color: #fff;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+
+.freelancer-dashboard-primary-action:hover {
+  background: #085041;
+}
+
+.freelancer-dashboard-empty-state {
+  display: grid;
+  gap: 6px;
+  min-height: 140px;
+  border: 1px dashed #d1d5db;
+  border-radius: 14px;
+  place-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.freelancer-dashboard-empty-title {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.freelancer-dashboard-empty-copy {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+.freelancer-dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.freelancer-dashboard-deadline-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.freelancer-dashboard-calendar-card {
+  min-width: 210px;
+  user-select: none;
+}
+
+.freelancer-dashboard-calendar-header p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.freelancer-dashboard-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 28px);
+  gap: 2px;
+}
+
+.freelancer-dashboard-calendar-grid.is-weekdays span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+}
+
+.freelancer-dashboard-calendar-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.freelancer-dashboard-calendar-day.is-today {
+  background: #e1f5ee;
+  color: #085041;
+  font-weight: 700;
+}
+
+.freelancer-dashboard-calendar-day.is-highlighted {
+  background: #0f6e56;
+  color: #fff;
+  font-weight: 600;
+}
+
+.freelancer-dashboard-upcoming-list {
+  display: grid;
+  gap: 10px;
+}
+
+.freelancer-dashboard-upcoming-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  display: grid;
+  gap: 4px;
+}
+
+.freelancer-dashboard-upcoming-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.freelancer-dashboard-upcoming-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.freelancer-dashboard-upcoming-meta {
+  margin: 0;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.freelancer-dashboard-upcoming-date {
+  margin: 0;
+  font-size: 12px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.freelancer-dashboard-income-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.freelancer-dashboard-income-chart {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  height: 160px;
+}
+
+.freelancer-dashboard-income-bar-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.freelancer-dashboard-income-bar-value {
+  font-size: 9px;
+  color: #9ca3af;
+  text-align: center;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.freelancer-dashboard-income-bar-track {
+  flex: 1;
+  width: 100%;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.freelancer-dashboard-income-bar-fill {
+  width: 100%;
+  background: #0f6e56;
+  border-radius: 6px;
+  transition: height 0.4s ease;
+  display: block;
+}
+
+.freelancer-dashboard-income-bar-label {
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.freelancer-dashboard-income-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.freelancer-dashboard-summary-card {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.freelancer-dashboard-summary-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.freelancer-dashboard-summary-card strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.3px;
+  margin-bottom: 2px;
+}
+
+.freelancer-dashboard-summary-copy {
+  margin: 0;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.freelancer-dashboard-skeleton {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: freelancer-shimmer 1.5s infinite linear;
+}
+
+.freelancer-dashboard-skeleton-stat    { height: 28px; width: 60%; margin-bottom: 8px; }
+.freelancer-dashboard-skeleton-text    { height: 14px; width: 72%; }
+.freelancer-dashboard-skeleton-heading { height: 18px; width: 80%; }
+.freelancer-dashboard-skeleton-pill    { height: 22px; width: 70px; }
+.freelancer-dashboard-skeleton-bar     { height: 8px; width: 100%; border-radius: 999px; }
+.freelancer-dashboard-skeleton-button  { height: 34px; width: 120px; border-radius: 9px; margin-top: 4px; }
+.freelancer-dashboard-skeleton-day     { height: 28px; width: 28px; border-radius: 8px; }
+.freelancer-dashboard-skeleton-bar-vertical { width: 100%; border-radius: 6px; }
+
+.freelancer-dashboard-calendar-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 28px);
+  gap: 2px;
+  margin-top: 8px;
+}
+
+@keyframes freelancer-shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (max-width: 1100px) {
+  .freelancer-dashboard-stat-grid,
+  .freelancer-dashboard-activity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .freelancer-dashboard-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .freelancer-dashboard-stat-grid,
+  .freelancer-dashboard-activity-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .freelancer-dashboard-activity-card { min-height: auto; }
+  .freelancer-dashboard-deadline-grid { grid-template-columns: minmax(0, 1fr); }
+  .freelancer-dashboard-income-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ── Freelancer requests page ──────────────────────────────────────────────── */
+
+.freelancer-requests-section-label {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.freelancer-requests-section-title {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.freelancer-requests-card {
+  display: grid;
+  gap: 8px;
+}
+
+.freelancer-requests-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.freelancer-requests-card-meta {
+  margin: 0;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.freelancer-requests-card-body {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  border-left: 2px solid #e5e7eb;
+  padding-left: 10px;
+}
+
+.freelancer-requests-supporting-copy {
+  margin: 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* ── Active job cards ─────────────────────────────────────────────────────── */
+
+.active-job-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.active-job-card:hover {
+  border-color: #0f6e56;
+  box-shadow: 0 0 0 3px #e1f5ee, 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.active-job-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid transparent;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.active-job-header:hover {
+  background: #f9fafb;
+}
+
+.active-job-card:has(.active-job-milestones) .active-job-header {
+  border-bottom-color: #f3f4f6;
+}
+
+.active-job-milestones {
+  padding: 20px 24px;
+  background: #fafafa;
+}
+
+/* ── Milestone timeline ───────────────────────────────────────────────────── */
+
+.milestone-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.milestone-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.milestone-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+.milestone-node {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.spine-connector {
+  width: 2px;
+  flex: 1;
+  background: #e5e7eb;
+  margin: 4px 0;
+  min-height: 12px;
+}
+
+.milestone-card {
+  flex: 1;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  min-width: 0;
+}
+
+.milestone-card:hover:not(.locked) {
+  border-color: #0f6e56;
+  box-shadow: 0 0 0 3px #e1f5ee;
+}
+
+.milestone-card.expanded {
+  border-color: #0f6e56;
+}
+
+.milestone-card.locked {
+  cursor: default;
+  opacity: 0.65;
+  background: #fafafa;
+}
+
+.milestone-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.milestone-card-title-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.milestone-card-title-section h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.milestone-card-amount-section {
+  flex-shrink: 0;
+}
+
+.milestone-card-status-section {
+  flex-shrink: 0;
+}
+
+.milestone-card-details {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.detail-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  font-size: 13px;
+}

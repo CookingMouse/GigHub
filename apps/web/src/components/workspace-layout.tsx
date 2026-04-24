@@ -3,8 +3,10 @@
 import type { AppRole, PublicUser } from "@gighub/shared";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { type ReactNode, startTransition, useState } from "react";
-import { authApi } from "@/lib/api";
+import React, { type ReactNode, startTransition, useEffect, useState } from "react";
+import { authApi, freelancersApi, profileApi } from "@/lib/api";
+
+type DirectoryItem = { id: string; label: string; sub: string; href: string };
 
 // ── Inline SVG icon helper ────────────────────────────────────────────────────
 const Icon = ({ d, size = 16 }: { d: string; size?: number }) => (
@@ -141,10 +143,42 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
   const pathname = usePathname();
   const router   = useRouter();
   const [logoutPending, setLogoutPending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [directoryItems, setDirectoryItems] = useState<DirectoryItem[]>([]);
 
   const cfg      = roleStyle[user.role];
   const sections = roleNavSections[user.role];
   const initials = getInitials(user.name);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (user.role === "freelancer") {
+          const res = await profileApi.listPublicCompanies();
+          setDirectoryItems(res.companies.map(c => ({
+            id: c.id, label: c.companyName,
+            sub: c.industry ?? "Company", href: `/companies/${c.id}`
+          })));
+        } else {
+          const res = await freelancersApi.list();
+          setDirectoryItems(res.freelancers.map(f => ({
+            id: f.id, label: f.displayName,
+            sub: f.skills.slice(0, 2).join(", ") || "Freelancer", href: `/freelancers/${f.id}`
+          })));
+        }
+      } catch { /* silently ignore — search just won't populate */ }
+    };
+    void load();
+  }, [user.role]);
+
+  const searchResults = searchQuery.trim().length > 0
+    ? directoryItems.filter(item =>
+        item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sub.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  const showDropdown = searchQuery.trim().length > 0;
 
   const handleLogout = () => {
     setLogoutPending(true);
@@ -189,7 +223,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
         </div>
 
         {/* Search */}
-        <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6" }}>
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6", position: "relative" }}>
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
             background: "#F9FAFB", border: "1px solid #E5E7EB",
@@ -199,14 +233,47 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
               <Icon d={ICONS.search} size={14} />
             </span>
             <input
-              placeholder="Search..."
+              placeholder={user.role === "freelancer" ? "Search companies…" : "Search freelancers…"}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === "Escape") setSearchQuery(""); }}
               style={{
                 border: "none", background: "none", outline: "none",
                 fontSize: 13, color: "#374151", width: "100%",
                 fontFamily: "'DM Sans', sans-serif",
               }}
             />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} type="button"
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", padding: 0, fontSize: 13, lineHeight: 1, flexShrink: 0 }}>
+                ✕
+              </button>
+            )}
           </div>
+          {showDropdown && (
+            <div style={{
+              position: "absolute", top: "calc(100% - 4px)", left: 14, right: 14, zIndex: 100,
+              background: "#fff", border: "1px solid #E5E7EB", borderRadius: 10,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxHeight: 260, overflowY: "auto",
+            }}>
+              {searchResults.length === 0 ? (
+                <p style={{ padding: "12px 14px", margin: 0, fontSize: 12, color: "#9CA3AF" }}>No results found.</p>
+              ) : (
+                searchResults.map(item => (
+                  <Link
+                    key={item.id} href={item.href}
+                    onClick={() => setSearchQuery("")}
+                    style={{ display: "flex", flexDirection: "column", padding: "10px 14px", textDecoration: "none", borderBottom: "1px solid #F3F4F6" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#F9FAFB"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{item.label}</span>
+                    <span style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>{item.sub}</span>
+                  </Link>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* Nav sections */}
