@@ -184,11 +184,6 @@ export const CompanyProfilePage = () => {
                     </article>
                   ))
                 )}
-                {profile.postedJobs.length > 5 && (
-                  <p className="muted" style={{ textAlign: "center", fontSize: 12, marginTop: 8 }}>
-                    Showing 5 of {profile.postedJobs.length} posted jobs
-                  </p>
-                )}
               </div>
             </section>
           </div>
