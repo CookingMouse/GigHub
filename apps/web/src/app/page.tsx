@@ -5,10 +5,10 @@ export default function HomePage() {
     <main className="page-shell">
       <section className="hero-card">
         <p className="eyebrow">GigHub</p>
-        <h1>Escrow-backed freelance work with structured workflows.</h1>
-        <p className="muted">
-          GigHub now supports structured briefs, funded escrow, milestone submissions, manual
-          disputes, income statements, and matching for the full demo loop.
+        <h1>Work with Confidence. Get Paid with Escrow.</h1>
+        <p className="muted" style={{ fontSize: "1.1rem", maxWidth: "600px" }}>
+          The secure marketplace where freelancers and companies build trust through 
+          AI-validated milestones and guaranteed payments.
         </p>
 
         <div className="cta-row">
@@ -18,15 +18,6 @@ export default function HomePage() {
           <Link className="button-secondary" href="/login">
             Sign in
           </Link>
-          <Link className="button-secondary" href="/demo">
-            Demo readiness
-          </Link>
-        </div>
-
-        <div className="meta-row">
-          <span className="button-secondary">Structured brief validation</span>
-          <span className="button-secondary">Seeded demo accounts</span>
-          <span className="button-secondary">End-to-end marketplace flow</span>
         </div>
       </section>
     </main>
