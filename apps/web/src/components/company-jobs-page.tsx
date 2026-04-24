@@ -1,8 +1,9 @@
 "use client";
 
-import type { JobRecord } from "@gighub/shared";
+import type { JobRecord, JobStatus } from "@gighub/shared";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { ApiRequestError, jobsApi } from "@/lib/api";
 import { CompanyWorkspaceShell } from "./company-workspace-shell";
@@ -11,6 +12,8 @@ type JobsState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; jobs: JobRecord[] };
+
+type FilterStatus = "ALL" | "DRAFT" | "ACTIVE" | "COMPLETED";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-MY", {
@@ -25,14 +28,42 @@ const formatDate = (value: string | null) => {
   }
 
   return new Intl.DateTimeFormat("en-MY", {
-    dateStyle: "medium",
-    timeStyle: "short"
+    dateStyle: "medium"
   }).format(new Date(value));
+};
+
+const getJobStatusLabel = (status: JobStatus) => {
+  return status.replace(/_/g, " ");
+};
+
+const getStatusColor = (status: JobStatus) => {
+  switch (status) {
+    case "DRAFT": return "#6B7280";
+    case "OPEN": return "#10B981";
+    case "ASSIGNED":
+    case "ESCROW_FUNDED":
+    case "IN_PROGRESS": return "#4F46E5";
+    case "COMPLETED": return "#059669";
+    case "DISPUTED": return "#DC2626";
+    case "CANCELLED": return "#9CA3AF";
+    default: return "#6B7280";
+  }
 };
 
 export const CompanyJobsPage = () => {
   const session = useProtectedUser("company");
+  const searchParams = useSearchParams();
+  const queryQ = searchParams.get("q");
+
   const [state, setState] = useState<JobsState>({ status: "loading" });
+  const [filter, setFilter] = useState<FilterStatus>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (queryQ) {
+      setSearchQuery(queryQ);
+    }
+  }, [queryQ]);
 
   useEffect(() => {
     if (session.status !== "ready") {
@@ -73,12 +104,44 @@ export const CompanyJobsPage = () => {
     };
   }, [session.status]);
 
+  const filteredJobs = useMemo(() => {
+    if (state.status !== "ready") return [];
+
+    return state.jobs.filter((job) => {
+      const matchesSearch = 
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.assignedFreelancer?.displayName.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      let matchesFilter = true;
+      if (filter === "DRAFT") {
+        matchesFilter = job.status === "DRAFT";
+      } else if (filter === "ACTIVE") {
+        matchesFilter = ["OPEN", "ASSIGNED", "ESCROW_FUNDED", "IN_PROGRESS", "DISPUTED"].includes(job.status);
+      } else if (filter === "COMPLETED") {
+        matchesFilter = job.status === "COMPLETED";
+      }
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [state, filter, searchQuery]);
+
+  const stats = useMemo(() => {
+    if (state.status !== "ready") return { all: 0, drafts: 0, active: 0, completed: 0 };
+    
+    return {
+      all: state.jobs.length,
+      drafts: state.jobs.filter(j => j.status === "DRAFT").length,
+      active: state.jobs.filter(j => ["OPEN", "ASSIGNED", "ESCROW_FUNDED", "IN_PROGRESS", "DISPUTED"].includes(j.status)).length,
+      completed: state.jobs.filter(j => j.status === "COMPLETED").length
+    };
+  }, [state]);
+
   if (session.status === "loading") {
     return (
       <section className="shell-card">
         <p className="eyebrow">GigHub</p>
         <h1>Loading company workspace</h1>
-        <p className="muted">Restoring your hiring dashboard and job drafts.</p>
+        <p className="muted">Restoring your hiring dashboard and job history.</p>
       </section>
     );
   }
@@ -101,22 +164,65 @@ export const CompanyJobsPage = () => {
       actions={
         <>
           <Link className="button-primary" href="/jobs/new">
-            New draft
+            New job draft
           </Link>
           <Link className="button-secondary" href="/dashboard">
-            Dashboard overview
+            Dashboard
           </Link>
         </>
       }
       companyEmail={session.user.email}
       companyName={session.user.name}
-      description="Manage structured briefs, rerun validation after edits, and publish only when the brief is fresh and specific."
-      title="Job drafts"
+      description="Manage your entire job lifecycle from draft to completion. Track progress, review milestones, and manage payments in one place."
+      title="Job History"
     >
+      <div className="freelancer-dashboard-surface" style={{ marginBottom: 24, padding: "20px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(["ALL", "ACTIVE", "DRAFT", "COMPLETED"] as FilterStatus[]).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  style={{
+                    padding: "6px 16px",
+                    borderRadius: "20px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    border: "1px solid #E5E7EB",
+                    backgroundColor: filter === f ? "#4F46E5" : "white",
+                    color: filter === f ? "white" : "#374151",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {f.charAt(0) + f.slice(1).toLowerCase()} ({stats[f.toLowerCase() as keyof typeof stats]})
+                </button>
+              ))}
+            </div>
+            <div style={{ flex: 1, maxWidth: "300px", position: "relative" }}>
+              <input
+                type="text"
+                placeholder="Search by job title or freelancer..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #E5E7EB",
+                  fontSize: "14px"
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {state.status === "loading" ? (
         <section className="inline-panel">
           <h2>Loading jobs</h2>
-          <p className="muted">Fetching your existing drafts and published roles.</p>
+          <p className="muted">Fetching your job history...</p>
         </section>
       ) : null}
 
@@ -127,59 +233,92 @@ export const CompanyJobsPage = () => {
         </section>
       ) : null}
 
-      {state.status === "ready" && state.jobs.length === 0 ? (
-        <section className="inline-panel">
-          <h2>No jobs yet</h2>
+      {state.status === "ready" && filteredJobs.length === 0 ? (
+        <section className="inline-panel" style={{ textAlign: "center", padding: "48px 0" }}>
+          <h2>No jobs found</h2>
           <p className="muted">
-            Create your first structured brief, validate it, and publish it once the score clears
-            the threshold.
+            {searchQuery ? `No jobs matching "${searchQuery}" for the selected filter.` : "You haven't created any jobs yet."}
           </p>
+          {!searchQuery && (
+            <Link className="button-primary" href="/jobs/new" style={{ marginTop: 16, display: "inline-block" }}>
+              Create your first job
+            </Link>
+          )}
         </section>
       ) : null}
 
-      {state.status === "ready" && state.jobs.length > 0 ? (
-        <div className="card-stack">
-          {state.jobs.map((job) => (
-            <article className="list-card" key={job.id}>
-              <div className="list-card-header">
-                <div>
-                  <p className="eyebrow">Status: {job.status}</p>
-                  <h2>{job.title}</h2>
-                </div>
-                <Link className="button-secondary" href={`/jobs/${job.id}`}>
-                  View job
-                </Link>
-              </div>
+      {state.status === "ready" && filteredJobs.length > 0 ? (
+        <div style={{ maxHeight: "1000px", overflowY: "auto", paddingRight: "8px" }}>
+          <div className="card-stack">
+            {filteredJobs.map((job) => {
+              const statusColor = getStatusColor(job.status);
+              const completedMilestones = job.milestones.filter(m => m.status === "RELEASED" || m.status === "APPROVED").length;
+              const progress = job.milestones.length > 0 ? (completedMilestones / job.milestones.length) * 100 : 0;
 
-              <div className="status-grid compact-grid">
-                <article className="status-panel">
-                  <span className="panel-label">Budget</span>
-                  <strong>{formatCurrency(job.budget)}</strong>
-                  <p>{job.milestoneCount} milestone(s)</p>
-                </article>
+              return (
+                <article className="list-card" key={job.id} style={{ borderLeft: `4px solid ${statusColor}` }}>
+                  <div className="list-card-header">
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            backgroundColor: `${statusColor}15`,
+                            color: statusColor,
+                            letterSpacing: "0.05em"
+                          }}
+                        >
+                          {getJobStatusLabel(job.status)}
+                        </span>
+                        <span className="muted" style={{ fontSize: "12px" }}>
+                          Created {formatDate(job.createdAt)}
+                        </span>
+                      </div>
+                      <h2 style={{ fontSize: "18px", marginBottom: 4 }}>{job.title}</h2>
+                      {job.assignedFreelancer && (
+                        <p style={{ fontSize: "14px", color: "#4B5563" }}>
+                          Freelancer: <strong>{job.assignedFreelancer.displayName}</strong>
+                        </p>
+                      )}
+                    </div>
+                    <Link className="button-secondary" href={`/jobs/${job.id}`}>
+                      Manage Job
+                    </Link>
+                  </div>
 
-                <article className="status-panel">
-                  <span className="panel-label">Validation</span>
-                  <strong>
-                    {job.brief.validation.score === null
-                      ? "Not validated"
-                      : `${job.brief.validation.score}/100`}
-                  </strong>
-                  <p>
-                    {job.brief.validation.isStale
-                      ? "Outdated after recent edits"
-                      : "Fresh and ready for publish checks"}
-                  </p>
-                </article>
+                  <div className="status-grid compact-grid" style={{ marginTop: 16 }}>
+                    <article className="status-panel">
+                      <span className="panel-label">Financials</span>
+                      <strong>{formatCurrency(job.budget)}</strong>
+                      <p>{job.milestoneCount} milestone(s)</p>
+                    </article>
 
-                <article className="status-panel">
-                  <span className="panel-label">Last validated</span>
-                  <strong>{formatDate(job.brief.validation.lastValidatedAt)}</strong>
-                  <p>Published: {formatDate(job.publishedAt)}</p>
+                    <article className="status-panel">
+                      <span className="panel-label">Progress</span>
+                      <strong>{Math.round(progress)}%</strong>
+                      <div style={{ width: "100%", height: "4px", backgroundColor: "#E5E7EB", borderRadius: "2px", marginTop: "4px" }}>
+                        <div style={{ width: `${progress}%`, height: "100%", backgroundColor: statusColor, borderRadius: "2px" }} />
+                      </div>
+                    </article>
+
+                    <article className="status-panel">
+                      <span className="panel-label">Latest Update</span>
+                      <strong>{formatDate(job.updatedAt)}</strong>
+                      <p>
+                        {job.status === "DRAFT" 
+                          ? (job.brief.validation.score ? `Brief Score: ${job.brief.validation.score}` : "Not validated")
+                          : (job.publishedAt ? `Published ${formatDate(job.publishedAt)}` : "In workflow")}
+                      </p>
+                    </article>
+                  </div>
                 </article>
-              </div>
-            </article>
-          ))}
+              );
+            })}
+          </div>
         </div>
       ) : null}
     </CompanyWorkspaceShell>

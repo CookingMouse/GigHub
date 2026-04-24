@@ -6,6 +6,7 @@ import React from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { AdminDisputesPage } from "./admin-disputes-page";
 import { FreelancerDashboard } from "./freelancer-dashboard";
+import { CompanyDashboard } from "./company-dashboard";
 import { WorkspaceLayout } from "./workspace-layout";
 
 type ProtectedShellProps = {
@@ -75,6 +76,10 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
 
   if (user.role === "freelancer" && mode === "dashboard") {
     return <FreelancerDashboard user={user} />;
+  }
+
+  if (user.role === "company" && mode === "dashboard") {
+    return <CompanyDashboard user={user} />;
   }
 
   return (

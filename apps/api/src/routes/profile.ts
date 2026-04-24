@@ -14,12 +14,26 @@ import {
   getFreelancerResume,
   updateCompanyProfile,
   updateFreelancerProfile,
-  uploadFreelancerResume
+  uploadFreelancerResume,
+  listPublicCompanies
 } from "../services/profile-service";
 
 export const profileRouter = Router();
 
 profileRouter.use(requireAuth);
+
+profileRouter.get(
+  "/companies",
+  asyncHandler(async (request, response) => {
+    const companies = await listPublicCompanies();
+
+    response.json({
+      data: {
+        companies
+      }
+    });
+  })
+);
 
 profileRouter.get(
   "/freelancer",
@@ -60,6 +74,21 @@ profileRouter.get(
     response.json({
       data: {
         company
+      }
+    });
+  })
+);
+
+profileRouter.get(
+  "/freelancers/:freelancerId",
+  asyncHandler(async (request, response) => {
+    const profile = await getPublicFreelancerProfile(
+      Array.isArray(request.params.freelancerId) ? request.params.freelancerId[0] : request.params.freelancerId
+    );
+
+    response.json({
+      data: {
+        profile
       }
     });
   })

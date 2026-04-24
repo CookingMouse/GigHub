@@ -493,6 +493,17 @@ export type JobMatchRecord = {
   requiredSkills: string[];
 };
 
+export type WorkerRecommendationRecord = {
+  freelancerId: string;
+  name: string;
+  displayName: string;
+  headline: string | null;
+  skills: string[];
+  matchScore: number;
+  reasons: string[];
+  bestMatchJobTitle: string;
+};
+
 export type JobAvailabilityRecord = {
   id: string;
   title: string;
@@ -621,6 +632,17 @@ export type PublicCompanyProfileRecord = {
   website: string | null;
   industry: string | null;
   about: string | null;
+};
+
+export type PublicFreelancerProfileRecord = {
+  id: string;
+  name: string;
+  displayName: string;
+  portfolioUrl: string | null;
+  skills: string[];
+  headline: string | null;
+  bio: string | null;
+  experienceYears: number | null;
 };
 
 export type AdminAuditLogRecord = {
