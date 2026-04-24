@@ -232,7 +232,8 @@ const toFreelancerDirectoryRecord = (
       : null,
     ratingAverage: freelancer.freelancerProfile?.ratingAverage
       ? Number(freelancer.freelancerProfile.ratingAverage)
-      : null
+      : null,
+    hasResume: Boolean(freelancer.freelancerProfile?.resumeStorageKey)
   };
 };
 
