@@ -450,6 +450,12 @@ model IncomeStatement {
   verifyToken     String                    @unique
   glmNarrative    String?
   status          StatementStatus           @default(GENERATED)
+  platformServiceFee Decimal                @db.Decimal(12, 2)
+  estimatedOperatingExpenses Decimal        @db.Decimal(12, 2)
+  netIncome       Decimal                   @db.Decimal(12, 2)
+  socsoProvisioning Decimal                 @db.Decimal(12, 2)
+  epfProvisioning Decimal                   @db.Decimal(12, 2)
+  amountAfterStatutory Decimal              @db.Decimal(12, 2)
   freelancer      User                      @relation("IncomeStatementFreelancer", fields: [freelancerId], references: [id], onDelete: Cascade)
   lineItems       IncomeStatementLineItem[]
 

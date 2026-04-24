@@ -28,6 +28,24 @@ const toSentenceCase = (value: string) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
 
+const getStatusColor = (status: string): { color: string; backgroundColor: string } => {
+  const statusLower = status.toLowerCase();
+  
+  if (statusLower === "accepted" || statusLower === "approved") {
+    return { color: "#0F6E56", backgroundColor: "#E1F5EE" };
+  }
+  
+  if (statusLower === "rejected" || statusLower === "denied") {
+    return { color: "#DC2626", backgroundColor: "#FEF2F2" };
+  }
+  
+  if (statusLower === "pending") {
+    return { color: "#B45309", backgroundColor: "#FEF3C7" };
+  }
+  
+  return { color: "#6B7280", backgroundColor: "#F3F4F6" };
+};
+
 const formatRequestError = (error: unknown, fallback: string) => {
   if (error instanceof ApiRequestError && error.status === 404) {
     return "The running API process does not include the request routes yet. Restart API (npm run dev) and retry.";
@@ -111,7 +129,19 @@ export const FreelancerRequestsPage = () => {
                   <article className="status-panel freelancer-requests-card" key={application.id}>
                     <strong className="freelancer-requests-card-title">{application.jobTitle}</strong>
                     <p className="freelancer-requests-card-meta">
-                      Status: {toSentenceCase(application.status)}
+                      Status:{" "}
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "4px 12px",
+                          borderRadius: "6px",
+                          fontWeight: 600,
+                          fontSize: "12px",
+                          ...getStatusColor(application.status)
+                        }}
+                      >
+                        {toSentenceCase(application.status)}
+                      </span>
                     </p>
                     <p className="freelancer-requests-supporting-copy">
                       Applied: {formatDate(application.appliedAt)}
@@ -141,7 +171,19 @@ export const FreelancerRequestsPage = () => {
                     <p className="freelancer-requests-card-meta">{invitation.companyName}</p>
                     <p className="freelancer-requests-card-body">{invitation.note ?? "No note."}</p>
                     <p className="freelancer-requests-card-meta">
-                      Status: {toSentenceCase(invitation.status)}
+                      Status:{" "}
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "4px 12px",
+                          borderRadius: "6px",
+                          fontWeight: 600,
+                          fontSize: "12px",
+                          ...getStatusColor(invitation.status)
+                        }}
+                      >
+                        {toSentenceCase(invitation.status)}
+                      </span>
                     </p>
                     <div className="action-row">
                       <Link className="button-secondary" href={`/companies/${invitation.companyId}`}>

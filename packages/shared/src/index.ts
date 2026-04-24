@@ -463,6 +463,12 @@ export type IncomeStatementRecord = {
   verifyToken: string;
   glmNarrative: string | null;
   status: StatementStatus;
+  platformServiceFee: number;
+  estimatedOperatingExpenses: number;
+  netIncome: number;
+  socsoProvisioning: number;
+  epfProvisioning: number;
+  amountAfterStatutory: number;
   lineItems: IncomeStatementLineItemRecord[];
 };
 

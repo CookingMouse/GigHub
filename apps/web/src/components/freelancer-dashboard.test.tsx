@@ -117,6 +117,12 @@ describe("FreelancerDashboard", () => {
           verifyToken: "verify-1",
           glmNarrative: null,
           status: "GENERATED",
+          platformServiceFee: 270,
+          estimatedOperatingExpenses: 155.1,
+          netIncome: 4974.9,
+          socsoProvisioning: 39.8,
+          epfProvisioning: 397.99,
+          amountAfterStatutory: 4537.11,
           lineItems: [
             {
               id: "line-1",
