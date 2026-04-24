@@ -140,3 +140,67 @@ export const listFreelancerJobMatches = async (freelancerId: string) => {
     .sort((left, right) => right.matchScore - left.matchScore)
     .slice(0, 10);
 };
+
+export const listWorkerRecommendations = async (companyId: string): Promise<WorkerRecommendationRecord[]> => {
+  const [companyJobs, freelancers] = await Promise.all([
+    prisma.job.findMany({
+      where: {
+        companyId,
+        status: "OPEN",
+        freelancerId: null
+      },
+      include: openJobInclude
+    }),
+    prisma.user.findMany({
+      where: {
+        role: "freelancer"
+      },
+      include: {
+        freelancerProfile: true
+      }
+    })
+  ]);
+
+  if (companyJobs.length === 0) {
+    return [];
+  }
+
+  const recommendations: WorkerRecommendationRecord[] = [];
+
+  freelancers.forEach((freelancer) => {
+    if (!freelancer.freelancerProfile) return;
+
+    const freelancerSkills = profileSkills(freelancer.freelancerProfile.skills);
+    const portfolioUrl = freelancer.freelancerProfile.portfolioUrl ?? null;
+
+    let bestScore = -1;
+    let bestJobTitle = "";
+    let bestReasons: string[] = [];
+
+    companyJobs.forEach((job) => {
+      const match = scoreJob(job, freelancerSkills, portfolioUrl);
+      if (match.matchScore > bestScore) {
+        bestScore = match.matchScore;
+        bestJobTitle = job.title;
+        bestReasons = match.reasons;
+      }
+    });
+
+    if (bestScore >= 40) {
+      recommendations.push({
+        freelancerId: freelancer.id,
+        name: freelancer.name,
+        displayName: freelancer.freelancerProfile.displayName,
+        headline: freelancer.freelancerProfile.headline ?? null,
+        skills: freelancerSkills,
+        matchScore: bestScore,
+        reasons: bestReasons,
+        bestMatchJobTitle: bestJobTitle
+      });
+    }
+  });
+
+  return recommendations
+    .sort((left, right) => right.matchScore - left.matchScore)
+    .slice(0, 15);
+};

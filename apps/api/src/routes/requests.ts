@@ -18,6 +18,7 @@ import {
   resolveCompanyApplication,
   respondFreelancerInvitation
 } from "../services/request-service";
+import { listWorkerRecommendations } from "../services/job-matching-service";
 
 export const requestsRouter = Router();
 const readParam = (value: string | string[]) => (Array.isArray(value) ? value[0] : value);
@@ -133,6 +134,20 @@ requestsRouter.post(
     response.json({
       data: {
         success: true
+      }
+    });
+  })
+);
+
+requestsRouter.get(
+  "/company/recommendations",
+  requireRole("company"),
+  asyncHandler(async (request, response) => {
+    const recommendations = await listWorkerRecommendations(request.auth!.userId);
+
+    response.json({
+      data: {
+        recommendations
       }
     });
   })
