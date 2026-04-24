@@ -7,7 +7,8 @@ import type {
   IncomeNarrativeInput,
   IncomeNarrativeResult,
   MilestoneScoringInput,
-  MilestoneScoringResult
+  MilestoneScoringResult,
+  ResumeParsingResult
 } from "./mock-glm-service";
 
 type ChatMessage = {
@@ -240,6 +241,37 @@ export const liveGLMProvider = {
 
     return {
       narrative: asString(output.narrative, "GLM generated an income summary from released escrow records.")
+    };
+  },
+
+  async parseResume(text: string): Promise<ResumeParsingResult> {
+    const output = await callGLMJson([
+      {
+        role: "system",
+        content: systemPrompt
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          task: "resume_parsing",
+          instruction:
+            "Extract freelancer profile information from the provided resume text. Be concise and professional.",
+          schema: {
+            skills: "string[]",
+            experienceYears: "number",
+            headline: "string (max 160 chars)",
+            bio: "string (max 1000 chars, professional summary)"
+          },
+          resumeText: text.slice(0, 10000) // Limit text to avoid token limits
+        })
+      }
+    ]);
+
+    return {
+      skills: asStringArray(output.skills),
+      experienceYears: asNumber(output.experienceYears, 0),
+      headline: asString(output.headline, "Freelancer Profile").slice(0, 160),
+      bio: asString(output.bio, "Professional freelancer summary.").slice(0, 1000)
     };
   }
 };

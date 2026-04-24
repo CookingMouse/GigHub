@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { startTransition, useEffect, useState } from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
-import { ApiRequestError, freelancersApi, jobsApi, paymentsApi } from "@/lib/api";
+import { ApiRequestError, freelancersApi, jobsApi, paymentsApi, profileApi } from "@/lib/api";
 import {
   jobFormValuesToInput,
   jobRecordToFormValues,
@@ -80,6 +80,24 @@ export const CompanyJobDetailPage = () => {
   const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
   const [actingReviewMilestoneId, setActingReviewMilestoneId] = useState<string | null>(null);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | "auto-release" | null>(null);
+
+  const handleDownloadResume = async (freelancerId: string) => {
+    try {
+      const { blob, fileName } = await profileApi.downloadFreelancerResume(freelancerId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      setAssignmentError(
+        error instanceof ApiRequestError ? error.message : "Unable to download resume right now."
+      );
+    }
+  };
 
   useEffect(() => {
     if (session.status !== "ready") {
@@ -766,6 +784,15 @@ export const CompanyJobDetailPage = () => {
                         >
                           View portfolio
                         </a>
+                      ) : null}
+                      {freelancer.hasResume ? (
+                        <button
+                          className="button-secondary"
+                          onClick={() => handleDownloadResume(freelancer.id)}
+                          type="button"
+                        >
+                          View resume
+                        </button>
                       ) : null}
                       <button
                         className="button-primary"

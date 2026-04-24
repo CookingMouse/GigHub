@@ -1,5 +1,5 @@
-import { createCipheriv, createHash, hkdfSync, randomBytes, randomUUID } from "crypto";
-import { mkdir, rm, writeFile } from "fs/promises";
+import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes, randomUUID } from "crypto";
+import { mkdir, readFile, rm, writeFile } from "fs/promises";
 import path from "path";
 import type { SupportedSubmissionFormat } from "@gighub/shared";
 import { env } from "../lib/env";
@@ -64,6 +64,20 @@ export const storeSubmissionFile = async ({
     storageKey: storageKey.replace(/\\/g, "/"),
     retentionExpiresAt: new Date(Date.now() + env.FILE_RETENTION_HOURS * 60 * 60 * 1000)
   };
+};
+
+export const retrieveSubmissionFile = async (storageKey: string): Promise<Buffer> => {
+  const destination = path.join(storageRoot, storageKey);
+  const encryptedPayloadWithHeader = await readFile(destination);
+
+  const iv = encryptedPayloadWithHeader.slice(0, 12);
+  const authTag = encryptedPayloadWithHeader.slice(12, 28);
+  const encryptedPayload = encryptedPayloadWithHeader.slice(28);
+
+  const decipher = createDecipheriv("aes-256-gcm", encryptionKey, iv);
+  decipher.setAuthTag(authTag);
+
+  return Buffer.concat([decipher.update(encryptedPayload), decipher.final()]);
 };
 
 export const removeStoredSubmissionFile = async (storageKey: string) => {

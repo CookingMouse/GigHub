@@ -287,6 +287,10 @@ export const profileApi = {
       }
     );
   },
+  downloadFreelancerResume: (freelancerId: string) =>
+    requestBlob(`/profile/freelancers/${freelancerId}/resume`, {
+      method: "GET"
+    }),
   getCompanyProfile: () =>
     requestJson<{ profile: CompanyProfileRecord }>("/profile/company", {
       method: "GET"

@@ -256,6 +256,7 @@ export type FreelancerDirectoryRecord = {
   skills: string[];
   hourlyRate: number | null;
   ratingAverage: number | null;
+  hasResume: boolean;
 };
 
 export type EscrowRecord = {
