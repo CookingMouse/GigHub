@@ -475,10 +475,18 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
   const calendarCells = getCalendarCells(referenceCalendarDate);
   const maxBarAmount = Math.max(...monthlyIncomeBars.map((bar) => bar.amount), 1);
 
+  const firstName = user.name.split(" ")[0];
+  const subtitleText =
+    pendingReviewCount > 0
+      ? `You have ${pendingReviewCount} milestone${pendingReviewCount > 1 ? "s" : ""} awaiting review.`
+      : deadlineItems.length > 0
+        ? `You have ${deadlineItems.length} upcoming deadline${deadlineItems.length > 1 ? "s" : ""} this week.`
+        : "Your freelancer workspace overview.";
+
   return (
     <WorkspaceLayout
-      title="Freelancer dashboard"
-      subtitle="Track active work, upcoming deadlines, and earnings in one overview."
+      title={`Welcome back, ${firstName}!`}
+      subtitle={jobsState.status === "ready" ? subtitleText : "Loading your workspace…"}
       user={user}
     >
       <div className="freelancer-dashboard">
@@ -555,7 +563,14 @@ export const FreelancerDashboard = ({ user }: FreelancerDashboardProps) => {
         </section>
 
         <section className="freelancer-dashboard-surface">
-          <DashboardSectionHeader label="Active work" title="Current jobs and milestone progress" />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#374151", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Recent Activity
+            </p>
+            <Link href="/freelancer/active-jobs" style={{ fontSize: 13, color: freelancerAccent, fontWeight: 500, textDecoration: "none" }}>
+              View all →
+            </Link>
+          </div>
 
           {jobsState.status === "loading" ? (
             <div className="freelancer-dashboard-activity-grid" aria-label="Loading active work">
