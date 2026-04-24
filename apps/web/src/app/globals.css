@@ -12,7 +12,311 @@
   --accent-light: #E1F5EE;
   --accent-text: #085041;
   --accent-ink: #ffffff;
+  --hiring: #1D4ED8;
+  --hiring-light: #EFF6FF;
+  --hiring-text: #1E40AF;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.company-dashboard {
+  display: grid;
+  gap: 28px;
+  color: #111827;
+  font-family: "DM Sans", "Trebuchet MS", sans-serif;
+}
+
+.company-dashboard-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.company-dashboard-stat-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+}
+
+.company-dashboard-stat-label {
+  margin: 0 0 6px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.company-dashboard-stat-value {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.company-dashboard-stat-note {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.company-dashboard-stat-note.is-positive {
+  color: var(--accent);
+}
+
+.company-dashboard-stat-note.is-hiring {
+  color: var(--hiring);
+}
+
+.company-dashboard-stat-note.is-neutral {
+  color: #6b7280;
+}
+
+.company-dashboard-stat-note.is-negative {
+  color: #dc2626;
+}
+
+.company-dashboard-surface {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.company-dashboard-section-header {
+  margin-bottom: 18px;
+}
+
+.company-dashboard-section-label {
+  margin: 0 0 4px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.company-dashboard-section-title {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.company-dashboard-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.company-dashboard-activity-card {
+  display: grid;
+  gap: 16px;
+  min-height: 240px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.company-dashboard-activity-card:hover {
+  border-color: var(--hiring);
+  box-shadow: 0 0 0 3px var(--hiring-light);
+}
+
+.company-dashboard-activity-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.company-dashboard-freelancer {
+  margin: 0 0 6px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.company-dashboard-activity-card h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.company-dashboard-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.company-dashboard-progress-block {
+  display: grid;
+  gap: 10px;
+}
+
+.company-dashboard-progress-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.company-dashboard-progress-row p,
+.company-dashboard-progress-copy,
+.company-dashboard-detail-grid dt,
+.company-dashboard-empty-copy,
+.company-dashboard-summary-copy {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.company-dashboard-progress-row strong {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.company-dashboard-progress-track {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+}
+
+.company-dashboard-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--hiring);
+}
+
+.company-dashboard-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.company-dashboard-detail-grid dt {
+  margin-bottom: 4px;
+}
+
+.company-dashboard-detail-grid dd {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.company-dashboard-primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  min-height: 36px;
+  border-radius: 9px;
+  background: var(--hiring);
+  color: #fff;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.company-dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.company-dashboard-empty-state {
+  display: grid;
+  gap: 6px;
+  min-height: 160px;
+  border: 1px dashed #d1d5db;
+  border-radius: 14px;
+  background: #fff;
+  place-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.company-dashboard-empty-title {
+  margin: 0;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.company-dashboard-skeleton {
+  display: block;
+  border-radius: 9px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: company-dashboard-shimmer 1.5s infinite linear;
+}
+
+.company-dashboard-skeleton-stat {
+  width: 60%;
+  height: 28px;
+  margin-bottom: 8px;
+}
+
+.company-dashboard-skeleton-text {
+  width: 72%;
+  height: 14px;
+}
+
+@keyframes company-dashboard-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 1100px) {
+  .company-dashboard-stat-grid,
+  .company-dashboard-activity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .company-dashboard-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .company-dashboard-stat-grid,
+  .company-dashboard-activity-grid,
+  .company-dashboard-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .company-dashboard-activity-card {
+    min-height: auto;
+  }
+
+  .company-dashboard-activity-header,
+  .company-dashboard-progress-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 * {

@@ -87,8 +87,8 @@ export const CompanyRequestsPage = () => {
 
   return (
     <WorkspaceLayout
-      title="Job Request"
-      subtitle="Review freelancer requests and send company requests."
+      title="Requests"
+      subtitle="Review freelancer applications and invite talent to your open roles."
       user={session.user}
     >
       {error ? <p className="form-error">{error}</p> : null}
@@ -98,8 +98,8 @@ export const CompanyRequestsPage = () => {
       {state.status === "ready" ? (
         <div className="workspace-grid">
           <section className="inline-panel">
-            <p className="eyebrow">Freelancer applications</p>
-            <h2>Self requested</h2>
+            <p className="eyebrow">Talent Pipeline</p>
+            <h2>Freelancer Applications</h2>
             <div className="card-stack">
               {state.applications.map((application) => (
                 <article className="status-panel" key={application.id}>

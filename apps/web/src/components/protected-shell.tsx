@@ -5,6 +5,7 @@ import Link from "next/link";
 import React from "react";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { AdminDisputesPage } from "./admin-disputes-page";
+import { CompanyDashboard } from "./company-dashboard";
 import { FreelancerDashboard } from "./freelancer-dashboard";
 import { WorkspaceLayout } from "./workspace-layout";
 
@@ -75,6 +76,10 @@ export const ProtectedShell = ({ mode }: ProtectedShellProps) => {
 
   if (user.role === "freelancer" && mode === "dashboard") {
     return <FreelancerDashboard user={user} />;
+  }
+
+  if (user.role === "company" && mode === "dashboard") {
+    return <CompanyDashboard user={user} />;
   }
 
   return (

@@ -74,8 +74,8 @@ const roleNavSections: Record<AppRole, NavSection[]> = {
       group: null,
       items: [
         { href: "/dashboard",          label: "Dashboard",   icon: "dashboard" },
-        { href: "/company/active-jobs",label: "Active Work", icon: "layers"    },
-        { href: "/company/requests",   label: "Job Requests",icon: "fileText"  },
+        { href: "/company/jobs",       label: "Job History", icon: "layers"    },
+        { href: "/company/requests",   label: "Requests",    icon: "fileText"  },
       ],
     },
     {
