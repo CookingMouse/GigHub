@@ -7,6 +7,7 @@ import { ApiRequestError, freelancerWorkspaceApi } from "@/lib/api";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { FreelancerSubmissionForm } from "./freelancer-submission-form";
 import { FreelancerWorkspaceShell } from "./freelancer-workspace-shell";
+import { EscrowStatusHeader } from "./escrow-status-header";
 
 type FreelancerMilestoneDetailPageProps = {
   milestoneId: string;
@@ -247,6 +248,8 @@ const FreelancerMilestoneDetailContent = ({
       hideWorkflowCard
       title="Milestone and submission"
     >
+      <EscrowStatusHeader budget={milestone.job.budget} escrow={milestone.job.escrow} role="freelancer" />
+
       <p className="muted" style={{ fontSize: "13px", marginBottom: "24px", fontStyle: "italic" }}>
         Each milestone supports one primary file per revision, up to three revisions. Review, upload, and submit.
       </p>

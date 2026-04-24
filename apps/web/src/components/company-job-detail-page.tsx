@@ -23,6 +23,7 @@ import {
 import { CompanyWorkspaceShell } from "./company-workspace-shell";
 import { JobDraftForm } from "./job-draft-form";
 import { MilestonePlanForm } from "./milestone-plan-form";
+import { EscrowStatusHeader } from "./escrow-status-header";
 
 type DetailState =
   | { status: "loading" }
@@ -610,424 +611,290 @@ export const CompanyJobDetailPage = () => {
       description="Move the job from publish to assignment, escrow funding, and milestone setup in one controlled company workflow."
       title={job.title}
     >
+      <EscrowStatusHeader budget={job.budget} escrow={job.escrow} role="company" />
+
       <div className="workspace-grid">
-        <section className="inline-panel">
-          <div className="panel-heading-row">
-            <div>
-              <p className="eyebrow">Brief source</p>
-              <h2>{isDraft ? "Edit draft" : "Published brief"}</h2>
-            </div>
-            {isDirty ? <span className="status-chip">Unsaved changes</span> : null}
-          </div>
-
-          {!isDraft ? (
-            <p className="muted">
-              This job is already published. The brief stays locked so assignment and funding happen
-              against the same validated posting.
-            </p>
-          ) : null}
-
-          <JobDraftForm
-            disabled={!isDraft}
-            errorMessage={saveError}
-            footer={
-              isDraft ? (
-                <span className="helper-copy">
-                  Saving after validation will mark the existing validation as outdated.
-                </span>
-              ) : (
-                <span className="helper-copy">
-                  The brief is now read-only while the company completes assignment and funding.
-                </span>
-              )
-            }
-            isSubmitting={isSaving}
-            onChange={updateField}
-            onSubmit={handleSave}
-            submitLabel="Save draft"
-            values={values}
-          />
-        </section>
-
-        <aside className="inline-panel validation-panel">
-          <p className="eyebrow">Validation</p>
-          <h2>
-            {validation.score === null ? "Not validated yet" : `${validation.score}/100 brief score`}
-          </h2>
-          <p className="muted">
-            {validation.summary ?? "Run validation to see the brief score and feedback."}
-          </p>
-
-          <div className="validation-meta">
-            <div>
-              <span className="panel-label">Last validated</span>
-              <strong>{formatDate(validation.lastValidatedAt)}</strong>
-            </div>
-            <div>
-              <span className="panel-label">State</span>
-              <strong>{validation.isStale ? "Outdated" : "Fresh"}</strong>
-            </div>
-          </div>
-
-          {publishBlockedReason ? <p className="callout-warning">{publishBlockedReason}</p> : null}
-          {validationError ? <p className="form-error">{validationError}</p> : null}
-
-          <div className="action-row">
-            <button
-              className="button-secondary"
-              disabled={!isDraft || isDirty || isSaving || isValidating || isPublishing}
-              onClick={handleValidate}
-              type="button"
-            >
-              {isValidating ? "Validating..." : "Validate brief"}
-            </button>
-            <button
-              className="button-primary"
-              disabled={Boolean(publishBlockedReason) || isSaving || isValidating || isPublishing}
-              onClick={handlePublish}
-              type="button"
-            >
-              {isPublishing ? "Publishing..." : "Publish job"}
-            </button>
-          </div>
-
-          <div className="feedback-grid">
-            <section>
-              <span className="panel-label">Gaps</span>
-              {validation.gaps.length > 0 ? (
-                <ul className="feedback-list">
-                  {validation.gaps.map((gap) => (
-                    <li key={gap}>{gap}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted">No major gaps flagged.</p>
-              )}
-            </section>
-
-            <section>
-              <span className="panel-label">Clarifying questions</span>
-              {validation.clarifyingQuestions.length > 0 ? (
-                <ul className="feedback-list">
-                  {validation.clarifyingQuestions.map((question) => (
-                    <li key={question}>{question}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted">No follow-up questions yet.</p>
-              )}
-            </section>
-          </div>
-        </aside>
-      </div>
-
-      <div className="transaction-stack">
-        <section className="inline-panel">
-          <div className="panel-heading-row">
-            <div>
-              <p className="eyebrow">Step 1</p>
-              <h2>Assign freelancer</h2>
-            </div>
-            <span className="status-chip">{job.status}</span>
-          </div>
-
-          {job.assignedFreelancer ? (
-            <div className="status-grid compact-grid">
-              <article className="status-panel">
-                <span className="panel-label">Assigned freelancer</span>
-                <strong>{job.assignedFreelancer.displayName}</strong>
-                <p>{job.assignedFreelancer.name}</p>
-              </article>
-
-              <article className="status-panel">
-                <span className="panel-label">Assigned at</span>
-                <strong>{formatDate(job.assignedAt)}</strong>
-                <p>{job.assignedFreelancer.skills.join(", ") || "No skills listed yet."}</p>
-              </article>
-            </div>
-          ) : null}
-
-          {assignmentError ? <p className="form-error">{assignmentError}</p> : null}
-
-          {canAssignFreelancer ? (
-            <>
-              {freelancerState.status === "loading" ? (
-                <p className="muted">Loading freelancer profiles for assignment.</p>
-              ) : null}
-
-              {freelancerState.status === "error" ? (
-                <p className="form-error">{freelancerState.message}</p>
-              ) : null}
-
-              {freelancerState.status === "ready" ? (
-                <div className="directory-grid">
-                  {freelancerState.freelancers.map((freelancer) => (
-                    <article className="directory-card" key={freelancer.id}>
-                      <p className="eyebrow">Freelancer</p>
-                      <h3>{freelancer.displayName}</h3>
-                      <p className="muted">
-                        {freelancer.skills.length > 0
-                          ? freelancer.skills.join(", ")
-                          : "No skills listed yet."}
-                      </p>
-                      <p className="muted">
-                        {freelancer.hourlyRate !== null
-                          ? `${formatCurrency(freelancer.hourlyRate)} / hour`
-                          : "Hourly rate not listed"}
-                      </p>
-                      {freelancer.portfolioUrl ? (
-                        <a
-                          className="button-secondary"
-                          href={freelancer.portfolioUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          View portfolio
-                        </a>
-                      ) : null}
-                      {freelancer.hasResume ? (
-                        <button
-                          className="button-secondary"
-                          onClick={() => handleDownloadResume(freelancer.id)}
-                          type="button"
-                        >
-                          View resume
-                        </button>
-                      ) : null}
-                      <button
-                        className="button-primary"
-                        disabled={assigningFreelancerId !== null}
-                        onClick={() => handleAssignFreelancer(freelancer.id)}
-                        type="button"
-                      >
-                        {assigningFreelancerId === freelancer.id ? "Assigning..." : "Assign"}
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p className="muted">
-              {job.assignedFreelancer
-                ? "Assignment is locked for this branch after a freelancer has been selected."
-                : "Publish the job first before assigning a freelancer."}
-            </p>
-          )}
-        </section>
-
-        <section className="inline-panel">
-          <div className="panel-heading-row">
-            <div>
-              <p className="eyebrow">Step 2</p>
-              <h2>Fund escrow</h2>
-            </div>
-          </div>
-
-          <div className="status-grid compact-grid">
-            <article className="status-panel">
-              <span className="panel-label">Escrow status</span>
-              <strong>{job.escrow?.status ?? "UNFUNDED"}</strong>
-              <p>Funding is required before milestone setup can begin.</p>
-            </article>
-
-            <article className="status-panel">
-              <span className="panel-label">Budget</span>
-              <strong>{formatCurrency(job.budget)}</strong>
-              <p>Full job amount is held in escrow for this workflow.</p>
-            </article>
-
-            <article className="status-panel">
-              <span className="panel-label">Funded at</span>
-              <strong>{formatDate(job.escrow?.fundedAt ?? null)}</strong>
-              <p>Provider: {job.escrow?.provider ?? "mock"}</p>
-            </article>
-          </div>
-
-          {fundingError ? <p className="form-error">{fundingError}</p> : null}
-
-          <div className="action-row">
-            <button
-              className="button-secondary"
-              disabled={!canCreateEscrowIntent || isCreatingIntent || isSimulatingPayment}
-              onClick={handleCreateEscrowIntent}
-              type="button"
-            >
-              {isCreatingIntent ? "Creating intent..." : "Create mock payment intent"}
-            </button>
-            <button
-              className="button-primary"
-              disabled={!canSimulateFunding || isCreatingIntent || isSimulatingPayment}
-              onClick={handleSimulateFunding}
-              type="button"
-            >
-              {isSimulatingPayment ? "Funding escrow..." : "Simulate payment success"}
-            </button>
-          </div>
-
-          {escrowIntentId ? (
-            <p className="helper-copy">Current mock intent: <code>{escrowIntentId}</code></p>
-          ) : null}
-        </section>
-
-        <section className="inline-panel">
-          <div className="panel-heading-row">
-            <div>
-              <p className="eyebrow">Step 3</p>
-              <h2>Define milestones</h2>
-            </div>
-          </div>
-
-          {!showMilestones ? (
-            <p className="muted">
-              Fund escrow first. The milestone builder only unlocks after payment has been confirmed.
-            </p>
-          ) : (
-            <MilestonePlanForm
-              disabled={!canEditMilestones}
-              errorMessage={milestoneError}
-              helperText={
-                canEditMilestones
-                  ? "Milestone amounts must add up to the funded job budget, and the count must match the published brief."
-                  : "Milestones are locked once the job moves into progress."
-              }
-              isSubmitting={isSavingMilestones}
-              milestones={milestoneValues}
-              onApplyHalfSplit={job.milestoneCount === 2 && canEditMilestones ? handleApplyHalfSplit : undefined}
-              onChange={updateMilestoneField}
-              onSubmit={handleSaveMilestones}
-              totalBudget={job.budget}
-            />
-          )}
-        </section>
-
-        {job.milestones.length > 0 ? (
+        <div className="workspace-column-main">
           <section className="inline-panel">
             <div className="panel-heading-row">
               <div>
-                <p className="eyebrow">Step 4</p>
-                <h2>Review submissions and disputes</h2>
+                <p className="eyebrow">Brief source</p>
+                <h2>{isDraft ? "Edit draft" : "Published brief"}</h2>
+              </div>
+              {isDirty ? <span className="status-chip">Unsaved changes</span> : null}
+            </div>
+
+            {!isDraft ? (
+              <p className="muted">
+                This job is already published. The brief stays locked so assignment and funding happen
+                against the same validated posting.
+              </p>
+            ) : null}
+
+            <JobDraftForm
+              disabled={!isDraft}
+              errorMessage={saveError}
+              footer={
+                isDraft ? (
+                  <span className="helper-copy">
+                    Saving after validation will mark the existing validation as outdated.
+                  </span>
+                ) : (
+                  <span className="helper-copy">
+                    The brief is now read-only while the company completes assignment and funding.
+                  </span>
+                )
+              }
+              isSubmitting={isSaving}
+              onChange={updateField}
+              onSubmit={handleSave}
+              submitLabel="Save draft"
+              values={values}
+            />
+          </section>
+
+          {job.milestones.length > 0 ? (
+            <section className="inline-panel">
+              <div className="panel-heading-row">
+                <div>
+                  <p className="eyebrow">Milestone Progress</p>
+                  <h2>Vertical Timeline</h2>
+                </div>
+              </div>
+              <div className="card-stack">
+                {job.milestones.map((milestone) => (
+                  <article className="list-card" key={milestone.id}>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "50%",
+                          backgroundColor: milestone.status === "RELEASED" ? "#0F6E56" : "#E5E7EB",
+                          color: milestone.status === "RELEASED" ? "#fff" : "#6B7280",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        {milestone.sequence}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <h3 style={{ margin: 0, fontSize: "14px" }}>{milestone.title}</h3>
+                          <span className="status-chip">{milestone.status}</span>
+                        </div>
+                        <p className="muted" style={{ margin: "2px 0 0 0", fontSize: "12px" }}>
+                          {formatCurrency(milestone.amount)} · Due {formatDate(milestone.dueAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+
+        <div className="workspace-column-sidebar">
+          <aside className="inline-panel validation-panel">
+            <p className="eyebrow">Validation</p>
+            <h2>
+              {validation.score === null ? "Not validated yet" : `${validation.score}/100 brief score`}
+            </h2>
+            <p className="muted">
+              {validation.summary ?? "Run validation to see the brief score and feedback."}
+            </p>
+
+            <div className="validation-meta">
+              <div>
+                <span className="panel-label">Last validated</span>
+                <strong>{formatDate(validation.lastValidatedAt)}</strong>
+              </div>
+              <div>
+                <span className="panel-label">State</span>
+                <strong>{validation.isStale ? "Outdated" : "Fresh"}</strong>
               </div>
             </div>
 
-            <p className="muted">
-              Review submitted work, approve to release funds, or reject with a clear reason to open
-              a dispute.
-            </p>
+            {publishBlockedReason ? <p className="callout-warning">{publishBlockedReason}</p> : null}
+            {validationError ? <p className="form-error">{validationError}</p> : null}
 
-            {reviewError ? <p className="form-error">{reviewError}</p> : null}
-
-            <div className="card-stack">
-              {job.milestones.map((milestone) => {
-                const submission = milestone.latestSubmission;
-                const dispute = milestone.activeDispute;
-                const autoReleaseDue =
-                  milestone.reviewDueAt !== null &&
-                  new Date(milestone.reviewDueAt).getTime() <= Date.now();
-                const isActing = actingReviewMilestoneId === milestone.id;
-
-                return (
-                  <article className="list-card" key={milestone.id}>
-                    <div className="list-card-header">
-                      <div>
-                        <p className="eyebrow">Milestone {milestone.sequence}</p>
-                        <h2>{milestone.title}</h2>
-                        <p className="muted">
-                          {milestone.status} · {formatCurrency(milestone.amount)}
-                        </p>
-                      </div>
-                      <span className="status-chip">{milestone.status}</span>
-                    </div>
-
-                    <div className="status-grid compact-grid">
-                      <article className="status-panel">
-                        <span className="panel-label">Latest submission</span>
-                        <strong>{submission?.fileName ?? "No submission yet"}</strong>
-                        <p>
-                          {submission?.fileFormat?.toUpperCase() ?? "N/A"} · Revision{" "}
-                          {submission?.revision ?? "-"}
-                        </p>
-                      </article>
-
-                      <article className="status-panel">
-                        <span className="panel-label">Review state</span>
-                        <strong>{milestone.status}</strong>
-                        <p>{submission ? "Submission received" : "Waiting for the first submission"}</p>
-                      </article>
-
-                      <article className="status-panel">
-                        <span className="panel-label">Review deadline</span>
-                        <strong>{formatDate(milestone.reviewDueAt)}</strong>
-                        <p>{milestone.releasedAt ? `Released ${formatDate(milestone.releasedAt)}` : "Pending"}</p>
-                      </article>
-                    </div>
-
-
-                    {milestone.status === "UNDER_REVIEW" ? (
-                      <>
-                        <div className="action-row">
-                          <button
-                            className="button-primary"
-                            disabled={isActing}
-                            onClick={() => handleApproveMilestone(milestone.id)}
-                            type="button"
-                          >
-                            {isActing && reviewAction === "approve" ? "Approving..." : "Approve and release"}
-                          </button>
-                          <button
-                            className="button-secondary"
-                            disabled={isActing || !autoReleaseDue}
-                            onClick={() => handleAutoReleaseCheck(milestone.id)}
-                            type="button"
-                          >
-                            {isActing && reviewAction === "auto-release"
-                              ? "Checking..."
-                              : autoReleaseDue
-                                ? "Run auto-release"
-                                : "Auto-release not due"}
-                          </button>
-                        </div>
-
-                        <label className="field" htmlFor={`reject-${milestone.id}`}>
-                          <span>Reject and open dispute</span>
-                          <textarea
-                            id={`reject-${milestone.id}`}
-                            onChange={(event) => updateRejectReason(milestone.id, event.target.value)}
-                            placeholder="State the exact mismatch between the submission and the validated milestone brief."
-                            value={rejectReasons[milestone.id] ?? ""}
-                          />
-                        </label>
-
-                        <div className="action-row">
-                          <button
-                            className="button-secondary"
-                            disabled={isActing}
-                            onClick={() => handleRejectMilestone(milestone.id)}
-                            type="button"
-                          >
-                            {isActing && reviewAction === "reject" ? "Opening dispute..." : "Reject with reason"}
-                          </button>
-                        </div>
-                      </>
-                    ) : null}
-
-                    {milestone.status === "DISPUTED" && dispute ? (
-                      <div className="callout-warning">
-                        <strong>Dispute open.</strong> {dispute.rejectionReason}
-                      </div>
-                    ) : null}
-
-                    {milestone.status === "RELEASED" ? (
-                      <p className="helper-copy">
-                        Funds released at {formatDate(milestone.releasedAt)}.
-                      </p>
-                    ) : null}
-                  </article>
-                );
-              })}
+            <div className="action-row">
+              <button
+                className="button-secondary"
+                disabled={!isDraft || isDirty || isSaving || isValidating || isPublishing}
+                onClick={handleValidate}
+                type="button"
+              >
+                {isValidating ? "Validating..." : "Validate brief"}
+              </button>
+              <button
+                className="button-primary"
+                disabled={Boolean(publishBlockedReason) || isSaving || isValidating || isPublishing}
+                onClick={handlePublish}
+                type="button"
+              >
+                {isPublishing ? "Publishing..." : "Publish job"}
+              </button>
             </div>
+          </aside>
+
+          {/* Step 1: Assignment */}
+          <section className="inline-panel">
+            <div className="panel-heading-row">
+              <div>
+                <p className="eyebrow">Step 1</p>
+                <h2>Assign freelancer</h2>
+              </div>
+            </div>
+
+            {job.assignedFreelancer ? (
+              <div className="status-panel">
+                <span className="panel-label">Assigned to</span>
+                <strong>{job.assignedFreelancer.displayName}</strong>
+                <p className="muted" style={{ fontSize: "12px" }}>
+                  {job.assignedFreelancer.email}
+                </p>
+              </div>
+            ) : canAssignFreelancer ? (
+              <div className="card-stack">
+                {freelancerState.status === "ready" ? (
+                  freelancerState.freelancers.map((f) => (
+                    <article className="status-panel" key={f.id} style={{ padding: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <strong>{f.displayName}</strong>
+                          <p className="muted" style={{ fontSize: "11px", margin: 0 }}>{f.skills.slice(0, 3).join(", ")}</p>
+                        </div>
+                        <button
+                          className="button-primary"
+                          disabled={assigningFreelancerId !== null}
+                          onClick={() => handleAssignFreelancer(f.id)}
+                          style={{ padding: "4px 10px", fontSize: "12px" }}
+                          type="button"
+                        >
+                          Assign
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <p className="muted">Loading freelancers...</p>
+                )}
+              </div>
+            ) : (
+              <p className="muted">Complete validation to assign.</p>
+            )}
+            {assignmentError ? <p className="form-error">{assignmentError}</p> : null}
           </section>
-        ) : null}
+
+          {/* Step 2: Escrow */}
+          <section className="inline-panel">
+            <div className="panel-heading-row">
+              <div>
+                <p className="eyebrow">Step 2</p>
+                <h2>Escrow Funding</h2>
+              </div>
+            </div>
+            
+            <div className="status-panel">
+              <span className="panel-label">Status</span>
+              <strong>{job.escrow?.status ?? "UNFUNDED"}</strong>
+            </div>
+
+            {job.status === "ASSIGNED" && (
+              <div className="action-row" style={{ marginTop: "12px" }}>
+                <button
+                  className="button-secondary"
+                  disabled={!canCreateEscrowIntent || isCreatingIntent}
+                  onClick={handleCreateEscrowIntent}
+                  style={{ flex: 1 }}
+                  type="button"
+                >
+                  {isCreatingIntent ? "..." : "Setup Payment"}
+                </button>
+                <button
+                  className="button-primary"
+                  disabled={!canSimulateFunding || isSimulatingPayment}
+                  onClick={handleSimulateFunding}
+                  style={{ flex: 1 }}
+                  type="button"
+                >
+                  {isSimulatingPayment ? "Funding..." : "Simulate Pay"}
+                </button>
+              </div>
+            )}
+            {fundingError ? <p className="form-error">{fundingError}</p> : null}
+          </section>
+
+          {/* Step 3: Milestones */}
+          {showMilestones && (
+            <section className="inline-panel">
+              <div className="panel-heading-row">
+                <div>
+                  <p className="eyebrow">Step 3</p>
+                  <h2>Milestone Setup</h2>
+                </div>
+              </div>
+              <MilestonePlanForm
+                disabled={!canEditMilestones}
+                errorMessage={milestoneError}
+                isSubmitting={isSavingMilestones}
+                milestones={milestoneValues}
+                onChange={updateMilestoneField}
+                onSubmit={handleSaveMilestones}
+                totalBudget={job.budget}
+              />
+            </section>
+          )}
+
+          {/* Step 4: Reviews */}
+          {job.milestones.some(m => m.latestSubmission) && (
+            <section className="inline-panel">
+              <div className="panel-heading-row">
+                <div>
+                  <p className="eyebrow">Step 4</p>
+                  <h2>Active Reviews</h2>
+                </div>
+              </div>
+              {reviewError ? <p className="form-error">{reviewError}</p> : null}
+              <div className="card-stack">
+                {job.milestones.filter(m => m.status === "UNDER_REVIEW").map(m => {
+                   const isActing = actingReviewMilestoneId === m.id;
+                   return (
+                    <article className="list-card" key={m.id} style={{ padding: "12px" }}>
+                      <strong>{m.title}</strong>
+                      <p className="muted" style={{ fontSize: "12px", marginBottom: "10px" }}>{m.latestSubmission?.fileName}</p>
+                      <div className="action-row">
+                        <button
+                          className="button-primary"
+                          disabled={isActing}
+                          onClick={() => handleApproveMilestone(m.id)}
+                          style={{ padding: "6px 10px", fontSize: "12px" }}
+                          type="button"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="button-secondary"
+                          disabled={isActing}
+                          onClick={() => handleAutoReleaseCheck(m.id)}
+                          style={{ padding: "6px 10px", fontSize: "12px" }}
+                          type="button"
+                        >
+                          Auto
+                        </button>
+                      </div>
+                    </article>
+                   );
+                })}
+              </div>
+            </section>
+          )}
+        </div>
       </div>
     </CompanyWorkspaceShell>
   );
