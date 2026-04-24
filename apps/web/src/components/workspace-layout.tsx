@@ -3,7 +3,7 @@
 import type { AppRole, PublicUser } from "@gighub/shared";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { LogoutButton } from "./logout-button";
 
 type WorkspaceLayoutProps = {
@@ -21,8 +21,9 @@ type NavItem = {
 const roleNavItems: Record<Exclude<AppRole, "admin">, NavItem[]> = {
   freelancer: [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/freelancer/browse-jobs", label: "Browse Job" },
     { href: "/freelancer/requests", label: "Job Request" },
-    { href: "/freelancer/active-jobs", label: "Active Job" },
+    { href: "/freelancer/active-jobs", label: "Active Work" },
     { href: "/freelancer/income", label: "Income Generator" },
     { href: "/freelancer/inbox", label: "Inbox" },
     { href: "/freelancer/profile", label: "Profile" }
@@ -30,7 +31,7 @@ const roleNavItems: Record<Exclude<AppRole, "admin">, NavItem[]> = {
   company: [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/company/requests", label: "Job Request" },
-    { href: "/company/active-jobs", label: "Active Job" },
+    { href: "/company/active-jobs", label: "Active Work" },
     { href: "/company/inbox", label: "Inbox" },
     { href: "/company/profile", label: "Profile" }
   ]
@@ -86,6 +87,25 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
               <p className="eyebrow">{user.role}</p>
               <h1>{title}</h1>
               {subtitle ? <p className="muted">{subtitle}</p> : null}
+            </div>
+
+            <div className="header-action-group">
+              <button
+                aria-label="Go back"
+                className="button-secondary workspace-history-button"
+                onClick={() => window.history.back()}
+                type="button"
+              >
+                &larr;
+              </button>
+              <button
+                aria-label="Go forward"
+                className="button-secondary workspace-history-button"
+                onClick={() => window.history.forward()}
+                type="button"
+              >
+                &rarr;
+              </button>
             </div>
           </div>
           {children}

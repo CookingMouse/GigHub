@@ -1,10 +1,9 @@
 "use client";
 
-import type { JobApplicationRecord, JobAvailabilityRecord, JobInvitationRecord } from "@gighub/shared";
+import type { JobApplicationRecord, JobInvitationRecord } from "@gighub/shared";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import React, { startTransition, useEffect, useState } from "react";
-import { ApiRequestError, healthApi, requestsApi } from "@/lib/api";
+import { ApiRequestError, requestsApi } from "@/lib/api";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { WorkspaceLayout } from "./workspace-layout";
 
@@ -12,57 +11,50 @@ type RequestsState =
   | { status: "loading" }
   | {
       status: "ready";
-      jobs: JobAvailabilityRecord[];
       applications: JobApplicationRecord[];
       invitations: JobInvitationRecord[];
     }
   | { status: "error"; message: string };
 
+const formatDate = (value: string) =>
+  new Intl.DateTimeFormat("en-MY", {
+    dateStyle: "medium"
+  }).format(new Date(value));
+
+const toSentenceCase = (value: string) =>
+  value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const formatRequestError = (error: unknown, fallback: string) => {
+  if (error instanceof ApiRequestError && error.status === 404) {
+    return "The running API process does not include the request routes yet. Restart API (npm run dev) and retry.";
+  }
+
+  return error instanceof ApiRequestError ? error.message : fallback;
+};
+
 export const FreelancerRequestsPage = () => {
   const session = useProtectedUser("freelancer");
-  const searchParams = useSearchParams();
-  const highlightedJobId = searchParams.get("jobId");
   const [state, setState] = useState<RequestsState>({ status: "loading" });
-  const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [actionInvitationId, setActionInvitationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const reload = async () => {
     try {
-      const routeStatus = await healthApi.routes();
-
-      if (!routeStatus.routes.requests) {
-        setState({
-          status: "error",
-          message: "Request routes are unavailable in the running API process. Restart API and retry."
-        });
-        return;
-      }
-
-      const [availability, requests] = await Promise.all([
-        requestsApi.listAvailability(),
-        requestsApi.listFreelancerRequests()
-      ]);
+      const requests = await requestsApi.listFreelancerRequests();
 
       setState({
         status: "ready",
-        jobs: availability.jobs,
         applications: requests.applications,
         invitations: requests.invitations
       });
     } catch (loadError) {
-      if (loadError instanceof ApiRequestError && loadError.status === 404) {
-        setState({
-          status: "error",
-          message:
-            "The running API process does not include the new request routes yet. Restart API (npm run dev) and retry."
-        });
-        return;
-      }
-
       setState({
         status: "error",
-        message: loadError instanceof ApiRequestError ? loadError.message : "Unable to load job requests."
+        message: formatRequestError(loadError, "Unable to load job requests.")
       });
     }
   };
@@ -77,21 +69,6 @@ export const FreelancerRequestsPage = () => {
     return null;
   }
 
-  const handleApply = (jobId: string) => {
-    setError(null);
-    setApplyingJobId(jobId);
-    startTransition(async () => {
-      try {
-        await requestsApi.applyToJob(jobId, { coverNote: "" });
-        await reload();
-      } catch (applyError) {
-        setError(applyError instanceof ApiRequestError ? applyError.message : "Unable to apply.");
-      } finally {
-        setApplyingJobId(null);
-      }
-    });
-  };
-
   const handleInviteAction = (invitationId: string, action: "accept" | "reject") => {
     setError(null);
     setActionInvitationId(invitationId);
@@ -100,7 +77,7 @@ export const FreelancerRequestsPage = () => {
         await requestsApi.respondInvitation(invitationId, { action });
         await reload();
       } catch (inviteError) {
-        setError(inviteError instanceof ApiRequestError ? inviteError.message : "Unable to respond.");
+        setError(formatRequestError(inviteError, "Unable to respond."));
       } finally {
         setActionInvitationId(null);
       }
@@ -110,7 +87,7 @@ export const FreelancerRequestsPage = () => {
   return (
     <WorkspaceLayout
       title="Job Request"
-      subtitle="Self request on open jobs, and handle company requests in one place."
+      subtitle="Track your submitted applications and respond to company invitations."
       user={session.user}
     >
       {error ? <p className="form-error">{error}</p> : null}
@@ -120,37 +97,27 @@ export const FreelancerRequestsPage = () => {
       {state.status === "ready" ? (
         <div className="workspace-grid">
           <section className="inline-panel">
-            <p className="eyebrow">Self request</p>
-            <h2>Open jobs you can apply for</h2>
+            <p className="eyebrow">Your applications</p>
+            <h2>Submitted requests</h2>
             <div className="card-stack">
-              {state.jobs.map((job) => {
-                const applied = state.applications.find((item) => item.jobId === job.id);
-                return (
-                  <article
-                    className="status-panel"
-                    key={job.id}
-                    style={highlightedJobId === job.id ? { borderColor: "rgba(11,110,79,0.4)" } : undefined}
-                  >
-                    <strong>{job.title}</strong>
-                    <p>{job.companyName}</p>
-                    <p className="muted">Budget: {job.budget}</p>
-                    {applied ? <p className="helper-copy">Application status: {applied.status}</p> : null}
-                    <button
-                      className="button-primary"
-                      disabled={applyingJobId !== null || Boolean(applied && applied.status === "PENDING")}
-                      onClick={() => handleApply(job.id)}
-                      type="button"
-                    >
-                      {applyingJobId === job.id ? "Applying..." : applied ? "Re-apply" : "Apply"}
-                    </button>
+              {state.applications.length === 0 ? (
+                <p className="muted">You have not applied to any jobs yet.</p>
+              ) : (
+                state.applications.map((application) => (
+                  <article className="status-panel" key={application.id}>
+                    <strong>{application.jobTitle}</strong>
+                    <p className="muted">Status: {toSentenceCase(application.status)}</p>
+                    <p className="helper-copy">Applied: {formatDate(application.appliedAt)}</p>
+                    <p className="helper-copy">Last updated: {formatDate(application.updatedAt)}</p>
+                    {application.coverNote ? <p className="muted">{application.coverNote}</p> : null}
                   </article>
-                );
-              })}
+                ))
+              )}
             </div>
           </section>
 
           <section className="inline-panel">
-            <p className="eyebrow">Company request</p>
+            <p className="eyebrow">Company invitations</p>
             <h2>Invitations from companies</h2>
             <div className="card-stack">
               {state.invitations.length === 0 ? (
@@ -161,7 +128,7 @@ export const FreelancerRequestsPage = () => {
                     <strong>{invitation.jobTitle}</strong>
                     <p>{invitation.companyName}</p>
                     <p className="muted">{invitation.note ?? "No note."}</p>
-                    <p className="muted">Status: {invitation.status}</p>
+                    <p className="muted">Status: {toSentenceCase(invitation.status)}</p>
                     <div className="action-row">
                       <Link className="button-secondary" href={`/companies/${invitation.companyId}`}>
                         View company page

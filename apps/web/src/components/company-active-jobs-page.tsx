@@ -34,8 +34,8 @@ export const CompanyActiveJobsPage = () => {
 
   return (
     <WorkspaceLayout
-      title="Active Job"
-      subtitle="Monitor freelancer progress for active jobs."
+      title="Active Work"
+      subtitle="Monitor freelancer progress for active work."
       user={session.user}
     >
       {error ? <p className="form-error">{error}</p> : null}

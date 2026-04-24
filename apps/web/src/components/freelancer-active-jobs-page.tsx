@@ -33,11 +33,7 @@ export const FreelancerActiveJobsPage = () => {
   }
 
   return (
-    <WorkspaceLayout
-      title="Active Job"
-      subtitle="Track active jobs and milestones."
-      user={session.user}
-    >
+    <WorkspaceLayout title="Active Work" subtitle="Track active work and milestones." user={session.user}>
       {error ? <p className="form-error">{error}</p> : null}
       <div className="card-stack">
         {jobs.map((job) => (
