@@ -10,6 +10,7 @@ import { requireRole } from "../middleware/rbac";
 import {
   getCompanyProfile,
   getPublicCompanyProfile,
+  getPublicFreelancerProfile,
   getFreelancerProfile,
   getFreelancerResume,
   updateCompanyProfile,

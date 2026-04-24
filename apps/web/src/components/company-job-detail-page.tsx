@@ -20,9 +20,9 @@ import {
   milestoneRecordsToFormValues,
   type MilestoneFormValue
 } from "@/lib/milestone-plan";
-import { CompanyWorkspaceShell } from "./company-workspace-shell";
 import { JobDraftForm } from "./job-draft-form";
 import { MilestonePlanForm } from "./milestone-plan-form";
+import { WorkspaceLayout } from "./workspace-layout";
 
 type DetailState =
   | { status: "loading" }
@@ -219,19 +219,35 @@ export const CompanyJobDetailPage = () => {
     }
   };
 
-  if (session.status === "loading" || detailState.status === "loading" || !values) {
+  if (session.status === "loading") {
     return (
-      <CompanyWorkspaceShell companyEmail={session.user.email} companyName={session.user.name} description="Organizing job workflow..." title="Job details">
-        <section className="inline-panel"><h2>Loading job details...</h2></section>
-      </CompanyWorkspaceShell>
+      <section className="shell-card">
+        <p className="eyebrow">GigHub</p>
+        <h1>Loading workspace</h1>
+        <p className="muted">Organizing your job workflow and escrow state...</p>
+      </section>
     );
   }
 
-  if (detailState.status === "error") {
+  if (session.status === "error" || detailState.status === "error") {
+    const msg = session.status === "error" ? session.message : (detailState as any).message;
     return (
-      <CompanyWorkspaceShell companyEmail={session.user.email} companyName={session.user.name} description="Error" title="Job details">
-        <section className="inline-panel"><h2>{detailState.message}</h2></section>
-      </CompanyWorkspaceShell>
+      <section className="shell-card">
+        <p className="eyebrow">GigHub</p>
+        <h1>Unable to load job</h1>
+        <p className="muted">{msg}</p>
+        <Link className="button-secondary" href="/dashboard">Back to Dashboard</Link>
+      </section>
+    );
+  }
+
+  if (detailState.status === "loading" || !values) {
+    return (
+      <WorkspaceLayout user={session.user} title="Loading Job..." subtitle="Pulling the latest workflow data.">
+        <section className="inline-panel">
+          <h2 className="muted">Refreshing job state...</h2>
+        </section>
+      </WorkspaceLayout>
     );
   }
 
@@ -337,18 +353,16 @@ export const CompanyJobDetailPage = () => {
   };
 
   return (
-    <CompanyWorkspaceShell
-      actions={
-        <div style={{ display: "flex", gap: 12 }}>
-          <Link className="button-secondary" href="/jobs">Back to History</Link>
-          <Link className="button-primary" style={{ backgroundColor: companyAccent }} href="/jobs/new">Post New Job</Link>
-        </div>
-      }
-      companyEmail={session.user.email}
-      companyName={session.user.name}
-      description={`Job ID: ${job.id.slice(0, 8)}...`}
+    <WorkspaceLayout
+      user={session.user}
       title={job.title}
+      subtitle={`Manage your project workflow and escrow state.`}
     >
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginBottom: 24 }}>
+        <Link className="button-secondary" href="/jobs">Back to History</Link>
+        <Link className="button-primary" style={{ backgroundColor: companyAccent }} href="/jobs/new">Post New Job</Link>
+      </div>
+
       <EscrowMonitor job={job} />
 
       <nav style={{ display: "flex", gap: 24, marginBottom: 32, borderBottom: "1px solid #E5E7EB", paddingBottom: 2 }}>
