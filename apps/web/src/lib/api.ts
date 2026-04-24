@@ -1,11 +1,6 @@
 "use client";
 
 import type {
-  AdminDisputeDetailRecord,
-  AdminDisputeListRecord,
-  AdminAuditLogRecord,
-  AdminIncomeStatementRecord,
-  AdminJobTraceRecord,
   ApiErrorResponse,
   AssignFreelancerInput,
   CompanyJobApplicationRecord,
@@ -39,7 +34,6 @@ import type {
   RejectMilestoneInput,
   RegisterInput,
   RespondJobInvitationInput,
-  ResolveDisputeInput,
   UpdateCompanyProfileInput,
   UpdateFreelancerProfileInput,
   UpsertJobDraftInput
@@ -442,33 +436,6 @@ export const freelancerWorkspaceApi = {
     }),
   listJobMatches: () =>
     requestJson<{ matches: JobMatchRecord[] }>("/freelancer/job-matches", {
-      method: "GET"
-    })
-};
-
-export const adminApi = {
-  listDisputes: () =>
-    requestJson<{ disputes: AdminDisputeListRecord[] }>("/admin/disputes", {
-      method: "GET"
-    }),
-  getDispute: (disputeId: string) =>
-    requestJson<{ dispute: AdminDisputeDetailRecord }>(`/admin/disputes/${disputeId}`, {
-      method: "GET"
-    }),
-  resolveDispute: (disputeId: string, input: ResolveDisputeInput) =>
-    requestJson<{ dispute: AdminDisputeDetailRecord }>(`/admin/disputes/${disputeId}/resolve`, {
-      method: "POST",
-      json: input
-    }),
-  getAudit: () =>
-    requestJson<{
-      auditLogs: AdminAuditLogRecord[];
-      incomeStatements: AdminIncomeStatementRecord[];
-    }>("/admin/audit-logs", {
-      method: "GET"
-    }),
-  getJobTrace: (jobId: string) =>
-    requestJson<{ trace: AdminJobTraceRecord }>(`/admin/jobs/${jobId}/trace`, {
       method: "GET"
     })
 };

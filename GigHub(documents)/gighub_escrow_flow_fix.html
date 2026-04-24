@@ -1,0 +1,301 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .tabs { display: flex; gap: 4px; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 24px; flex-wrap: wrap; }
+  .tab { padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; white-space: nowrap; }
+  .tab.active { color: var(--color-text-primary); border-bottom-color: var(--color-text-primary); }
+  .tab:hover:not(.active) { color: var(--color-text-primary); }
+  .section { display: none; }
+  .section.visible { display: block; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px 20px; margin-bottom: 12px; }
+  .card-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; }
+  .card-body { font-size: 13px; color: var(--color-text-secondary); line-height: 1.65; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 4px; margin-right: 6px; margin-bottom: 4px; }
+  .badge-teal { background: var(--color-background-success); color: var(--color-text-success); }
+  .badge-amber { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .badge-blue { background: var(--color-background-info); color: var(--color-text-info); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; }
+  .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+  .flow-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+  .flow-box { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 12px; font-size: 12px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; }
+  .flow-box.highlight { border-color: var(--color-border-warning); background: var(--color-background-warning); color: var(--color-text-warning); }
+  .flow-box.escrow { border-color: var(--color-border-success); background: var(--color-background-success); color: var(--color-text-success); }
+  .flow-arrow { font-size: 14px; color: var(--color-text-tertiary); }
+  .layer { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: var(--border-radius-md); margin-bottom: 8px; border: 0.5px solid var(--color-border-tertiary); }
+  .layer-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .layer-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 3px; }
+  .layer-detail { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+  .glm-row { display: grid; grid-template-columns: 160px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .glm-row:last-child { border-bottom: none; }
+  .glm-fn { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .glm-why { font-size: 12px; color: var(--color-text-secondary); line-height: 1.55; }
+  .divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 18px 0; }
+  h2 { font-size: 16px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 12px; }
+  h3 { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 14px 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .glm-test { background: var(--color-background-warning); border: 0.5px solid var(--color-border-warning); border-radius: var(--border-radius-md); padding: 12px 14px; margin: 12px 0; font-size: 13px; color: var(--color-text-warning); }
+  .pill { display: inline-flex; align-items: center; gap: 5px; border: 0.5px solid var(--color-border-secondary); border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--color-text-secondary); margin: 2px; }
+  .e2e-step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .e2e-step:last-child { border-bottom: none; }
+  .e2e-num { width: 22px; height: 22px; border-radius: 50%; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: var(--color-text-secondary); flex-shrink: 0; margin-top: 1px; }
+  .e2e-label { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 3px; }
+  .e2e-detail { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+  .flow-note { font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; font-style: italic; }
+</style>
+
+<div>
+  <div class="tabs">
+    <div class="tab active" onclick="show('overview')">Overview</div>
+    <div class="tab" onclick="show('problem')">Problem trap</div>
+    <div class="tab" onclick="show('glm')">Why GLM</div>
+    <div class="tab" onclick="show('features')">Features</div>
+    <div class="tab" onclick="show('stack')">Tech stack</div>
+    <div class="tab" onclick="show('safety')">Data safety</div>
+  </div>
+
+  <div id="section-overview" class="section visible">
+    <h2>GigHub — solution brief</h2>
+    <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.65;margin-bottom:16px;">An escrow-backed freelance marketplace for Malaysia where GLM is the central decision intelligence layer — not a bolt-on chatbot. Aligned to hackathon domain: AI for Economic Empowerment & Decision Intelligence.</p>
+    <div class="stat-grid">
+      <div class="stat"><div class="stat-label">Gig workers protected</div><div class="stat-value">1.64M</div></div>
+      <div class="stat"><div class="stat-label">Ave. monthly income</div><div class="stat-value">RM2–4k</div></div>
+      <div class="stat"><div class="stat-label">Youth unemployment</div><div class="stat-value">10.3%</div></div>
+      <div class="stat"><div class="stat-label">Non-payment cases</div><div class="stat-value">#1 issue</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Core value proposition</div>
+      <div class="card-body">Companies post and GLM validates before any commitment is made. Once a freelancer accepts, the company funds escrow — locking payment before work begins. GLM then validates briefs, scores deliverables, powers dispute arbitration, and generates income intelligence. The escrow only releases when GLM confirms the milestone is fulfilled — making it unremovable from the core loop.</div>
+    </div>
+    <h3>Target users</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+      <div class="pill">Malaysian freelancers (design, writing, dev, translation, creative)</div>
+      <div class="pill">SMEs needing project-based talent</div>
+      <div class="pill">Startups without HR budgets</div>
+      <div class="pill">Gig workers needing income proof for bank loans</div>
+    </div>
+    <h3>How it maps to hackathon expectations</h3>
+    <div class="card">
+      <div class="card-body">
+        <div style="margin-bottom:8px;"><span class="badge badge-teal">Decision-making</span> GLM decides milestone pass/fail, generates dispute verdicts, recommends jobs to freelancers</div>
+        <div style="margin-bottom:8px;"><span class="badge badge-teal">Quantifiable impact</span> Eliminates ~100% of non-payment risk; reduces dispute resolution from weeks to hours; generates formal income slips for bank loan applications</div>
+        <div style="margin-bottom:8px;"><span class="badge badge-teal">Clear users</span> 1.64M gig workers + Malaysian SME market</div>
+        <div><span class="badge badge-teal">Validation</span> Scenario-based: escrow flow demo + GLM brief-match scoring demo</div>
+      </div>
+    </div>
+    <button onclick="sendPrompt('Give me more detail on the GigHub business model and revenue streams')">Explore business model ↗</button>
+  </div>
+
+  <div id="section-problem" class="section">
+    <h2>Problem statement trap & real-life validation</h2>
+    <p style="font-size:13px;color:var(--color-text-secondary);line-height:1.65;margin-bottom:16px;">The "problem" is deeper than late payments. Here are the structural traps that a surface-level solution misses — validated by Malaysia-specific research.</p>
+    <div class="card" style="border-left: 3px solid var(--color-border-danger); border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+      <div class="card-title">Trap 1 — "Just build an escrow app"</div>
+      <div class="card-body">Escrow alone doesn't solve the verification problem. If a client puts money in escrow and then refuses to release it claiming bad work, you've just moved the dispute — not resolved it. Without GLM comparing the deliverable to the original brief, you have no arbiter. This is why Fiverr and Upwork still have massive fraud and dispute rates despite having escrow.</div>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--color-border-danger); border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+      <div class="card-title">Trap 2 — "Gig workers need minimum wage"</div>
+      <div class="card-body">The Ministry of Human Resources confirmed the RM1,700 minimum wage doesn't directly apply to gig workers — a separate Gig Consultative Council (MPGIG, first meeting April 3 2026) handles income rates. The real problem isn't wage level; it's that freelancers can't prove their income to banks. No payslip, no EPF record, no loan. A platform that generates formal income history solves a more urgent problem.</div>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--color-border-danger); border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+      <div class="card-title">Trap 3 — "One rate fits all freelancers"</div>
+      <div class="card-body">An e-hailing driver, a childcare provider, and a freelance translator all fall under the same Gig Workers Act 2025, but their cost structures are entirely different. GLM can dynamically analyse market rates by sector, location, and complexity — producing personalised income benchmarks, not a single blunt number.</div>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--color-border-danger); border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+      <div class="card-title">Trap 4 — "The law has fixed the problem"</div>
+      <div class="card-body">Malaysia's Human Rights Commission (Suhakam) flagged that the Gig Workers Bill is still missing provisions for wage guarantees. APAD's May 2025 shutdown of InDrive and Maxim showed regulatory crackdowns can instantly wipe out a freelancer's income. The law created a framework but not a safety net.</div>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--color-border-danger); border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+      <div class="card-title">Trap 5 — "Confidential work is unverifiable"</div>
+      <div class="card-body">When jobs are confidential, platforms instinctively give up on verification. GigHub solves this with end-to-end encryption + wrapper verification: file metadata, SHA-256 hash proofs, and timestamps confirm delivery without exposing content. GLM assesses brief fulfilment using structure only — never reads the underlying IP.</div>
+    </div>
+    <button onclick="sendPrompt('What are best practices from Upwork and Fiverr that GigHub should adopt or improve on?')">Compare with global platforms ↗</button>
+  </div>
+
+  <div id="section-glm" class="section">
+    <h2>Why GLM is non-removable</h2>
+    <div class="glm-test">Removability test: if GLM is off, the platform cannot (1) validate whether a brief is specific enough to be enforceable, (2) score whether a deliverable fulfils a brief, (3) generate a neutral dispute summary, or (4) produce personalised income benchmarks. The escrow flow breaks at steps 2 and 3. The platform becomes a file-sharing tool with a payment hold.</div>
+    <h3>GLM functions in the core loop</h3>
+    <div class="glm-row"><div class="glm-fn">Brief validation</div><div class="glm-why">Scores brief completeness (0–100), flags vague requirements, asks clarifying questions before any freelancer sees the job. Threshold: ≥70 required before a job goes live. Without GLM, any brief goes live regardless of quality.</div></div>
+    <div class="glm-row"><div class="glm-fn">Milestone scoring</div><div class="glm-why">Compares deliverable metadata and activity log against the agreed brief. Produces a structured pass/partial/fail verdict. This is the escrow release trigger — without it, there's no automated basis for fund release.</div></div>
+    <div class="glm-row"><div class="glm-fn">Dispute arbitration</div><div class="glm-why">Reads brief vs submission match score, activity trail, rejection reason, and client dispute history. Generates a neutral ruling summary. Flags bad-faith rejections. Human moderator reviews before final ruling within 48hr.</div></div>
+    <div class="glm-row"><div class="glm-fn">Income intelligence</div><div class="glm-why">Analyses completed project history, compares against market rate benchmarks by skill and sector, and generates a formal income statement PDF for bank loan applications.</div></div>
+    <div class="glm-row"><div class="glm-fn">Job matching</div><div class="glm-why">Reads freelancer portfolio and skills against open briefs, ranks fit using semantic understanding — not just keyword matching.</div></div>
+    <hr class="divider">
+    <h3>Honest assessment of GLM vs alternatives</h3>
+    <div class="card">
+      <div class="card-body">
+        <div style="margin-bottom:8px;"><span class="badge badge-teal">Suitable</span> GLM-4 handles all 5 functions above. Brief scoring, dispute summarisation, and job matching are text reasoning tasks where GLM-4 performs competitively at low cost.</div>
+        <div style="margin-bottom:8px;"><span class="badge badge-amber">Limitation</span> GLM's vision model (glm-4v) is weaker for design quality review. For visual deliverables, rely on metadata verification + client sign-off rather than GLM visual assessment.</div>
+        <div><span class="badge badge-blue">Hackathon fit</span> Brief match scorer + dispute summariser are the two highest-impact features to demo — both are well within GLM-4's capabilities and prove non-removability.</div>
+      </div>
+    </div>
+    <button onclick="sendPrompt('Show me a sample GLM API call for the brief match scoring function in GigHub')">See GLM API example ↗</button>
+  </div>
+
+  <div id="section-features" class="section">
+    <h2>Key features</h2>
+
+    <h3>Core escrow flow</h3>
+    <div class="flow-row">
+      <div class="flow-box">Company posts brief</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">GLM validates brief</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Freelancer accepts</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box escrow">Escrow funded</div>
+    </div>
+    <div class="flow-note" style="margin-bottom:4px;">Company funds escrow only after a freelancer commits — no idle capital lock-up before a match is made.</div>
+    <div class="flow-row">
+      <div class="flow-box">Work submitted</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box highlight">GLM scores milestone</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box">Client reviews</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box escrow">Escrow releases</div>
+    </div>
+
+    <h3>Feature set</h3>
+    <div class="card">
+      <div class="card-title">1. Structured brief builder + GLM validation</div>
+      <div class="card-body">Company fills a structured brief form (deliverable type, format, word count/dimensions, deadline, reference examples). GLM scores specificity and asks clarifying questions for gaps. A brief must score ≥70 before it is visible to freelancers. Prevents unenforceable contracts from the start.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">2. Freelancer acceptance + escrow trigger</div>
+      <div class="card-body">Once GLM approves a brief, it is listed on the marketplace. When a freelancer accepts the job, the platform prompts the company to fund escrow before work begins. This sequence — accept first, then escrow — ensures no freelancer starts work without guaranteed payment, while no company is locked into escrow before a match exists.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">3. Milestone system</div>
+      <div class="card-body">Project amount broken into up to 5 milestones. 50/50 split option available to ease SME friction. 72-hour auto-release if client doesn't respond to a submission — prevents ghosting. Watermarked previews for design work prevent IP theft before payment.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">4. GLM milestone verification</div>
+      <div class="card-body">On submission, GLM receives the original brief, file metadata (size, format, word count, dimensions), submission timestamp log, and activity trail. Produces a 0–100 brief match score with breakdown by requirement. Triggers auto-release if score ≥ threshold and client is unresponsive.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">5. GLM dispute arbitration</div>
+      <div class="card-body">If client rejects: GLM reads brief vs submission match score, activity trail evidence, and rejection reason. Generates a neutral ruling summary. Flags bad-faith patterns (vague rejection, rejection after deadline, history of disputes). Human moderator reviews GLM summary and issues final ruling within 48hr.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">6. Income intelligence dashboard</div>
+      <div class="card-body">Freelancer-facing: monthly/annual earnings summary, market rate benchmarks by skill (from GLM analysis of platform data), formal income statement PDF for bank loan applications. Directly solves the loan access problem under the Gig Workers Act 2025 framework.</div>
+    </div>
+    <div class="card" style="border: 2px solid var(--color-border-info);">
+      <div style="margin-bottom:8px;"><span class="badge badge-blue">E2E encrypted</span></div>
+      <div class="card-title">7. Confidential work — end-to-end encrypted delivery</div>
+      <div class="card-body">
+        <p style="margin-bottom:10px;">All deliverables on GigHub are treated as confidential by default. Files are encrypted on the freelancer's device before upload (AES-256-GCM), pass through GigHub's servers as an opaque encrypted blob, and are automatically hard-deleted from Cloudflare R2 after 72 hours. GigHub never holds decryptable content.</p>
+        <div style="margin-top:12px;">
+          <div class="e2e-step"><div class="e2e-num">1</div><div><div class="e2e-label">Client-side encryption</div><div class="e2e-detail">Freelancer's browser encrypts the file using AES-256-GCM with a symmetric key derived from the job keypair before any bytes leave the device.</div></div></div>
+          <div class="e2e-step"><div class="e2e-num">2</div><div><div class="e2e-label">Encrypted upload to R2</div><div class="e2e-detail">The encrypted blob is uploaded to Cloudflare R2. GigHub's server receives and stores only the ciphertext — it cannot read the file content at any point.</div></div></div>
+          <div class="e2e-step"><div class="e2e-num">3</div><div><div class="e2e-label">SHA-256 hash recorded</div><div class="e2e-detail">A SHA-256 hash of the encrypted file is stored immutably in PostgreSQL as proof-of-delivery without revealing its contents.</div></div></div>
+          <div class="e2e-step"><div class="e2e-num">4</div><div><div class="e2e-label">Client-side decryption</div><div class="e2e-detail">The client downloads the encrypted blob and decrypts it locally using the shared job key. GigHub never participates in decryption.</div></div></div>
+          <div class="e2e-step"><div class="e2e-num">5</div><div><div class="e2e-label">72-hour auto-delete</div><div class="e2e-detail">R2 lifecycle rule hard-deletes the encrypted blob 72 hours after upload. The SHA-256 hash in PostgreSQL remains as the permanent audit record.</div></div></div>
+          <div class="e2e-step"><div class="e2e-num">6</div><div><div class="e2e-label">GLM uses metadata only</div><div class="e2e-detail">For milestone scoring and dispute analysis, GLM receives only the brief text, file metadata, and activity log — never file content.</div></div></div>
+        </div>
+        <div style="margin-top:12px; padding:10px 12px; background:var(--color-background-secondary); border-radius:var(--border-radius-md);">
+          <span style="font-size:12px;color:var(--color-text-secondary);">Compliant with Malaysia's PDPA and Gig Workers Act 2025. GigHub cannot be compelled to produce file content it has never decrypted.</span>
+        </div>
+      </div>
+    </div>
+    <button onclick="sendPrompt('Design the database schema for the milestone and escrow system in GigHub')">See DB schema ↗</button>
+  </div>
+
+  <div id="section-stack" class="section">
+    <h2>Technical stack</h2>
+    <h3>Data ingestion</h3>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-info);">📥</div>
+      <div><div class="layer-title">Input sources</div><div class="layer-detail">Freelancer profile + portfolio (text/images), job brief form (structured JSON), encrypted file submission uploads (R2), activity logs (timestamped events), GLM brief score responses, client feedback forms (structured), payment webhook events (Stripe/iPay88)</div></div>
+    </div>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-info);">🔄</div>
+      <div><div class="layer-title">Ingestion pipeline</div><div class="layer-detail">Node.js API receives submissions → extracts file metadata (size, word count, dimensions via pdfparse/sharp/mammoth) from pre-encryption manifest → logs to PostgreSQL audit table → sends structured metadata payload to GLM for scoring → stores score + reasoning in milestone record</div></div>
+    </div>
+    <h3>Data storage</h3>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-success);">🗄️</div>
+      <div><div class="layer-title">PostgreSQL (primary)</div><div class="layer-detail">Users, jobs, milestones, escrow state machine, submission logs, audit trail, GLM scores, dispute records, SHA-256 hash proofs. Milestone state transitions are atomic and auditable.</div></div>
+    </div>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-success);">⚡</div>
+      <div><div class="layer-title">Redis (session + queue)</div><div class="layer-detail">Session tokens, real-time notification queue, escrow lock (prevent double-release race condition), GLM response cache (brief scores cached 24hr)</div></div>
+    </div>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-success);">☁️</div>
+      <div><div class="layer-title">Cloudflare R2 (file storage)</div><div class="layer-detail">Stores encrypted blobs only — GigHub never holds plaintext content. Zero egress fees. R2 lifecycle rule hard-deletes all files 72 hours after upload. SHA-256 hash retained in PostgreSQL as permanent proof-of-delivery.</div></div>
+    </div>
+    <h3>GLM context assembly</h3>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-warning);">🧠</div>
+      <div><div class="layer-title">Brief validation prompt</div><div class="layer-detail">Input: structured brief JSON. Returns: {score, gaps[], clarifying_questions[]}. Threshold: 70+ to publish.</div></div>
+    </div>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-warning);">🧠</div>
+      <div><div class="layer-title">Milestone scoring prompt</div><div class="layer-detail">Input: {brief, submission_metadata, activity_log, file_hash}. Metadata extracted pre-encryption. Returns: {overall_score, requirement_scores[], pass_fail, reasoning}. No file content ever sent to GLM.</div></div>
+    </div>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-warning);">🧠</div>
+      <div><div class="layer-title">Dispute analysis prompt</div><div class="layer-detail">Input: {brief, milestone_score, activity_log, rejection_reason, client_dispute_history}. Returns: {recommendation, bad_faith_flags[], reasoning}.</div></div>
+    </div>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-warning);">🧠</div>
+      <div><div class="layer-title">Income intelligence prompt</div><div class="layer-detail">Input: {completed_jobs[], skills[], location, sector}. Returns: {income_summary, market_rate_benchmark, recommended_rate_range, income_statement_text_for_bank}. Output rendered as PDF via pdfkit.</div></div>
+    </div>
+    <h3>Frontend</h3>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-secondary);">⚛️</div>
+      <div><div class="layer-title">Next.js (App Router)</div><div class="layer-detail">Full-stack: React frontend + API routes in one repo. Deployed free on Vercel. Client-side Web Crypto API handles E2E encryption/decryption — keys never leave the browser. Mobile-responsive.</div></div>
+    </div>
+    <h3>Backend</h3>
+    <div class="layer">
+      <div class="layer-icon" style="background:var(--color-background-secondary);">🖥️</div>
+      <div><div class="layer-title">Node.js + Express</div><div class="layer-detail">REST API: escrow state machine, milestone transitions, GLM orchestration, metadata extraction pipeline, payment webhooks. Stripe (sandbox for hackathon) or iPay88 for FPX/online banking (production).</div></div>
+    </div>
+  </div>
+
+  <div id="section-safety" class="section">
+    <h2>Data safety</h2>
+    <div class="card" style="border-left: 3px solid var(--color-border-danger); border-radius: 0 var(--border-radius-lg) var(--border-radius-lg) 0;">
+      <div class="card-title">Regulatory baseline — PDPA + Gig Workers Act 2025</div>
+      <div class="card-body">Malaysia's Personal Data Protection Act (PDPA) governs how freelancer and client data is collected, stored, and processed. The Gig Workers Act 2025 mandates payment transparency and service agreement documentation. Because GigHub never decrypts file content, it cannot be compelled to produce content it has never held in plaintext.</div>
+    </div>
+    <h3>End-to-end encryption model</h3>
+    <div class="card" style="border: 2px solid var(--color-border-info);">
+      <div style="margin-bottom:8px;"><span class="badge badge-blue">Core architecture</span></div>
+      <div class="card-body">
+        <div style="margin-bottom:8px;">Files are encrypted in the browser using the Web Crypto API (AES-256-GCM) before upload. GigHub's servers receive only ciphertext. The symmetric key is derived from a per-job keypair exchanged between freelancer and client — GigHub never holds the key.</div>
+        <div style="margin-bottom:8px;">SHA-256 hash of the encrypted blob is stored immutably in PostgreSQL as the proof-of-delivery record for dispute arbitration, escrow release, and legal compliance.</div>
+        <div>72-hour hard-delete via Cloudflare R2 lifecycle rule removes the encrypted blob automatically. The hash record in PostgreSQL is permanent and append-only.</div>
+      </div>
+    </div>
+    <h3>GLM context safety</h3>
+    <div class="card">
+      <div class="card-body">
+        <div style="margin-bottom:8px;">GLM prompts assembled server-side only — API key never exposed to browser. PII stripped from all prompts (names and emails replaced with role tokens: freelancer_1, client_1).</div>
+        <div style="margin-bottom:8px;">GLM receives only: brief text, file metadata extracted pre-encryption, activity logs, and submission timestamps. File content is never sent to GLM under any circumstances.</div>
+        <div>GLM responses stored in PostgreSQL for milestone and dispute decisions only — not used for training or third-party sharing.</div>
+      </div>
+    </div>
+    <h3>Payment data</h3>
+    <div class="card">
+      <div class="card-body">Card and banking data never stored on the platform — delegated to Stripe or iPay88 (PCI-DSS compliant). Platform stores only: transaction ID, amount, status, and timestamp. Escrow is funded after freelancer acceptance and held as a ledger entry in PostgreSQL until milestone release.</div>
+    </div>
+    <h3>Access control</h3>
+    <div class="card">
+      <div class="card-body">JWT with 15-minute access tokens + 7-day refresh tokens in HttpOnly cookies. Role-based access: freelancer sees only their own jobs; company sees only jobs they posted; admin sees all for dispute resolution. PostgreSQL row-level security via user_id partitioning. All API routes validated with Zod schemas before database writes.</div>
+    </div>
+    <button onclick="sendPrompt('What MSB licensing or e-money regulations apply to running an escrow platform in Malaysia?')">Explore Malaysia payment regulations ↗</button>
+  </div>
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('visible');
+    event.target.classList.add('active');
+  }
+</script>

@@ -16,7 +16,7 @@ const getRedirectTarget = (user: PublicUser | null, requiredRole?: AppRole) => {
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    return user.role === "admin" ? "/admin" : "/dashboard";
+    return "/dashboard";
   }
 
   return null;

@@ -7,8 +7,6 @@ const mockCompanyCount = 200;
 const mockFreelancerCount = 200;
 const mockEmailDomain = "gighub.mock";
 
-const adminEmail = process.env.ADMIN_EMAIL ?? "admin@gighub.local";
-const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin123!";
 const demoCompanyPassword = process.env.DEMO_COMPANY_PASSWORD ?? "Company123!";
 const demoFreelancerPassword = process.env.DEMO_FREELANCER_PASSWORD ?? "Freelancer123!";
 const demoIncomeVerifyToken = "demo-income-statement-aina-2026-04";
@@ -22,25 +20,6 @@ const demoJobTitles = [
 const demoInvitationNote =
   "We reviewed your profile and would like to invite you to this Kampung Labs project.";
 const demoInvitationThreadSubject = "Kampung Labs invitation for Demo Open Job - Figma landing page design";
-
-const upsertAdmin = async () => {
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
-
-  return prisma.user.upsert({
-    where: { email: adminEmail.toLowerCase() },
-    update: {
-      name: "GigHub Admin",
-      passwordHash,
-      role: "admin"
-    },
-    create: {
-      email: adminEmail.toLowerCase(),
-      name: "GigHub Admin",
-      passwordHash,
-      role: "admin"
-    }
-  });
-};
 
 const upsertDemoCompany = async () => {
   const passwordHash = await bcrypt.hash(demoCompanyPassword, 12);
@@ -375,7 +354,7 @@ const createDemoDisputeJob = async (companyId: string, freelancerId: string) => 
     }
   });
 
-  await prisma.auditLog.createMany({
+  await prisma.activityLog.createMany({
     data: [
       {
         actorId: freelancerId,
@@ -498,7 +477,7 @@ const createDemoCompletedJob = async (companyId: string, freelancerId: string) =
     }
   });
 
-  await prisma.auditLog.create({
+  await prisma.activityLog.create({
     data: {
       actorId: companyId,
       entityType: "job",
@@ -1032,7 +1011,6 @@ const seedBulkRequestsAndInbox = async (
 };
 
 const main = async () => {
-  await upsertAdmin();
   const company = await upsertDemoCompany();
   const [aina] = await upsertDemoFreelancers();
   const bulkCompanies = await upsertBulkCompanies();

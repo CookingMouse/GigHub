@@ -207,7 +207,6 @@ const toDisputeRecord = (dispute: CompanySubmission["dispute"] | null): DisputeR
     rejectionReason: dispute.rejectionReason,
     resolutionType: dispute.resolutionType ?? null,
     resolutionSummary: dispute.resolutionSummary ?? null,
-    adminNote: dispute.adminNote ?? null,
     openedAt: dispute.openedAt.toISOString(),
     resolvedAt: dispute.resolvedAt?.toISOString() ?? null,
     latestDecision: toGLMDecisionRecord(dispute.glmDecisions[0] ?? null)
@@ -420,7 +419,7 @@ const persistBriefValidation = async (
       }
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId,
         entityType: "job",
@@ -480,7 +479,7 @@ export const createCompanyJob = async (companyId: string, input: UpsertJobDraftI
       include: companyJobInclude
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId: companyId,
         entityType: "job",
@@ -526,7 +525,7 @@ export const updateCompanyJob = async (companyId: string, jobId: string, input: 
       include: companyJobInclude
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId: companyId,
         entityType: "job",
@@ -614,7 +613,7 @@ export const publishCompanyJob = async (companyId: string, jobId: string) => {
       include: companyJobInclude
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId: companyId,
         entityType: "job",
@@ -692,7 +691,7 @@ export const assignFreelancerToJob = async (
       }
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId: companyId,
         entityType: "job",
@@ -771,7 +770,7 @@ export const createMockEscrowIntent = async (
       }
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId: companyId,
         entityType: "job",
@@ -867,7 +866,7 @@ export const handleMockPaymentWebhook = async (input: MockPaymentWebhookInput) =
       });
     }
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         entityType: "job",
         entityId: escrow.jobId,
@@ -973,7 +972,7 @@ export const replaceJobMilestones = async (
       }
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId: companyId,
         entityType: "job",
@@ -1135,7 +1134,7 @@ export const rejectCompanyMilestone = async (
       }
     });
 
-    await tx.auditLog.create({
+    await tx.activityLog.create({
       data: {
         actorId: companyId,
         entityType: "milestone",

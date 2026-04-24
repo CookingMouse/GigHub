@@ -8,7 +8,7 @@ export default function HomePage() {
         <h1>Escrow-backed freelance work with structured workflows.</h1>
         <p className="muted">
           GigHub now supports structured briefs, funded escrow, milestone submissions, manual
-          disputes, income statements, matching, and admin audit views for the full demo loop.
+          disputes, income statements, and matching for the full demo loop.
         </p>
 
         <div className="cta-row">

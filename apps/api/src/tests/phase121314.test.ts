@@ -12,7 +12,7 @@ const clearData = async () => {
   await prisma.incomeStatementLineItem.deleteMany();
   await prisma.incomeStatement.deleteMany();
   await prisma.notification.deleteMany();
-  await prisma.auditLog.deleteMany();
+  await prisma.activityLog.deleteMany();
   await prisma.gLMDecision.deleteMany();
   await prisma.dispute.deleteMany();
   await prisma.submission.deleteMany();
@@ -69,24 +69,6 @@ const registerFreelancer = async (agent: Agent, email = "aina@example.com") => {
     where: {
       email
     }
-  });
-};
-
-const registerAdmin = async (agent: Agent) => {
-  const password = "StrongPass123";
-
-  await prisma.user.create({
-    data: {
-      email: "admin@example.com",
-      name: "GigHub Admin",
-      passwordHash: await hashPassword(password),
-      role: "admin"
-    }
-  });
-
-  await agent.post("/api/v1/auth/login").send({
-    email: "admin@example.com",
-    password
   });
 };
 
@@ -151,7 +133,7 @@ const createReleasedJob = async (freelancerId: string, companyId: string) => {
     }
   });
 
-  await prisma.auditLog.create({
+  await prisma.activityLog.create({
     data: {
       actorId: companyId,
       entityType: "job",
@@ -271,34 +253,5 @@ describe("phase 12-14 routes", () => {
     expect(response.body.data.matches[0].jobId).toBe(openJob.id);
     expect(response.body.data.matches[0].matchScore).toBeGreaterThanOrEqual(60);
     expect(response.body.data.matches[0].reasons.join(" ")).toMatch(/skill match/i);
-  });
-
-  it("exposes admin audit logs, income statements, and job trace context", async () => {
-    const freelancer = request.agent(app);
-    const freelancerUser = await registerFreelancer(freelancer);
-    const company = request.agent(app);
-    const companyUser = await registerCompany(company);
-    const job = await createReleasedJob(freelancerUser.id, companyUser.id);
-
-    await freelancer.post("/api/v1/freelancer/income/statements").send({
-      periodStart: "2026-04-01T00:00:00.000Z",
-      periodEnd: "2026-04-30T23:59:59.999Z"
-    });
-
-    const admin = request.agent(app);
-    await registerAdmin(admin);
-
-    const auditResponse = await admin.get("/api/v1/admin/audit-logs");
-
-    expect(auditResponse.status).toBe(200);
-    expect(auditResponse.body.data.auditLogs[0].eventType).toBe("job.completed");
-    expect(auditResponse.body.data.incomeStatements).toHaveLength(1);
-
-    const traceResponse = await admin.get(`/api/v1/admin/jobs/${job.id}/trace`);
-
-    expect(traceResponse.status).toBe(200);
-    expect(traceResponse.body.data.trace.id).toBe(job.id);
-    expect(traceResponse.body.data.trace.milestones[0].status).toBe("RELEASED");
-    expect(traceResponse.body.data.trace.auditLogs.length).toBeGreaterThan(0);
   });
 });

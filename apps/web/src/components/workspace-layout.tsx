@@ -91,16 +91,6 @@ const roleNavSections: Record<AppRole, NavSection[]> = {
       ],
     },
   ],
-  admin: [
-    {
-      group: null,
-      items: [
-        { href: "/admin",          label: "Dashboard",  icon: "dashboard"     },
-        { href: "/admin/disputes", label: "Disputes",   icon: "alertTriangle" },
-        { href: "/admin/audit",    label: "Audit Log",  icon: "clipboard"     },
-      ],
-    },
-  ],
 };
 
 // ── Role accent colours ───────────────────────────────────────────────────────
@@ -130,21 +120,12 @@ const roleStyle: Record<AppRole, RoleStyle> = {
     cta:         "Post Job",
     ctaHref:     "/jobs/new",
   },
-  admin: {
-    accent:      "#7C3AED",
-    accentLight: "#F5F3FF",
-    accentText:  "#5b21b6",
-    tagline:     "Super Admin",
-    cta:         "Audit Log",
-    ctaHref:     "/admin/audit",
-  },
 };
 
 const getInitials = (name: string) =>
   name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
-const isActive = (pathname: string, href: string, role: AppRole) => {
-  if (role === "admin" && href === "/admin") return pathname === "/admin";
+const isActive = (pathname: string, href: string) => {
   return pathname === href || pathname.startsWith(`${href}/`);
 };
 

@@ -10,7 +10,6 @@ datasource db {
 enum Role {
   freelancer
   company
-  admin
 }
 
 enum JobStatus {
@@ -50,7 +49,6 @@ enum EscrowStatus {
 enum EscrowReleaseTrigger {
   CLIENT_APPROVAL
   AUTO_RELEASE
-  ADMIN_RULING
 }
 
 enum MilestoneStatus {
@@ -114,7 +112,7 @@ model User {
   sentMessages     ConversationMessage[]  @relation("ConversationMessageSender")
   conversationParticipants ConversationParticipant[]
   createdThreads   ConversationThread[]   @relation("ConversationThreadCreator")
-  auditLogs        AuditLog[]             @relation("AuditActor")
+  activityLogs     ActivityLog[]          @relation("ActivityActor")
   incomeStatements IncomeStatement[]      @relation("IncomeStatementFreelancer")
   sentInvitations  JobInvitation[]        @relation("JobInvitationCompany")
   receivedInvitations JobInvitation[]     @relation("JobInvitationFreelancer")
@@ -366,7 +364,6 @@ model Dispute {
   rejectionReason   String
   resolutionType    String?
   resolutionSummary String?
-  adminNote         String?
   openedAt          DateTime       @default(now())
   resolvedAt        DateTime?
   submission        Submission     @relation(fields: [submissionId], references: [id], onDelete: Cascade)
@@ -421,7 +418,7 @@ model Notification {
   @@index([deliveryStatus])
 }
 
-model AuditLog {
+model ActivityLog {
   id         String   @id @default(cuid())
   actorId    String?
   entityType String
@@ -429,7 +426,7 @@ model AuditLog {
   eventType  String
   payload    Json?
   createdAt  DateTime @default(now())
-  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actor      User?    @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([entityType, entityId])
   @@index([actorId])

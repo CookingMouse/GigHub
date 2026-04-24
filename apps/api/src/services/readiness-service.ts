@@ -16,12 +16,6 @@ const demoAccounts = [
     email: "aina@example.com",
     password: "Freelancer123!",
     label: "Demo freelancer with assigned milestones, matches, and income records"
-  },
-  {
-    role: "admin" as const,
-    email: env.ADMIN_EMAIL,
-    password: env.ADMIN_PASSWORD,
-    label: "Seeded admin for disputes, audit trail, and job trace review"
   }
 ];
 
@@ -154,7 +148,6 @@ export const getDemoReadiness = async (): Promise<DemoReadinessRecord> => {
     demoFlow: [
       "Sign in as the demo company to inspect published jobs, escrow, milestones, review, and disputes.",
       "Sign in as Aina to view assigned work, job matches, income intelligence, and statement generation.",
-      "Sign in as admin to review disputes, audit records, income verification, and job traces.",
       "Keep GLM_MODE=mock until the live Zhipu API key is wired in the final integration pass."
     ]
   };
