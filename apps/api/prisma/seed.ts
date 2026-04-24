@@ -272,7 +272,7 @@ const createDemoActiveJob = async (companyId: string, freelancerId: string) =>
             title: "Design direction and content structure",
             description: "Initial design pass and content hierarchy for review.",
             amount: "1600.00",
-            status: "PENDING",
+            status: "IN_PROGRESS",
             dueAt: new Date("2026-05-02T00:00:00.000Z")
           },
           {

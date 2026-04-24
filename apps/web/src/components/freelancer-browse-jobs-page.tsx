@@ -174,8 +174,8 @@ export const FreelancerBrowseJobsPage = () => {
           <section aria-label="Browse job filters" className="inline-panel">
             <div className="panel-heading-row">
               <div>
-                <p className="eyebrow">Browse controls</p>
-                <h2>Search, sort, and filter</h2>
+                <p className="browse-job-section-label">Browse controls</p>
+                <h2 className="browse-job-section-title">Search, sort, and filter</h2>
               </div>
               <button className="button-secondary" onClick={clearFilters} type="button">
                 Clear filters
@@ -238,20 +238,20 @@ export const FreelancerBrowseJobsPage = () => {
           <section aria-label="Browse job results" className="inline-panel">
             <div className="panel-heading-row">
               <div>
-                <p className="eyebrow">Open jobs</p>
-                <h2>Currently applyable jobs</h2>
+                <p className="browse-job-section-label">Open jobs</p>
+                <h2 className="browse-job-section-title">Currently applyable jobs</h2>
               </div>
-              <p className="helper-copy">
+              <p className="browse-job-result-count">
                 {filteredJobs.length} of {state.jobs.length} job(s)
               </p>
             </div>
 
             {state.jobs.length === 0 ? (
-              <p className="muted">No open jobs available right now.</p>
+              <p className="browse-job-supporting-copy">No open jobs available right now.</p>
             ) : null}
 
             {state.jobs.length > 0 && filteredJobs.length === 0 ? (
-              <p className="muted">No jobs match your current filters.</p>
+              <p className="browse-job-supporting-copy">No jobs match your current filters.</p>
             ) : null}
 
             {filteredJobs.length > 0 ? (
@@ -264,9 +264,9 @@ export const FreelancerBrowseJobsPage = () => {
                     <article className="status-panel browse-job-card" key={job.id}>
                       <div className="list-card-header">
                         <div>
-                          <p className="eyebrow">{job.companyName}</p>
+                          <p className="browse-job-company">{job.companyName}</p>
                           <h3 className="browse-job-card-title">{job.title}</h3>
-                          <p className="muted">
+                          <p className="browse-job-card-meta">
                             {job.publishedAt ? `Published ${formatDate(job.publishedAt)}` : "Published recently"}
                           </p>
                         </div>
@@ -279,13 +279,13 @@ export const FreelancerBrowseJobsPage = () => {
                             Application {toSentenceCase(application!.status)}
                           </span>
                         ) : (
-                          <span className="status-chip">Open now</span>
+                          <span className="browse-job-open-status">Open now</span>
                         )}
                       </div>
 
                       {job.description && (
-                        <div style={{ marginBottom: 16 }}>
-                          <p style={{ fontSize: 12.5, color: "#6B7280", fontWeight: 400, lineHeight: 1.5, margin: 0 }}>
+                        <div className="browse-job-description-wrapper">
+                          <p className="browse-job-description">
                             {expandedDescriptions.has(job.id)
                               ? job.description
                               : job.description.length > 150
@@ -293,6 +293,7 @@ export const FreelancerBrowseJobsPage = () => {
                                 : job.description}
                             {job.description.length > 150 && (
                               <button
+                                className="browse-job-description-toggle"
                                 type="button"
                                 onClick={() => {
                                   setExpandedDescriptions(prev => {
@@ -305,17 +306,6 @@ export const FreelancerBrowseJobsPage = () => {
                                     return next;
                                   });
                                 }}
-                                style={{
-                                  background: "none",
-                                  border: "none",
-                                  color: "#0F6E56",
-                                  cursor: "pointer",
-                                  fontSize: 12.5,
-                                  fontWeight: 500,
-                                  marginLeft: 4,
-                                  padding: 0,
-                                  textDecoration: "none",
-                                }}
                               >
                                 {expandedDescriptions.has(job.id) ? "See less" : "See more"}
                               </button>
@@ -326,22 +316,22 @@ export const FreelancerBrowseJobsPage = () => {
 
                       <div className="browse-job-meta">
                         <p>
-                          <span className="panel-label">Wages</span>
-                          <strong style={{ fontFamily: "'DM Mono', monospace", color: "#111827" }}>{formatCurrency(job.budget)}</strong>
+                          <span className="browse-job-meta-label">Wages</span>
+                          <strong className="browse-job-meta-value dashboard-mono">{formatCurrency(job.budget)}</strong>
                         </p>
                         <p>
-                          <span className="panel-label">Milestones</span>
-                          <strong>{job.milestoneCount}</strong>
+                          <span className="browse-job-meta-label">Milestones</span>
+                          <strong className="browse-job-meta-value">{job.milestoneCount}</strong>
                         </p>
                         {application ? (
                           <p>
-                            <span className="panel-label">Applied</span>
-                            <strong>{formatDate(application.appliedAt)}</strong>
+                            <span className="browse-job-meta-label">Applied</span>
+                            <strong className="browse-job-meta-value">{formatDate(application.appliedAt)}</strong>
                           </p>
                         ) : null}
                       </div>
 
-                      <p className="helper-copy">
+                      <p className="browse-job-supporting-copy">
                         {application
                           ? `Your current application status is ${toSentenceCase(application.status)}.`
                           : "Apply directly from this browse page."}

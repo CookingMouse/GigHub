@@ -4,10 +4,10 @@ import React from "react";
 
 export interface ActiveWorkStats {
   activeJobs: number;
-  earnedSoFar: number;
-  totalContracted: number;
+  totalMilestones: number;
+  readyToSubmit: number;
   pendingReview: number;
-  inEscrow: number;
+  dueThisWeek: number;
 }
 
 interface FreelancerActiveWorkStatsProps {
@@ -83,13 +83,17 @@ export const FreelancerActiveWorkStats = ({ stats }: FreelancerActiveWorkStatsPr
       <StatCard
         label="Active Jobs"
         value={stats.activeJobs}
-        subtext={`${stats.activeJobs * 2} total milestones`}
+        subtext={`${stats.totalMilestones} milestone(s) currently tracked`}
       />
       <StatCard
-        label="Earned So Far"
-        value={`RM ${stats.earnedSoFar.toLocaleString()}`}
-        subtext={`of RM ${stats.totalContracted.toLocaleString()} contracted`}
-        isPositive={true}
+        label="Ready to Submit"
+        value={stats.readyToSubmit}
+        subtext={
+          stats.readyToSubmit > 0
+            ? "In progress or revision-ready milestones"
+            : "No milestone waiting for upload"
+        }
+        isPositive={stats.readyToSubmit > 0}
       />
       <StatCard
         label="Pending Review"
@@ -98,9 +102,13 @@ export const FreelancerActiveWorkStats = ({ stats }: FreelancerActiveWorkStatsPr
         isPositive={stats.pendingReview === 0}
       />
       <StatCard
-        label="In Escrow"
-        value={`RM ${stats.inEscrow.toLocaleString()}`}
-        subtext="Protected by platform"
+        label="Due This Week"
+        value={stats.dueThisWeek}
+        subtext={
+          stats.dueThisWeek > 0
+            ? "Upcoming delivery windows to watch"
+            : "No milestone deadlines in the next 7 days"
+        }
       />
     </div>
   );

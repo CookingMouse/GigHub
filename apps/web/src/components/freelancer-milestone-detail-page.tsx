@@ -80,19 +80,23 @@ const SubmissionHistoryList = ({
         {milestone.submissionHistory.map((submission) => (
           <article className="status-panel" key={submission.id}>
             <span className="panel-label">Revision {submission.revision}</span>
-            <strong>{submission.fileName ?? "Submission file"}</strong>
-            <p>
+            <strong className="freelancer-milestone-detail-card-title">
+              {submission.fileName ?? "Submission file"}
+            </strong>
+            <p className="freelancer-milestone-detail-meta">
               {submission.fileFormat?.toUpperCase() ?? "Unknown"} · {submission.status} ·{" "}
               {formatDate(submission.submittedAt)}
             </p>
-            <p className="muted">
+            <p className="muted freelancer-milestone-detail-supporting-copy">
               {submission.fileSizeBytes !== null
                 ? `${submission.fileSizeBytes.toLocaleString()} bytes`
                 : "File size unavailable"}
               {submission.wordCount !== null ? ` · ${submission.wordCount} words` : ""}
               {submission.dimensions ? ` · ${submission.dimensions}` : ""}
             </p>
-            {submission.notes ? <p className="muted">{submission.notes}</p> : null}
+            {submission.notes ? (
+              <p className="muted freelancer-milestone-detail-supporting-copy">{submission.notes}</p>
+            ) : null}
           </article>
         ))}
       </div>
@@ -170,8 +174,8 @@ const FreelancerMilestoneDetailContent = ({
     return (
       <FreelancerWorkspaceShell
         actions={
-          <Link className="button-secondary" href="/dashboard">
-            Back to dashboard
+          <Link className="button-secondary" href="/freelancer/active-jobs">
+            Back to active work
           </Link>
         }
         description="The requested milestone could not be loaded."
@@ -228,8 +232,8 @@ const FreelancerMilestoneDetailContent = ({
   return (
     <FreelancerWorkspaceShell
       actions={
-        <Link className="button-secondary" href="/dashboard">
-          Back to dashboard
+        <Link className="button-secondary" href="/freelancer/active-jobs">
+          Back to active work
         </Link>
       }
       description="Review the accepted brief, upload one confidential file, and keep the submission history attached to the milestone."
@@ -237,104 +241,120 @@ const FreelancerMilestoneDetailContent = ({
       freelancerName={user.name}
       title={milestone.title}
     >
-      <div className="workspace-grid">
+      <div className="freelancer-milestone-detail-layout">
+        <div className="workspace-grid">
+          <section className="inline-panel">
+            <div className="panel-heading-row">
+              <div>
+                <p className="eyebrow">Milestone</p>
+                <h2>{milestone.job.title}</h2>
+              </div>
+              <span className="status-chip">{milestone.status}</span>
+            </div>
+
+            <p className="muted freelancer-milestone-detail-meta">
+              {milestone.job.companyName} · Milestone {milestone.sequence}
+            </p>
+            <p className="freelancer-milestone-detail-body">
+              {milestone.description || "No additional milestone description was provided."}
+            </p>
+
+            <div className="status-grid compact-grid">
+              <article className="status-panel">
+                <span className="panel-label">Due at</span>
+                <strong className="freelancer-milestone-detail-metric-value">
+                  {formatDate(milestone.dueAt)}
+                </strong>
+                <p className="freelancer-milestone-detail-supporting-copy">
+                  Keep the delivery inside the milestone window.
+                </p>
+              </article>
+
+              <article className="status-panel">
+                <span className="panel-label">Revision usage</span>
+                <strong className="freelancer-milestone-detail-metric-value">
+                  {milestone.revisionCount} / 3
+                </strong>
+                <p className="freelancer-milestone-detail-supporting-copy">
+                  {milestone.remainingRevisions} revision(s) remaining in this phase.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section className="inline-panel">
+            <p className="eyebrow">Brief summary</p>
+            <h2>What this milestone is judged against</h2>
+            <p className="freelancer-milestone-detail-body">
+              {milestone.brief.overview || "No brief overview is available for this milestone yet."}
+            </p>
+
+            <div className="feedback-grid">
+              <section>
+                <span className="panel-label">Deliverables</span>
+                {milestone.brief.deliverables.length > 0 ? (
+                  <ul className="feedback-list">
+                    {milestone.brief.deliverables.map((deliverable) => (
+                      <li key={deliverable}>{deliverable}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted freelancer-milestone-detail-supporting-copy">
+                    No deliverables were listed on the brief.
+                  </p>
+                )}
+              </section>
+
+              <section>
+                <span className="panel-label">Acceptance criteria</span>
+                {milestone.brief.acceptanceCriteria.length > 0 ? (
+                  <ul className="feedback-list">
+                    {milestone.brief.acceptanceCriteria.map((criterion) => (
+                      <li key={criterion}>{criterion}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted freelancer-milestone-detail-supporting-copy">
+                    No acceptance criteria were listed on the brief.
+                  </p>
+                )}
+              </section>
+            </div>
+          </section>
+        </div>
+
+        <DecisionSummary milestone={milestone} />
+
         <section className="inline-panel">
           <div className="panel-heading-row">
             <div>
-              <p className="eyebrow">Milestone</p>
-              <h2>{milestone.job.title}</h2>
+              <p className="eyebrow">Submit</p>
+              <h2>Upload milestone deliverable</h2>
             </div>
-            <span className="status-chip">{milestone.status}</span>
           </div>
 
-          <p className="muted">
-            {milestone.job.companyName} · Milestone {milestone.sequence}
-          </p>
-          <p>{milestone.description || "No additional milestone description was provided."}</p>
+          {locked ? (
+            <p className="callout-warning">
+              {milestone.remainingRevisions === 0
+                ? "The three-revision limit has been reached for this milestone."
+                : "This milestone is locked for further submissions."}
+            </p>
+          ) : null}
 
-          <div className="status-grid compact-grid">
-            <article className="status-panel">
-              <span className="panel-label">Due at</span>
-              <strong>{formatDate(milestone.dueAt)}</strong>
-              <p>Keep the delivery inside the milestone window.</p>
-            </article>
-
-            <article className="status-panel">
-              <span className="panel-label">Revision usage</span>
-              <strong>
-                {milestone.revisionCount} / 3
-              </strong>
-              <p>{milestone.remainingRevisions} revision(s) remaining in this phase.</p>
-            </article>
-          </div>
+          <FreelancerSubmissionForm
+            disabled={locked}
+            errorMessage={submitError}
+            file={file}
+            isSubmitting={isSubmitting}
+            notes={notes}
+            onFileChange={setFile}
+            onNotesChange={setNotes}
+            onSubmit={handleSubmit}
+          />
         </section>
 
-        <section className="inline-panel">
-          <p className="eyebrow">Brief summary</p>
-          <h2>What this milestone is judged against</h2>
-          <p>{milestone.brief.overview || "No brief overview is available for this milestone yet."}</p>
-
-          <div className="feedback-grid">
-            <section>
-              <span className="panel-label">Deliverables</span>
-              {milestone.brief.deliverables.length > 0 ? (
-                <ul className="feedback-list">
-                  {milestone.brief.deliverables.map((deliverable) => (
-                    <li key={deliverable}>{deliverable}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted">No deliverables were listed on the brief.</p>
-              )}
-            </section>
-
-            <section>
-              <span className="panel-label">Acceptance criteria</span>
-              {milestone.brief.acceptanceCriteria.length > 0 ? (
-                <ul className="feedback-list">
-                  {milestone.brief.acceptanceCriteria.map((criterion) => (
-                    <li key={criterion}>{criterion}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted">No acceptance criteria were listed on the brief.</p>
-              )}
-            </section>
-          </div>
-        </section>
+        <SubmissionHistoryList milestone={milestone} />
       </div>
-
-      <DecisionSummary milestone={milestone} />
-
-      <section className="inline-panel">
-        <div className="panel-heading-row">
-          <div>
-            <p className="eyebrow">Submit</p>
-            <h2>Upload milestone deliverable</h2>
-          </div>
-        </div>
-
-        {locked ? (
-          <p className="callout-warning">
-            {milestone.remainingRevisions === 0
-              ? "The three-revision limit has been reached for this milestone."
-              : "This milestone is locked for further submissions."}
-          </p>
-        ) : null}
-
-        <FreelancerSubmissionForm
-          disabled={locked}
-          errorMessage={submitError}
-          file={file}
-          isSubmitting={isSubmitting}
-          notes={notes}
-          onFileChange={setFile}
-          onNotesChange={setNotes}
-          onSubmit={handleSubmit}
-        />
-      </section>
-
-      <SubmissionHistoryList milestone={milestone} />
     </FreelancerWorkspaceShell>
   );
 };
