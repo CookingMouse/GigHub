@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   freelancer
   company
+  admin
 }
 
 enum JobStatus {
@@ -49,6 +50,7 @@ enum EscrowStatus {
 enum EscrowReleaseTrigger {
   CLIENT_APPROVAL
   AUTO_RELEASE
+  ADMIN_RULING
 }
 
 enum MilestoneStatus {
