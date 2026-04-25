@@ -1,6 +1,7 @@
 "use client";
 
 import type { JobApplicationRecord, JobAvailabilityRecord } from "@gighub/shared";
+import Link from "next/link";
 import React, { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { ApiRequestError, requestsApi } from "@/lib/api";
 import { useProtectedUser } from "@/hooks/use-protected-user";
@@ -400,23 +401,21 @@ export const FreelancerBrowseJobsPage = () => {
                     {/* Spacer */}
                     <div style={{ flex: 1 }} />
 
-                    {/* Apply button */}
-                    <button
-                      type="button"
-                      disabled={isApplied || applyingJobId !== null}
-                      onClick={() => handleApply(job.id)}
+                    {/* View Details button */}
+                    <Link
+                      href={`/freelancer/browse-jobs/${job.id}`}
                       style={{
                         padding: "12px 28px", borderRadius: 12, border: "none",
-                        fontSize: 14, fontWeight: 700, cursor: isApplied ? "default" : "pointer",
+                        fontSize: 14, fontWeight: 700, cursor: "pointer",
                         fontFamily: "inherit", letterSpacing: "-0.1px",
-                        background: isApplied ? "#F3F4F6" : accent,
-                        color: isApplied ? "#9CA3AF" : "#fff",
+                        background: accent,
+                        color: "#fff",
+                        textDecoration: "none",
                         transition: "background 150ms, opacity 150ms",
-                        opacity: applyingJobId !== null && applyingJobId !== job.id ? 0.5 : 1,
                       }}
                     >
-                      {applyingJobId === job.id ? "Applying…" : isApplied ? "Already applied" : "Apply Now"}
-                    </button>
+                      View Job Details
+                    </Link>
                   </div>
                 </article>
               );

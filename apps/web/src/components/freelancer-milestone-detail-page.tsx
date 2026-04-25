@@ -39,7 +39,6 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 const isSubmissionLocked = (milestone: FreelancerMilestoneDetailRecord) =>
-  milestone.remainingRevisions === 0 ||
   ["UNDER_REVIEW", "APPROVED", "RELEASED", "DISPUTED"].includes(milestone.status);
 
 // ── Components ────────────────────────────────────────────────────────────────
@@ -346,7 +345,7 @@ const FreelancerMilestoneDetailContent = ({
                   {formatDate(milestone.dueAt)}
                 </strong>
                 <p className="freelancer-milestone-detail-supporting-copy">
-                  {milestone.remainingRevisions} revision(s) remaining.
+                  Keep the delivery inside the milestone window.
                 </p>
               </article>
             </div>
@@ -401,9 +400,7 @@ const FreelancerMilestoneDetailContent = ({
 
           {locked ? (
             <p className="callout-warning">
-              {milestone.remainingRevisions === 0
-                ? "Revision limit reached."
-                : "This milestone is currently under review or completed."}
+              This milestone is currently under review or completed.
             </p>
           ) : null}
 

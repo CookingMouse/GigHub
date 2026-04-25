@@ -10,6 +10,7 @@ import { requireRole } from "../middleware/rbac";
 import {
   applyToJob,
   createCompanyInvitation,
+  getJobAvailabilityDetail,
   listCompanyApplications,
   listCompanyInvitations,
   listFreelancerApplications,
@@ -34,6 +35,20 @@ requestsRouter.get(
     response.json({
       data: {
         jobs
+      }
+    });
+  })
+);
+
+requestsRouter.get(
+  "/freelancer/availability/:jobId",
+  requireRole("freelancer"),
+  asyncHandler(async (request, response) => {
+    const job = await getJobAvailabilityDetail(readParam(request.params.jobId));
+
+    response.json({
+      data: {
+        job
       }
     });
   })

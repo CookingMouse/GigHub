@@ -530,7 +530,7 @@ export const CompanyJobDetailPage = () => {
                           <div style={{ textAlign: "right" }}>
                             {m.status === "UNDER_REVIEW" && (
                               <div style={{ display: "flex", gap: 10 }}>
-                                <button className="button-secondary" disabled={isActing} onClick={() => { /* scroll to reject section */ }}>Reject</button>
+                                <button className="button-secondary" disabled={isActing} onClick={() => { /* scroll to reject section */ }}>Request Rev.</button>
                                 <button className="button-primary" style={{ backgroundColor: companyAccent }} disabled={isActing} 
                                         onClick={() => handleApproveMilestone(m.id)}>
                                   {isActing && reviewAction === "approve" ? "Releasing..." : "Approve & Pay"}
@@ -564,7 +564,7 @@ export const CompanyJobDetailPage = () => {
 
                         {m.status === "UNDER_REVIEW" && (
                           <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px dashed #E5E7EB" }}>
-                            <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Rejection Reason (only if rejecting)</label>
+                            <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8, color: "#B45309" }}>Revision Request Details</label>
                             <textarea 
                               placeholder="Provide detailed feedback on what needs to be changed..."
                               style={{ width: "100%", minHeight: 80, padding: 12, borderRadius: 8, border: "1px solid #D1D5DB", fontSize: 14 }}
@@ -577,9 +577,9 @@ export const CompanyJobDetailPage = () => {
                               }
                             />
                             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-                              <button className="button-secondary" style={{ color: "#DC2626", borderColor: "#DC2626" }} 
+                              <button className="button-secondary" style={{ color: "#B45309", borderColor: "#B45309" }} 
                                       disabled={isActing} onClick={() => handleRejectMilestone(m.id)}>
-                                {isActing && reviewAction === "reject" ? "Processing..." : "Reject Submission"}
+                                {isActing && reviewAction === "reject" ? "Requesting..." : "Request Revision"}
                               </button>
                             </div>
                           </div>

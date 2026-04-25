@@ -41,7 +41,7 @@ export const submissionStatuses = [
 export const supportedSubmissionFormats = ["pdf", "docx", "png", "jpg", "zip"] as const;
 export const disputeResolutionOutcomes = ["release_funds", "request_revision"] as const;
 export const statementStatuses = ["GENERATED", "VERIFIED", "REVOKED"] as const;
-export const submissionRevisionLimit = 3;
+export const submissionRevisionLimit = 999;
 export const jobValidationThreshold = 70;
 
 export type AppRole = (typeof appRoles)[number];
@@ -520,6 +520,20 @@ export type JobAvailabilityRecord = {
   milestoneCount: number;
   publishedAt: string | null;
   description?: string;
+};
+
+export type JobAvailabilityDetailRecord = JobAvailabilityRecord & {
+  company: {
+    name: string;
+    industry: string | null;
+    website: string | null;
+    about: string | null;
+  };
+  brief: {
+    overview: string;
+    deliverables: string[];
+    acceptanceCriteria: string[];
+  };
 };
 
 export type JobApplicationRecord = {

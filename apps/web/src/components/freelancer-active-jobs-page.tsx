@@ -79,12 +79,7 @@ export const FreelancerActiveJobsPage = () => {
       description: m.description,
       amount: null,
       dueAt: m.dueAt,
-      status: m.status,
-      revisions: {
-        used: m.revisionCount,
-        remaining: m.remainingRevisions,
-        limit: 3
-      }
+      status: m.status
     }))
   }));
 

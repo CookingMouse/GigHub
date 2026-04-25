@@ -1,6 +1,6 @@
 import path from "path";
 import mammoth from "mammoth";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 import sharp from "sharp";
 import type { SupportedSubmissionFormat } from "@gighub/shared";
 import { supportedSubmissionFormats } from "@gighub/shared";
@@ -47,15 +47,12 @@ export const extractFileMetadata = async (
 
   try {
     if (format === "pdf") {
-      const parser = new PDFParse({
-        data: new Uint8Array(fileBuffer)
-      });
-      const result = await parser.getText();
-      await parser.destroy();
+      // Ensure we have a proper Buffer or Uint8Array
+      const data = await pdfParse(Buffer.from(fileBuffer));
 
       return {
         format,
-        wordCount: countWords(result.text ?? ""),
+        wordCount: countWords(data.text ?? ""),
         dimensions: null
       };
     }
@@ -92,10 +89,11 @@ export const extractFileMetadata = async (
       dimensions: null
     };
   } catch (error) {
+    console.error("Metadata extraction failed:", error);
     throw new HttpError(
       400,
       "SUBMISSION_METADATA_EXTRACTION_FAILED",
-      `GigHub could not read the uploaded ${format.toUpperCase()} file metadata.`
+      `GigHub could not read the uploaded ${format.toUpperCase()} file metadata. Error: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 };

@@ -410,6 +410,7 @@ export const createFreelancerSubmission = async (
 
     return toFreelancerMilestoneDetailRecord(updatedMilestone);
   } catch (error) {
+    console.error("Submission creation failed:", error);
     await removeStoredSubmissionFile(storedFile.storageKey);
     throw error;
   }
