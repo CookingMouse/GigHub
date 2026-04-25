@@ -205,17 +205,29 @@ const latestSubmissionForMilestone = (milestone: FreelancerMilestone | Freelance
 
 const toMilestoneSummaryRecord = (
   milestone: FreelancerJob["milestones"][number]
-): FreelancerMilestoneSummaryRecord => ({
-  id: milestone.id,
-  sequence: milestone.sequence,
-  title: milestone.title,
-  description: milestone.description ?? "",
-  status: milestone.status,
-  dueAt: milestone.dueAt?.toISOString() ?? null,
-  revisionCount: milestone.submissions.length,
-  remainingRevisions: Math.max(submissionRevisionLimit - milestone.submissions.length, 0),
-  reviewDueAt: milestone.reviewDueAt?.toISOString() ?? null
-});
+): FreelancerMilestoneSummaryRecord => {
+  const lastRejectedSubmission = milestone.submissions.find(
+    (submission) => submission.rejectionReason && submission.reviewedAt
+  );
+
+  return {
+    id: milestone.id,
+    sequence: milestone.sequence,
+    title: milestone.title,
+    description: milestone.description ?? "",
+    status: milestone.status,
+    dueAt: milestone.dueAt?.toISOString() ?? null,
+    revisionCount: milestone.submissions.length,
+    remainingRevisions: Math.max(submissionRevisionLimit - milestone.submissions.length, 0),
+    reviewDueAt: milestone.reviewDueAt?.toISOString() ?? null,
+    lastRejection: lastRejectedSubmission
+      ? {
+          reason: lastRejectedSubmission.rejectionReason!,
+          rejectedAt: lastRejectedSubmission.reviewedAt!.toISOString()
+        }
+      : null
+  };
+};
 
 const toFreelancerJobRecord = (job: FreelancerJob): FreelancerJobRecord => ({
   id: job.id,

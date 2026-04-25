@@ -352,6 +352,7 @@ export type FreelancerMilestoneSummaryRecord = {
   revisionCount: number;
   remainingRevisions: number;
   reviewDueAt: string | null;
+  lastRejection: { reason: string; rejectedAt: string } | null;
 };
 
 export type FreelancerJobRecord = {

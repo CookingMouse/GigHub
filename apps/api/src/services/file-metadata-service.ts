@@ -1,6 +1,6 @@
 import path from "path";
 import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import sharp from "sharp";
 import type { SupportedSubmissionFormat } from "@gighub/shared";
 import { supportedSubmissionFormats } from "@gighub/shared";
@@ -39,61 +39,61 @@ export const detectSubmissionFormat = (fileName: string): SupportedSubmissionFor
   return format as SupportedSubmissionFormat;
 };
 
+// Convert a Node Buffer to a properly-sliced Uint8Array view of just its bytes.
+// Node Buffers are pooled, so a naive `new Uint8Array(buffer)` may include other Buffers' bytes.
+const toTypedArray = (buffer: Buffer): Uint8Array =>
+  new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+
+const safeExtractPdfWordCount = async (fileBuffer: Buffer): Promise<number | null> => {
+  try {
+    const parser = new PDFParse({ data: toTypedArray(fileBuffer) });
+    const result = await parser.getText();
+    return countWords(result.text ?? "");
+  } catch (error) {
+    console.warn("PDF word-count extraction failed (continuing without it):", error);
+    return null;
+  }
+};
+
+const safeExtractDocxWordCount = async (fileBuffer: Buffer): Promise<number | null> => {
+  try {
+    const result = await mammoth.extractRawText({ buffer: fileBuffer });
+    return countWords(result.value ?? "");
+  } catch (error) {
+    console.warn("DOCX word-count extraction failed (continuing without it):", error);
+    return null;
+  }
+};
+
+const safeExtractImageDimensions = async (fileBuffer: Buffer): Promise<string | null> => {
+  try {
+    const metadata = await sharp(fileBuffer).metadata();
+    return typeof metadata.width === "number" && typeof metadata.height === "number"
+      ? `${metadata.width}x${metadata.height}`
+      : null;
+  } catch (error) {
+    console.warn("Image dimension extraction failed (continuing without it):", error);
+    return null;
+  }
+};
+
 export const extractFileMetadata = async (
   fileBuffer: Buffer,
   fileName: string
 ): Promise<FileMetadataResult> => {
   const format = detectSubmissionFormat(fileName);
 
-  try {
-    if (format === "pdf") {
-      // Ensure we have a proper Buffer or Uint8Array
-      const data = await pdfParse(Buffer.from(fileBuffer));
-
-      return {
-        format,
-        wordCount: countWords(data.text ?? ""),
-        dimensions: null
-      };
-    }
-
-    if (format === "docx") {
-      const result = await mammoth.extractRawText({
-        buffer: fileBuffer
-      });
-
-      return {
-        format,
-        wordCount: countWords(result.value ?? ""),
-        dimensions: null
-      };
-    }
-
-    if (format === "png" || format === "jpg") {
-      const metadata = await sharp(fileBuffer).metadata();
-      const dimensions =
-        typeof metadata.width === "number" && typeof metadata.height === "number"
-          ? `${metadata.width}x${metadata.height}`
-          : null;
-
-      return {
-        format,
-        wordCount: null,
-        dimensions
-      };
-    }
-
-    return {
-      format,
-      wordCount: null,
-      dimensions: null
-    };
-  } catch (error) {
-    console.error("Metadata extraction failed:", error);
-    throw new HttpError(
-      400,
-      "SUBMISSION_METADATA_EXTRACTION_FAILED",
-      `GigHub could not read the uploaded ${format.toUpperCase()} file metadata. Error: ${error instanceof Error ? error.message : String(error)}`
-    );
+  if (format === "pdf") {
+    return { format, wordCount: await safeExtractPdfWordCount(fileBuffer), dimensions: null };
   }
+
+  if (format === "docx") {
+    return { format, wordCount: await safeExtractDocxWordCount(fileBuffer), dimensions: null };
+  }
+
+  if (format === "png" || format === "jpg") {
+    return { format, wordCount: null, dimensions: await safeExtractImageDimensions(fileBuffer) };
+  }
+
+  return { format, wordCount: null, dimensions: null };
 };

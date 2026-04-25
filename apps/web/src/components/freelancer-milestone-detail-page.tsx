@@ -163,6 +163,38 @@ const SubmissionHistoryList = ({
             {submission.notes ? (
               <p className="muted freelancer-milestone-detail-supporting-copy">{submission.notes}</p>
             ) : null}
+            {submission.rejectionReason ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "12px 14px",
+                  borderRadius: 10,
+                  borderLeft: "3px solid #B45309",
+                  backgroundColor: "#FEF3C7"
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#B45309",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em"
+                  }}
+                >
+                  ✏️ Company feedback — revision needed
+                </p>
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: "#7C2D12", lineHeight: 1.55 }}>
+                  {submission.rejectionReason}
+                </p>
+                {submission.reviewedAt ? (
+                  <p style={{ margin: "6px 0 0", fontSize: 11, color: "#92400E" }}>
+                    Reviewed {formatDate(submission.reviewedAt)}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </article>
         ))}
       </div>
