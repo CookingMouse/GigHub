@@ -3,7 +3,7 @@
 import React, { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { CompanyJobApplicationRecord, CompanyJobInvitationRecord, WorkerRecommendationRecord, JobRecord, FreelancerDirectoryRecord } from "@gighub/shared";
-import { ApiRequestError, jobsApi, requestsApi, freelancersApi } from "@/lib/api";
+import { ApiRequestError, jobsApi, requestsApi, freelancersApi, profileApi } from "@/lib/api";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { WorkspaceLayout } from "./workspace-layout";
 
@@ -135,6 +135,26 @@ export const CompanyRequestsPage = () => {
     setShowInviteModal(true);
   };
 
+  const handleDownloadResume = async (freelancerId: string) => {
+    setError(null);
+    try {
+      const { blob, fileName } = await profileApi.downloadFreelancerResume(freelancerId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.body.appendChild(document.createElement("a"));
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      if (err instanceof ApiRequestError && err.status === 404) {
+        setError("This freelancer has not uploaded a resume yet.");
+      } else {
+        setError(err instanceof ApiRequestError ? err.message : "Unable to download resume.");
+      }
+    }
+  };
+
   if (session.status !== "ready") return null;
 
   return (
@@ -193,7 +213,15 @@ export const CompanyRequestsPage = () => {
                             <Link href={`/freelancers/${f.id}`} style={{ fontSize: "12px", color: "#6B7280", fontWeight: 500 }}>
                               Profile
                             </Link>
-                            <span 
+                            {f.hasResume ? (
+                              <span
+                                onClick={() => handleDownloadResume(f.id)}
+                                style={{ fontSize: "12px", color: "#0F6E56", fontWeight: 500, cursor: "pointer" }}
+                              >
+                                📄 Resume
+                              </span>
+                            ) : null}
+                            <span
                               onClick={() => openInviteModal(f.id, f.displayName)}
                               style={{ fontSize: "12px", color: companyAccent, fontWeight: 500, cursor: "pointer" }}
                             >
@@ -227,25 +255,35 @@ export const CompanyRequestsPage = () => {
                             {toSentenceCase(app.status)}
                           </span>
                         </div>
-                        {app.status === "PENDING" && (
-                          <div className="action-row" style={{ marginTop: 12 }}>
-                            <button
-                              className="button-primary"
-                              style={{ backgroundColor: companyAccent }}
-                              disabled={busyId !== null}
-                              onClick={() => resolveApplication(app.id, "accept")}
-                            >
-                              {busyId === app.id ? "Processing..." : "Accept"}
-                            </button>
-                            <button
-                              className="button-secondary"
-                              disabled={busyId !== null}
-                              onClick={() => resolveApplication(app.id, "reject")}
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
+                        <div className="action-row" style={{ marginTop: 12 }}>
+                          <button
+                            className="button-secondary"
+                            type="button"
+                            onClick={() => handleDownloadResume(app.freelancerId)}
+                            style={{ fontSize: 13 }}
+                          >
+                            📄 Download Resume
+                          </button>
+                          {app.status === "PENDING" && (
+                            <>
+                              <button
+                                className="button-primary"
+                                style={{ backgroundColor: companyAccent }}
+                                disabled={busyId !== null}
+                                onClick={() => resolveApplication(app.id, "accept")}
+                              >
+                                {busyId === app.id ? "Processing..." : "Accept"}
+                              </button>
+                              <button
+                                className="button-secondary"
+                                disabled={busyId !== null}
+                                onClick={() => resolveApplication(app.id, "reject")}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </article>
                     ))
                   )}
@@ -319,15 +357,25 @@ export const CompanyRequestsPage = () => {
                           </ul>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                           <span style={{ fontSize: 12, color: "#6B7280" }}>Matched for: <strong>{rec.bestMatchJobTitle}</strong></span>
-                          <button 
-                            className="button-primary" 
-                            style={{ backgroundColor: companyAccent, padding: "6px 16px", height: "auto", fontSize: 13 }}
-                            onClick={() => openInviteModal(rec.freelancerId, rec.displayName)}
-                          >
-                            Send Request
-                          </button>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              className="button-secondary"
+                              type="button"
+                              style={{ padding: "6px 12px", height: "auto", fontSize: 13 }}
+                              onClick={() => handleDownloadResume(rec.freelancerId)}
+                            >
+                              📄 Resume
+                            </button>
+                            <button
+                              className="button-primary"
+                              style={{ backgroundColor: companyAccent, padding: "6px 16px", height: "auto", fontSize: 13 }}
+                              onClick={() => openInviteModal(rec.freelancerId, rec.displayName)}
+                            >
+                              Send Request
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </article>
