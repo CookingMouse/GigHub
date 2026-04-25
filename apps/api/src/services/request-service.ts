@@ -74,6 +74,53 @@ export const listJobAvailability = async (): Promise<JobAvailabilityRecord[]> =>
   }));
 };
 
+export const getJobAvailabilityDetail = async (jobId: string): Promise<JobAvailabilityDetailRecord> => {
+  const job = await prisma.job.findUnique({
+    where: {
+      id: jobId,
+      status: "OPEN"
+    },
+    include: {
+      company: {
+        include: {
+          companyProfile: true
+        }
+      },
+      brief: true
+    }
+  });
+
+  if (!job) {
+    throw new HttpError(404, "JOB_NOT_FOUND", "That job could not be found or is no longer open.");
+  }
+
+  const normalizeStringArray = (value: Prisma.JsonValue | null | undefined) => {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is string => typeof item === "string");
+  };
+
+  return {
+    id: job.id,
+    title: job.title,
+    companyName: companyName(job),
+    budget: Number(job.budget),
+    milestoneCount: job.milestoneCount,
+    publishedAt: job.publishedAt?.toISOString() ?? null,
+    description: job.description ?? undefined,
+    company: {
+      name: companyName(job),
+      industry: job.company.companyProfile?.industry ?? null,
+      website: job.company.companyProfile?.website ?? null,
+      about: job.company.companyProfile?.about ?? null
+    },
+    brief: {
+      overview: job.brief?.overview ?? "",
+      deliverables: normalizeStringArray(job.brief?.deliverables),
+      acceptanceCriteria: normalizeStringArray(job.brief?.acceptanceCriteria)
+    }
+  };
+};
+
 export const applyToJob = async (
   freelancerId: string,
   jobId: string,

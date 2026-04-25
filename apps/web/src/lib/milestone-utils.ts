@@ -136,8 +136,9 @@ export const getMilestoneProgress = (currentIndex: number, totalMilestones: numb
 /**
  * Determine if milestone is locked (can't interact with it)
  */
-export const isMilestoneLocked = (status: MilestoneStatus, revisions?: { remaining: number }): boolean => {
-  const locked = ["PENDING", "APPROVED", "RELEASED", "DISPUTED"].includes(status);
-  const noRevisions = revisions ? revisions.remaining === 0 : false;
-  return locked || noRevisions;
+export const isMilestoneLocked = (status: MilestoneStatus): boolean => {
+  const locked = ["PENDING", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "DISPUTED"].includes(status);
+
+  return locked;
 };
+

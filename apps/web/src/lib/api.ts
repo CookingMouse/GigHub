@@ -189,6 +189,10 @@ export const requestsApi = {
     requestJson<{ jobs: JobAvailabilityRecord[] }>("/requests/freelancer/availability", {
       method: "GET"
     }),
+  getJobAvailability: (jobId: string) =>
+    requestJson<{ job: JobAvailabilityDetailRecord }>(`/requests/freelancer/availability/${jobId}`, {
+      method: "GET"
+    }),
   applyToJob: (jobId: string, input: CreateJobApplicationInput) =>
     requestJson<{ success: boolean }>(`/requests/freelancer/jobs/${jobId}/apply`, {
       method: "POST",

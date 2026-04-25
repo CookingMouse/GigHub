@@ -64,7 +64,7 @@ const MilestoneStatus = ({ status }: { status: string }) => {
 
 export const MilestoneTimeline = ({ milestones }: MilestoneTimelineProps) => {
   const [expandedId, setExpandedId] = useState<string | null>(milestones[0]?.id);
-  const locked = (m: MilestoneTimelineItem) => isMilestoneLocked(m.status as any, m.revisions);
+  const locked = (m: MilestoneTimelineItem) => isMilestoneLocked(m.status as any);
 
   return (
     <div className="milestone-timeline">
@@ -172,20 +172,6 @@ export const MilestoneTimeline = ({ milestones }: MilestoneTimelineProps) => {
                           </p>
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {m.revisions && m.status === "IN_PROGRESS" && (
-                    <div className="detail-section">
-                      <p style={{ margin: 0, fontSize: "11px", fontWeight: "700", color: "#6B7280", textTransform: "uppercase" }}>
-                        Revisions
-                      </p>
-                      <p style={{ margin: "6px 0 0", fontSize: "12px" }}>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: "600" }}>
-                          {m.revisions.used} / {m.revisions.limit}
-                        </span>
-                        {" "}({m.revisions.remaining} remaining)
-                      </p>
                     </div>
                   )}
 

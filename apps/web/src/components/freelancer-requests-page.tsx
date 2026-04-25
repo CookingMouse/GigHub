@@ -292,9 +292,9 @@ export const FreelancerRequestsPage = () => {
                         </p>
                       ) : null}
                       <div className="action-row" style={{ marginTop: 12 }}>
-                        <Link className="button-primary" href={`/freelancer/browse-jobs`}
+                        <Link className="button-primary" href={`/freelancer/requests/${match.jobId}`}
                           style={{ fontSize: 12, padding: "6px 14px" }}>
-                          Browse & Apply
+                          View Details
                         </Link>
                       </div>
                     </article>

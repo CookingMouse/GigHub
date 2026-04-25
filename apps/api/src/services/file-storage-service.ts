@@ -46,6 +46,7 @@ export const storeSubmissionFile = async ({
 
   const storageKey = buildStorageKey(format);
   const destination = path.join(storageRoot, storageKey);
+  console.log(`Storing file at: ${destination}`);
   const destinationDirectory = path.dirname(destination);
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", encryptionKey, iv);

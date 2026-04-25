@@ -1100,19 +1100,10 @@ export const rejectCompanyMilestone = async (
         id: submission.id
       },
       data: {
-        status: "DISPUTED",
+        status: "REJECTED",
         reviewDecision: "COMPANY_REJECTED",
         rejectionReason,
         reviewedAt
-      }
-    });
-
-    await tx.dispute.create({
-      data: {
-        submissionId: submission.id,
-        raisedById: companyId,
-        rejectionReason,
-        status: "OPEN"
       }
     });
 
@@ -1121,17 +1112,8 @@ export const rejectCompanyMilestone = async (
         id: milestone.id
       },
       data: {
-        status: "DISPUTED",
+        status: "REVISION_REQUESTED",
         reviewDueAt: null
-      }
-    });
-
-    await tx.job.update({
-      where: {
-        id: job.id
-      },
-      data: {
-        status: "DISPUTED"
       }
     });
 
