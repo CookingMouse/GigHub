@@ -30,89 +30,21 @@ const formatDate = (value: string | null) => {
   }).format(new Date(value));
 };
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-MY", {
-    style: "currency",
-    currency: "MYR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-
 const isSubmissionLocked = (milestone: FreelancerMilestoneDetailRecord) =>
   ["UNDER_REVIEW", "APPROVED", "RELEASED", "DISPUTED"].includes(milestone.status);
 
-// ── Components ────────────────────────────────────────────────────────────────
-
-const EscrowMonitor = ({ milestone }: { milestone: FreelancerMilestoneDetailRecord }) => {
-  const { job } = milestone;
-  const fundedAmount = job.escrow?.fundedAmount ?? 0;
-  const releasedAmount = job.escrow?.releasedAmount ?? 0;
-  const lockedAmount = fundedAmount - releasedAmount;
-  const totalBudget = job.budget;
-  const fundedPercent = totalBudget > 0 ? (fundedAmount / totalBudget) * 100 : 0;
-  const releasedPercent = totalBudget > 0 ? (releasedAmount / totalBudget) * 100 : 0;
-
-  return (
-    <section className="inline-panel" style={{ marginBottom: 24, borderTop: `4px solid ${freelancerAccent}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 18 }}>Escrow Protection</h2>
-        <span style={{ 
-          fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 6,
-          backgroundColor: job.escrow?.status === "FUNDED" ? "#E1F5EE" : "#FFFBEB",
-          color: job.escrow?.status === "FUNDED" ? "#0F6E56" : "#D97706"
-        }}>
-          {job.escrow?.status === "FUNDED" ? "✓ SECURED IN ESCROW" : (job.escrow?.status || "UNFUNDED")}
-        </span>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 20 }}>
-        <article>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Total Contract</span>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700 }}>{formatCurrency(totalBudget)}</p>
-        </article>
-        <article>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Locked for You</span>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700, color: "#D97706" }}>{formatCurrency(lockedAmount)}</p>
-        </article>
-        <article>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Released to You</span>
-          <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700, color: freelancerAccent }}>{formatCurrency(releasedAmount)}</p>
-        </article>
-      </div>
-
-      <div style={{ height: 12, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden", position: "relative" }}>
-        <div style={{ 
-          position: "absolute", left: 0, top: 0, bottom: 0, 
-          width: `${releasedPercent}%`, backgroundColor: freelancerAccent, transition: "width 0.6s ease", zIndex: 2
-        }} />
-        <div style={{ 
-          position: "absolute", left: 0, top: 0, bottom: 0, 
-          width: `${fundedPercent}%`, backgroundColor: freelancerAccent + "40", transition: "width 0.6s ease", zIndex: 1
-        }} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-        <span style={{ fontSize: 12, color: "#6B7280" }}>Earnings: {Math.round(releasedPercent)}% received</span>
-        <span style={{ fontSize: 12, color: "#6B7280" }}>Security: {Math.round(fundedPercent)}% funded by client</span>
-      </div>
-    </section>
-  );
-};
-
-const DecisionSummary = ({
-  milestone
-}: {
-  milestone: FreelancerMilestoneDetailRecord;
-}) => {
+const DecisionSummary = ({ milestone }: { milestone: FreelancerMilestoneDetailRecord }) => {
   const dispute = milestone.activeDispute;
+  const decision = milestone.latestDecision;
 
-  if (!dispute && milestone.status !== "UNDER_REVIEW") {
+  if (!dispute && !decision && milestone.status !== "UNDER_REVIEW") {
     return null;
   }
 
   return (
     <section className="inline-panel">
       <p className="eyebrow">Review status</p>
-      <h2>Company review and dispute state</h2>
+      <h2>Latest GLM scoring and dispute state</h2>
 
       {milestone.status === "UNDER_REVIEW" ? (
         <p className="helper-copy">
@@ -120,8 +52,29 @@ const DecisionSummary = ({
         </p>
       ) : null}
 
+      {decision ? (
+        <div className="status-panel" style={{ marginTop: 16 }}>
+          <span className="panel-label">{decision.decisionType.replaceAll("_", " ")}</span>
+          <strong className="freelancer-milestone-detail-card-title">
+            {decision.overallScore !== null ? `${decision.overallScore}/100` : "Score unavailable"}
+          </strong>
+          <p className="muted freelancer-milestone-detail-supporting-copy">
+            {decision.reasoning ?? "No additional GLM reasoning is available."}
+          </p>
+          {decision.requirementScores.length > 0 ? (
+            <ul className="feedback-list">
+              {decision.requirementScores.map((score) => (
+                <li key={score.requirement}>
+                  {score.requirement.replaceAll("_", " ")}: {score.score}/100
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
       {dispute ? (
-        <div className="callout-warning">
+        <div className="callout-warning" style={{ marginTop: 16 }}>
           <strong>Dispute status: {dispute.status}</strong>
           <p>{dispute.rejectionReason}</p>
         </div>
@@ -130,11 +83,7 @@ const DecisionSummary = ({
   );
 };
 
-const SubmissionHistoryList = ({
-  milestone
-}: {
-  milestone: FreelancerMilestoneDetailRecord;
-}) => (
+const SubmissionHistoryList = ({ milestone }: { milestone: FreelancerMilestoneDetailRecord }) => (
   <section className="inline-panel">
     <p className="eyebrow">Submission history</p>
     <h2>Prior revisions</h2>
@@ -150,15 +99,15 @@ const SubmissionHistoryList = ({
               {submission.fileName ?? "Submission file"}
             </strong>
             <p className="freelancer-milestone-detail-meta">
-              {submission.fileFormat?.toUpperCase() ?? "Unknown"} · {submission.status} ·{" "}
+              {submission.fileFormat?.toUpperCase() ?? "Unknown"} | {submission.status} |{" "}
               {formatDate(submission.submittedAt)}
             </p>
             <p className="muted freelancer-milestone-detail-supporting-copy">
               {submission.fileSizeBytes !== null
                 ? `${submission.fileSizeBytes.toLocaleString()} bytes`
                 : "File size unavailable"}
-              {submission.wordCount !== null ? ` · ${submission.wordCount} words` : ""}
-              {submission.dimensions ? ` · ${submission.dimensions}` : ""}
+              {submission.wordCount !== null ? ` | ${submission.wordCount} words` : ""}
+              {submission.dimensions ? ` | ${submission.dimensions}` : ""}
             </p>
             {submission.notes ? (
               <p className="muted freelancer-milestone-detail-supporting-copy">{submission.notes}</p>
@@ -183,7 +132,7 @@ const SubmissionHistoryList = ({
                     letterSpacing: "0.05em"
                   }}
                 >
-                  ✏️ Company feedback — revision needed
+                  Company feedback
                 </p>
                 <p style={{ margin: "6px 0 0", fontSize: 13, color: "#7C2D12", lineHeight: 1.55 }}>
                   {submission.rejectionReason}
@@ -255,7 +204,7 @@ const FreelancerMilestoneDetailContent = ({
   if (state.status === "loading") {
     return (
       <FreelancerWorkspaceShell
-        description="Loading project financials and milestone details..."
+        description="Loading milestone details..."
         freelancerEmail={user.email}
         freelancerName={user.name}
         hideFreelancerCard
@@ -272,7 +221,15 @@ const FreelancerMilestoneDetailContent = ({
   if (state.status === "error") {
     return (
       <FreelancerWorkspaceShell
-        actions={<Link className="button-primary" style={{backgroundColor: freelancerAccent}} href="/freelancer/active-jobs">Back to active work</Link>}
+        actions={
+          <Link
+            className="button-primary"
+            style={{ backgroundColor: freelancerAccent }}
+            href="/freelancer/active-jobs"
+          >
+            Back to active work
+          </Link>
+        }
         description="Error"
         freelancerEmail={user.email}
         freelancerName={user.name}
@@ -329,7 +286,11 @@ const FreelancerMilestoneDetailContent = ({
   return (
     <FreelancerWorkspaceShell
       actions={
-        <Link className="button-primary" style={{backgroundColor: freelancerAccent}} href="/freelancer/active-jobs">
+        <Link
+          className="button-primary"
+          style={{ backgroundColor: freelancerAccent }}
+          href="/freelancer/active-jobs"
+        >
           Back to active work
         </Link>
       }
@@ -340,8 +301,6 @@ const FreelancerMilestoneDetailContent = ({
       hideWorkflowCard
       title="Milestone Workroom"
     >
-      <EscrowMonitor milestone={milestone} />
-
       <div className="freelancer-milestone-detail-layout">
         <div className="workspace-grid">
           <section className="inline-panel">
@@ -354,7 +313,7 @@ const FreelancerMilestoneDetailContent = ({
             </div>
 
             <p className="muted freelancer-milestone-detail-meta">
-              {milestone.job.companyName} · Milestone {milestone.sequence}
+              {milestone.job.companyName} | Milestone {milestone.sequence}
             </p>
             <p className="freelancer-milestone-detail-body">
               {milestone.description || "No additional milestone description was provided."}
@@ -362,12 +321,12 @@ const FreelancerMilestoneDetailContent = ({
 
             <div className="status-grid compact-grid">
               <article className="status-panel">
-                <span className="panel-label">Milestone Value</span>
+                <span className="panel-label">Remaining Revisions</span>
                 <strong className="freelancer-milestone-detail-metric-value">
-                  {formatCurrency(milestone.amount)}
+                  {milestone.remainingRevisions}
                 </strong>
                 <p className="freelancer-milestone-detail-supporting-copy">
-                  Amount locked in escrow for this task.
+                  Additional submissions available if revisions are requested.
                 </p>
               </article>
 
@@ -426,9 +385,13 @@ const FreelancerMilestoneDetailContent = ({
           <div className="panel-heading-row">
             <div>
               <p className="eyebrow">Workroom</p>
-              <h2>Submit your deliverable</h2>
+              <h2>Upload milestone deliverable</h2>
             </div>
           </div>
+
+          {milestone.remainingRevisions === 0 ? (
+            <p className="callout-warning">The three-revision limit has been reached.</p>
+          ) : null}
 
           {locked ? (
             <p className="callout-warning">
@@ -437,7 +400,7 @@ const FreelancerMilestoneDetailContent = ({
           ) : null}
 
           <FreelancerSubmissionForm
-            disabled={locked}
+            disabled={locked || milestone.remainingRevisions === 0}
             errorMessage={submitError}
             file={file}
             isSubmitting={isSubmitting}

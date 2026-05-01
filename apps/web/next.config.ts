@@ -1,11 +1,10 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    turbopack: {
-      // This tells Turbopack the root is 2 levels up (the GigHub folder)
-      root: "../../"
-    }
+  turbopack: {
+    // Next.js 16 expects turbopack at the top level and the root must be absolute.
+    root: path.resolve(__dirname, "../..")
   }
 };
 

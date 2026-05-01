@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@gighub/shared": "*",
+    "agentation": "^3.0.2",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -26,4 +27,3 @@
     "vitest": "^3.1.3"
   }
 }
-

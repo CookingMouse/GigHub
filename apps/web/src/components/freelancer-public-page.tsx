@@ -128,7 +128,7 @@ export const FreelancerPublicPage = ({ freelancerId }: FreelancerPublicPageProps
                 <h2 style={{ fontSize: 20, marginBottom: 16, borderBottom: "1px solid #F3F4F6", paddingBottom: 12 }}>Skills & Expertise</h2>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {state.profile.skills.length > 0 ? (
-                    state.profile.skills.map(skill => (
+                    state.profile.skills.map((skill: string) => (
                       <span key={skill} style={{ 
                         padding: "6px 16px", borderRadius: 99, background: "#F3F4F6", 
                         fontSize: 14, fontWeight: 500, color: "#374151"

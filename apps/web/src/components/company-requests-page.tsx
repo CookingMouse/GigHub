@@ -246,7 +246,9 @@ export const CompanyRequestsPage = () => {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                           <div>
                             <strong style={{ display: "block", fontSize: 15 }}>{app.freelancerDisplayName}</strong>
-                            <p className="muted" style={{ fontSize: 13, margin: "2px 0 8px" }}>Applied for {app.jobTitle}</p>
+                            <p className="muted" style={{ fontSize: 13, margin: "2px 0 8px" }}>
+                              {app.coverNote ? `Cover note: ${app.coverNote}` : app.freelancerEmail}
+                            </p>
                           </div>
                           <span style={{ 
                             fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
