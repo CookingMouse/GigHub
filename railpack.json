@@ -1,0 +1,8 @@
+{
+  "build": {
+    "cmd": "npm run build --workspace @gighub/shared && npm run build --workspace @gighub/api"
+  },
+  "start": {
+    "cmd": "npm run start --workspace @gighub/api"
+  }
+}
