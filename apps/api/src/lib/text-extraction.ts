@@ -1,9 +1,10 @@
-import pdf from "pdf-parse";
+import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 
 export const extractTextFromPdf = async (buffer: Buffer): Promise<string> => {
   try {
-    const data = await pdf(buffer);
+    const parsePdf = pdfParse as unknown as (input: Buffer) => Promise<{ text: string }>;
+    const data = await parsePdf(buffer);
     return data.text;
   } catch (error) {
     console.error("Error extracting text from PDF:", error);

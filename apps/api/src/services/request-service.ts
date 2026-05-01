@@ -4,9 +4,11 @@ import type {
   CompanyJobInvitationRecord,
   CreateJobApplicationInput,
   CreateJobInvitationInput,
+  JobAvailabilityDetailRecord,
   JobApplicationRecord,
   JobAvailabilityRecord,
-  JobInvitationRecord
+  JobInvitationRecord,
+  WorkerRecommendationRecord
 } from "@gighub/shared";
 import { HttpError } from "../lib/http-error";
 import { prisma } from "../lib/prisma";

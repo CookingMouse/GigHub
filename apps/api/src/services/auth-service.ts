@@ -106,7 +106,7 @@ export const loginUser = async (input: LoginInput) => {
     throw new HttpError(401, "AUTH_INVALID_CREDENTIALS", "Email or password is incorrect.");
   }
 
-  if (user.role !== input.role) {
+  if (input.role && user.role !== input.role) {
     throw new HttpError(401, "AUTH_INVALID_CREDENTIALS", "Email or password is incorrect.");
   }
 

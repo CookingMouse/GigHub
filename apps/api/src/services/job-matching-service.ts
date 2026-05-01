@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import type { JobMatchRecord } from "@gighub/shared";
+import type { JobMatchRecord, WorkerRecommendationRecord } from "@gighub/shared";
 import { prisma } from "../lib/prisma";
 
 const openJobInclude = {

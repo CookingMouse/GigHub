@@ -120,10 +120,11 @@ profileRouter.get(
 
     // Authorization: Only freelancer or company can view resumes
     if (request.auth?.role !== "freelancer" && request.auth?.role !== "company") {
-      return response.status(403).json({
+      response.status(403).json({
         code: "FORBIDDEN",
         message: "Only freelancers and companies can view resumes."
       });
+      return;
     }
 
     const { buffer, fileName } = await getFreelancerResume(freelancerId);
@@ -171,7 +172,8 @@ profileRouter.put(
     const { publicKey } = request.body as { publicKey?: string };
 
     if (!publicKey || typeof publicKey !== "string" || publicKey.trim().length === 0) {
-      return response.status(400).json({ code: "INVALID_PUBLIC_KEY", message: "publicKey is required." });
+      response.status(400).json({ code: "INVALID_PUBLIC_KEY", message: "publicKey is required." });
+      return;
     }
 
     await prisma.user.update({

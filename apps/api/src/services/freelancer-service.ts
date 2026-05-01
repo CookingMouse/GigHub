@@ -12,6 +12,7 @@ import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { extractFileMetadata } from "./file-metadata-service";
+import { selectedGLMProvider } from "./glm-provider";
 import { removeStoredSubmissionFile, storeSubmissionFile } from "./file-storage-service";
 
 const freelancerJobInclude = {
@@ -144,6 +145,18 @@ const normalizeRequirementScores = (value: Prisma.JsonValue | null | undefined) 
 const companyNameForJob = (job: FreelancerJob | FreelancerMilestone["job"]) =>
   job.company.companyProfile?.companyName ?? job.company.name;
 
+const reviewDecisionForPassFail = (passFail: "pass" | "partial" | "fail") => {
+  if (passFail === "pass") {
+    return "GLM_PASS";
+  }
+
+  if (passFail === "partial") {
+    return "GLM_PARTIAL";
+  }
+
+  return "GLM_FAIL";
+};
+
 const toDecisionRecord = (
   decision:
     | FreelancerSubmission["glmDecisions"][number]
@@ -177,6 +190,7 @@ const toDisputeRecord = (dispute: FreelancerSubmission["dispute"] | null): Dispu
     rejectionReason: dispute.rejectionReason,
     resolutionType: dispute.resolutionType ?? null,
     resolutionSummary: dispute.resolutionSummary ?? null,
+    adminNote: null,
     openedAt: dispute.openedAt.toISOString(),
     resolvedAt: dispute.resolvedAt?.toISOString() ?? null,
     latestDecision: toDecisionRecord(dispute.glmDecisions[0] ?? null)
@@ -354,16 +368,33 @@ export const createFreelancerSubmission = async (
     format: metadata.format
   });
   const reviewDueAt = new Date(submittedAt.getTime() + reviewWindowMs);
+  const scoringResult = await selectedGLMProvider.scoreMilestone({
+    briefOverview: milestone.job.brief?.overview ?? "",
+    deliverables: normalizeStringArray(milestone.job.brief?.deliverables),
+    acceptanceCriteria: normalizeStringArray(milestone.job.brief?.acceptanceCriteria),
+    fileFormat: metadata.format,
+    fileSizeBytes: file.size,
+    fileHash: storedFile.fileHash,
+    wordCount: metadata.wordCount,
+    dimensions: metadata.dimensions,
+    revision: nextRevision,
+    notes: notes || null,
+    fileName: file.originalname
+  });
+  const reviewedAt = new Date();
+  const reviewDecision = reviewDecisionForPassFail(scoringResult.passFail);
+  const isRevisionRequested = scoringResult.passFail !== "pass";
 
   try {
     const updatedMilestone = await prisma.$transaction(async (tx) => {
-      await tx.submission.create({
+      const submission = await tx.submission.create({
         data: {
           milestoneId: milestone.id,
           revision: nextRevision,
-          status: "PENDING_REVIEW",
+          status: isRevisionRequested ? "REJECTED" : "PENDING_REVIEW",
           notes: notes || null,
-          reviewDecision: null,
+          reviewDecision,
+          rejectionReason: isRevisionRequested ? scoringResult.reasoning : null,
           fileName: file.originalname,
           fileFormat: metadata.format,
           fileSizeBytes: file.size,
@@ -371,7 +402,7 @@ export const createFreelancerSubmission = async (
           wordCount: metadata.wordCount,
           dimensions: metadata.dimensions,
           submittedAt,
-          reviewedAt: null,
+          reviewedAt,
           activityLog: [
             {
               type: "submission.created",
@@ -386,15 +417,29 @@ export const createFreelancerSubmission = async (
         }
       });
 
+      await tx.gLMDecision.create({
+        data: {
+          jobId: milestone.jobId,
+          submissionId: submission.id,
+          decisionType: "MILESTONE_SCORING",
+          overallScore: scoringResult.overallScore,
+          passFail: scoringResult.passFail,
+          recommendation: isRevisionRequested ? "request_revision" : "release_funds",
+          requirementScores: scoringResult.requirementScores,
+          badFaithFlags: [],
+          reasoning: scoringResult.reasoning
+        }
+      });
+
       await tx.milestone.update({
         where: {
           id: milestone.id
         },
         data: {
-          status: "UNDER_REVIEW",
+          status: isRevisionRequested ? "REVISION_REQUESTED" : "UNDER_REVIEW",
           submittedAt,
-          reviewDueAt,
-          revisionRequestedAt: null
+          reviewDueAt: isRevisionRequested ? null : reviewDueAt,
+          revisionRequestedAt: isRevisionRequested ? reviewedAt : null
         }
       });
 
@@ -406,6 +451,8 @@ export const createFreelancerSubmission = async (
           eventType: "submission.created",
           payload: {
             revision: nextRevision,
+            passFail: scoringResult.passFail,
+            reviewDecision,
             fileFormat: metadata.format,
             fileHash: storedFile.fileHash
           }

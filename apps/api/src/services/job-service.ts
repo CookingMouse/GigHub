@@ -20,7 +20,7 @@ import { prisma } from "../lib/prisma";
 import { HttpError } from "../lib/http-error";
 import { redis } from "../lib/redis";
 import type { BriefValidationProvider } from "./brief-validation-service";
-import { selectedBriefValidationProvider } from "./glm-provider";
+import { selectedBriefValidationProvider, selectedGLMProvider } from "./glm-provider";
 import { mockPaymentProvider } from "./mock-payment-service";
 import { releaseMilestoneEscrow } from "./release-service";
 
@@ -207,6 +207,7 @@ const toDisputeRecord = (dispute: CompanySubmission["dispute"] | null): DisputeR
     rejectionReason: dispute.rejectionReason,
     resolutionType: dispute.resolutionType ?? null,
     resolutionSummary: dispute.resolutionSummary ?? null,
+    adminNote: null,
     openedAt: dispute.openedAt.toISOString(),
     resolvedAt: dispute.resolvedAt?.toISOString() ?? null,
     latestDecision: toGLMDecisionRecord(dispute.glmDecisions[0] ?? null)
@@ -1064,7 +1065,7 @@ export const rejectCompanyMilestone = async (
   milestoneId: string,
   rejectionReason: string
 ) => {
-  const { job, milestone } = await findCompanyMilestoneOrThrow(companyId, jobId, milestoneId);
+  const { milestone } = await findCompanyMilestoneOrThrow(companyId, jobId, milestoneId);
 
   if (milestone.status !== "UNDER_REVIEW") {
     throw new HttpError(
@@ -1093,14 +1094,49 @@ export const rejectCompanyMilestone = async (
   }
 
   const reviewedAt = new Date();
+  const latestDecision = submission.glmDecisions[0] ?? null;
+  const clientDisputeHistoryCount = await prisma.dispute.count({
+    where: {
+      raisedById: companyId
+    }
+  });
+  const disputeAnalysis = await selectedGLMProvider.analyzeDispute({
+    rejectionReason,
+    milestoneScore: latestDecision?.overallScore ?? null,
+    milestonePassFail: latestDecision?.passFail ?? null,
+    clientDisputeHistoryCount
+  });
 
   await prisma.$transaction(async (tx) => {
+    const dispute = await tx.dispute.create({
+      data: {
+        submissionId: submission.id,
+        raisedById: companyId,
+        status: "OPEN",
+        rejectionReason
+      }
+    });
+
+    await tx.gLMDecision.create({
+      data: {
+        jobId: milestone.jobId,
+        disputeId: dispute.id,
+        decisionType: "DISPUTE_ANALYSIS",
+        overallScore: latestDecision?.overallScore ?? null,
+        passFail: latestDecision?.passFail ?? null,
+        recommendation: disputeAnalysis.recommendation,
+        requirementScores: latestDecision?.requirementScores ?? [],
+        badFaithFlags: disputeAnalysis.badFaithFlags,
+        reasoning: disputeAnalysis.reasoning
+      }
+    });
+
     await tx.submission.update({
       where: {
         id: submission.id
       },
       data: {
-        status: "REJECTED",
+        status: "DISPUTED",
         reviewDecision: "COMPANY_REJECTED",
         rejectionReason,
         reviewedAt
@@ -1112,8 +1148,18 @@ export const rejectCompanyMilestone = async (
         id: milestone.id
       },
       data: {
-        status: "REVISION_REQUESTED",
-        reviewDueAt: null
+        status: "DISPUTED",
+        reviewDueAt: null,
+        revisionRequestedAt: null
+      }
+    });
+
+    await tx.job.update({
+      where: {
+        id: milestone.jobId
+      },
+      data: {
+        status: "DISPUTED"
       }
     });
 
@@ -1122,10 +1168,11 @@ export const rejectCompanyMilestone = async (
         actorId: companyId,
         entityType: "milestone",
         entityId: milestone.id,
-        eventType: "milestone.rejected",
+        eventType: "milestone.disputed",
         payload: {
           submissionId: submission.id,
-          rejectionReason
+          rejectionReason,
+          recommendation: disputeAnalysis.recommendation
         }
       }
     });

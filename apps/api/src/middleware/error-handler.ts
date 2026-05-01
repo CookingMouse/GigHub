@@ -32,7 +32,7 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
     return;
   }
 
-  console.error(error);
+  console.error(error instanceof Error ? error.stack ?? `${error.name}: ${error.message}` : String(error));
 
   response.status(500).json({
     code: "INTERNAL_SERVER_ERROR",

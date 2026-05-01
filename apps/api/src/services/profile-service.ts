@@ -1,6 +1,7 @@
 import type {
   CompanyProfileRecord,
   FreelancerProfileRecord,
+  PublicFreelancerProfileRecord,
   PublicCompanyProfileRecord,
   UpdateCompanyProfileInput,
   UpdateFreelancerProfileInput

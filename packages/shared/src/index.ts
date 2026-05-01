@@ -41,7 +41,7 @@ export const submissionStatuses = [
 export const supportedSubmissionFormats = ["pdf", "docx", "png", "jpg", "zip"] as const;
 export const disputeResolutionOutcomes = ["release_funds", "request_revision"] as const;
 export const statementStatuses = ["GENERATED", "VERIFIED", "REVOKED"] as const;
-export const submissionRevisionLimit = 999;
+export const submissionRevisionLimit = 3;
 export const jobValidationThreshold = 70;
 
 export type AppRole = (typeof appRoles)[number];
@@ -66,7 +66,7 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().trim().email().max(255),
   password: z.string().min(8).max(72),
-  role: z.enum(appRoles)
+  role: z.enum(appRoles).optional()
 });
 
 const checklistItemSchema = z.string().trim().min(1).max(240);

@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { loginSchema, registerSchema } from "@gighub/shared";
+import { registerSchema } from "@gighub/shared";
+import { z } from "zod";
 import { asyncHandler } from "../lib/async-handler";
 import { clearAuthCookies, REFRESH_COOKIE_NAME, setAuthCookies } from "../lib/cookies";
 import { HttpError } from "../lib/http-error";
@@ -13,6 +14,12 @@ import {
 import { requireAuth } from "../middleware/auth";
 
 export const authRouter = Router();
+
+const loginRequestSchema = z.object({
+  email: z.string().trim().email().max(255),
+  password: z.string().min(8).max(72),
+  role: z.enum(["freelancer", "company", "admin"]).optional()
+});
 
 authRouter.post(
   "/register",
@@ -33,7 +40,7 @@ authRouter.post(
 authRouter.post(
   "/login",
   asyncHandler(async (request, response) => {
-    const input = loginSchema.parse(request.body);
+    const input = loginRequestSchema.parse(request.body);
     const result = await loginUser(input);
 
     setAuthCookies(response, result);
@@ -94,4 +101,3 @@ authRouter.get(
     });
   })
 );
-
