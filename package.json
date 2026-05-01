@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "start": "npm run start --workspace @gighub/api",
+    "start": "npm run db:migrate:deploy --workspace @gighub/api && npm run start --workspace @gighub/api",
     "dev": "npm run build --workspace @gighub/shared && concurrently -n web,api -c cyan,green \"npm run dev:web\" \"npm run dev:api\"",
     "dev:web": "dotenv -e .env -- npm run dev --workspace @gighub/web",
     "dev:api": "dotenv -e .env -- npm run dev --workspace @gighub/api",
