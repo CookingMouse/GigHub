@@ -60,11 +60,12 @@ const companyJob: JobRecord = {
     id: "freelancer-1",
     name: "Aina Musa",
     displayName: "Aina Musa",
-    portfolioUrl: null,
-    skills: ["UI Design"],
-    hourlyRate: 120,
-    ratingAverage: 4.8
-  },
+      portfolioUrl: null,
+      skills: ["UI Design"],
+      hourlyRate: 120,
+      ratingAverage: 4.8,
+      hasResume: true
+    },
   escrow: {
     status: "PARTIALLY_RELEASED",
     fundedAmount: 3200,

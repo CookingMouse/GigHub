@@ -4,6 +4,8 @@
 
 GigHub connects companies with freelancers and uses milestone-locked escrow plus AI-assisted brief validation to make project work safer for both sides. Companies fund a project once; payment is automatically released to the freelancer milestone-by-milestone after each deliverable is approved (or auto-released if the company doesn't review within 72 hours).
 
+**Demo Video**: https://drive.google.com/file/d/1RqPwPTXfHY9eap6rt7_YWJXGbH1OnJhJ/view?usp=sharing
+
 ---
 
 ## Core Features
