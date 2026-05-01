@@ -24,9 +24,17 @@ app.use((request, response, next) => {
   next();
 });
 
+const allowedOrigins = env.WEB_URL.split(",").map((o) => o.trim());
+
 app.use(
   cors({
-    origin: env.WEB_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      }
+    },
     credentials: true
   })
 );
