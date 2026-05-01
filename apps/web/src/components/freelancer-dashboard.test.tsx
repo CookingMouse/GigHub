@@ -57,7 +57,8 @@ describe("FreelancerDashboard", () => {
               dueAt: "2026-05-02T00:00:00.000Z",
               reviewDueAt: null,
               revisionCount: 1,
-              remainingRevisions: 2
+              remainingRevisions: 2,
+              lastRejection: null
             },
             {
               id: "milestone-2",
@@ -68,7 +69,8 @@ describe("FreelancerDashboard", () => {
               dueAt: "2026-05-06T00:00:00.000Z",
               reviewDueAt: "2026-05-08T00:00:00.000Z",
               revisionCount: 1,
-              remainingRevisions: 2
+              remainingRevisions: 2,
+              lastRejection: null
             }
           ]
         },
@@ -87,7 +89,8 @@ describe("FreelancerDashboard", () => {
               dueAt: "2026-04-02T00:00:00.000Z",
               reviewDueAt: null,
               revisionCount: 1,
-              remainingRevisions: 2
+              remainingRevisions: 2,
+              lastRejection: null
             }
           ]
         }
@@ -225,7 +228,8 @@ describe("FreelancerDashboard", () => {
               dueAt: "2026-05-02T00:00:00.000Z",
               reviewDueAt: null,
               revisionCount: 0,
-              remainingRevisions: 3
+              remainingRevisions: 3,
+              lastRejection: null
             }
           ]
         }

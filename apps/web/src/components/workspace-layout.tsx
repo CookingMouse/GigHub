@@ -93,6 +93,16 @@ const roleNavSections: Record<AppRole, NavSection[]> = {
       ],
     },
   ],
+  admin: [
+    {
+      group: null,
+      items: [{ href: "/dashboard", label: "Dashboard", icon: "dashboard" }]
+    },
+    {
+      group: "ACCOUNT",
+      items: [{ href: "/login", label: "Sign In", icon: "user" }]
+    }
+  ]
 };
 
 // ── Role accent colours ───────────────────────────────────────────────────────
@@ -122,6 +132,14 @@ const roleStyle: Record<AppRole, RoleStyle> = {
     cta:         "Post Job",
     ctaHref:     "/jobs/new",
   },
+  admin: {
+    accent:      "#6B7280",
+    accentLight: "#F3F4F6",
+    accentText:  "#374151",
+    tagline:     "Admin",
+    cta:         "Dashboard",
+    ctaHref:     "/dashboard",
+  }
 };
 
 const getInitials = (name: string) =>

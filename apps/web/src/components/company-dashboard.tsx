@@ -374,7 +374,9 @@ export const CompanyDashboard = ({ user }: CompanyDashboardProps) => {
                     <div className="freelancer-dashboard-upcoming-header">
                       <div>
                         <p className="freelancer-dashboard-upcoming-title" style={{ fontWeight: 600 }}>{app.freelancerDisplayName}</p>
-                        <p className="freelancer-dashboard-upcoming-meta">Applied for: {app.jobTitle}</p>
+                        <p className="freelancer-dashboard-upcoming-meta">
+                          {app.coverNote ? `Cover note: ${app.coverNote}` : app.freelancerEmail}
+                        </p>
                       </div>
                       <Link href="/company/requests" style={{ fontSize: 12, color: hiringAccent, fontWeight: 600, textDecoration: "none" }}>Review →</Link>
                     </div>
