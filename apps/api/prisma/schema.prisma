@@ -80,7 +80,6 @@ enum DisputeStatus {
 
 enum GLMDecisionType {
   BRIEF_VALIDATION
-  MILESTONE_SCORING
   DISPUTE_ANALYSIS
 }
 

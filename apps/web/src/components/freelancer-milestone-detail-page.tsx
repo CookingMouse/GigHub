@@ -34,55 +34,6 @@ const formatDate = (value: string | null) => {
 const isSubmissionLocked = (milestone: FreelancerMilestoneDetailRecord) =>
   ["UNDER_REVIEW", "APPROVED", "RELEASED", "DISPUTED"].includes(milestone.status);
 
-const DecisionSummary = ({ milestone }: { milestone: FreelancerMilestoneDetailRecord }) => {
-  const dispute = milestone.activeDispute;
-  const decision = milestone.latestDecision;
-
-  if (!dispute && !decision && milestone.status !== "UNDER_REVIEW") {
-    return null;
-  }
-
-  return (
-    <section className="inline-panel">
-      <p className="eyebrow">Review status</p>
-      <h2>Latest GLM scoring and dispute state</h2>
-
-      {milestone.status === "UNDER_REVIEW" ? (
-        <p className="helper-copy">
-          Your submission is waiting for company approval, rejection, or auto-release.
-        </p>
-      ) : null}
-
-      {decision ? (
-        <div className="status-panel" style={{ marginTop: 16 }}>
-          <span className="panel-label">{decision.decisionType.replaceAll("_", " ")}</span>
-          <strong className="freelancer-milestone-detail-card-title">
-            {decision.overallScore !== null ? `${decision.overallScore}/100` : "Score unavailable"}
-          </strong>
-          <p className="muted freelancer-milestone-detail-supporting-copy">
-            {decision.reasoning ?? "No additional GLM reasoning is available."}
-          </p>
-          {decision.requirementScores.length > 0 ? (
-            <ul className="feedback-list">
-              {decision.requirementScores.map((score) => (
-                <li key={score.requirement}>
-                  {score.requirement.replaceAll("_", " ")}: {score.score}/100
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
-
-      {dispute ? (
-        <div className="callout-warning" style={{ marginTop: 16 }}>
-          <strong>Dispute status: {dispute.status}</strong>
-          <p>{dispute.rejectionReason}</p>
-        </div>
-      ) : null}
-    </section>
-  );
-};
 
 const SubmissionHistoryList = ({ milestone }: { milestone: FreelancerMilestoneDetailRecord }) => (
   <section className="inline-panel">
@@ -322,16 +273,6 @@ const FreelancerMilestoneDetailContent = ({
 
             <div className="status-grid compact-grid">
               <article className="status-panel">
-                <span className="panel-label">Remaining Revisions</span>
-                <strong className="freelancer-milestone-detail-metric-value">
-                  {milestone.remainingRevisions}
-                </strong>
-                <p className="freelancer-milestone-detail-supporting-copy">
-                  Additional submissions available if revisions are requested.
-                </p>
-              </article>
-
-              <article className="status-panel">
                 <span className="panel-label">Due Date</span>
                 <strong className="freelancer-milestone-detail-metric-value">
                   {formatDate(milestone.dueAt)}
@@ -380,8 +321,6 @@ const FreelancerMilestoneDetailContent = ({
           </section>
         </div>
 
-        <DecisionSummary milestone={milestone} />
-
         <section className="inline-panel">
           <div className="panel-heading-row">
             <div>
@@ -390,10 +329,6 @@ const FreelancerMilestoneDetailContent = ({
             </div>
           </div>
 
-          {milestone.remainingRevisions === 0 ? (
-            <p className="callout-warning">The three-revision limit has been reached.</p>
-          ) : null}
-
           {locked ? (
             <p className="callout-warning">
               This milestone is currently under review or completed.
@@ -401,7 +336,7 @@ const FreelancerMilestoneDetailContent = ({
           ) : null}
 
           <FreelancerSubmissionForm
-            disabled={locked || milestone.remainingRevisions === 0}
+            disabled={locked}
             errorMessage={submitError}
             file={file}
             isSubmitting={isSubmitting}
