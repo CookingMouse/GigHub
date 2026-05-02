@@ -3,9 +3,8 @@ import mammoth from "mammoth";
 
 export const extractTextFromPdf = async (buffer: Buffer): Promise<string> => {
   try {
-    const parsePdf = pdfParse as unknown as (input: Buffer) => Promise<{ text: string }>;
-    const data = await parsePdf(buffer);
-    return data.text;
+    const data = await (pdfParse as unknown as (input: Buffer) => Promise<{ text: string }>)(buffer);
+    return data.text || "";
   } catch (error) {
     console.error("Error extracting text from PDF:", error);
     return "";
