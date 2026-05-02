@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { uploadFile, deleteFile, downloadFile, UploadResponse } from "@/lib/uploads-api";
+import { uploadFile, deleteFile, downloadFile, type UploadResponse } from "@/lib/uploads-api";
+
+export type { UploadResponse };
 
 interface FileUploadWidgetProps {
   fileType: "resume" | "deliverable" | "portfolio" | "document";
