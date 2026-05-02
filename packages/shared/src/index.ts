@@ -41,7 +41,7 @@ export const submissionStatuses = [
 export const supportedSubmissionFormats = ["pdf", "docx", "png", "jpg", "zip"] as const;
 export const disputeResolutionOutcomes = ["release_funds", "request_revision"] as const;
 export const statementStatuses = ["GENERATED", "VERIFIED", "REVOKED"] as const;
-export const submissionRevisionLimit = 3;
+export const submissionRevisionLimit = Infinity;
 export const jobValidationThreshold = 70;
 
 export type AppRole = (typeof appRoles)[number];

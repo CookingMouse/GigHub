@@ -368,22 +368,6 @@ export const createFreelancerSubmission = async (
     format: metadata.format
   });
   const reviewDueAt = new Date(submittedAt.getTime() + reviewWindowMs);
-  const scoringResult = await selectedGLMProvider.scoreMilestone({
-    briefOverview: milestone.job.brief?.overview ?? "",
-    deliverables: normalizeStringArray(milestone.job.brief?.deliverables),
-    acceptanceCriteria: normalizeStringArray(milestone.job.brief?.acceptanceCriteria),
-    fileFormat: metadata.format,
-    fileSizeBytes: file.size,
-    fileHash: storedFile.fileHash,
-    wordCount: metadata.wordCount,
-    dimensions: metadata.dimensions,
-    revision: nextRevision,
-    notes: notes || null,
-    fileName: file.originalname
-  });
-  const reviewedAt = new Date();
-  const reviewDecision = reviewDecisionForPassFail(scoringResult.passFail);
-  const isRevisionRequested = scoringResult.passFail !== "pass";
 
   try {
     const updatedMilestone = await prisma.$transaction(async (tx) => {
@@ -391,10 +375,10 @@ export const createFreelancerSubmission = async (
         data: {
           milestoneId: milestone.id,
           revision: nextRevision,
-          status: isRevisionRequested ? "REJECTED" : "PENDING_REVIEW",
+          status: "PENDING_REVIEW",
           notes: notes || null,
-          reviewDecision,
-          rejectionReason: isRevisionRequested ? scoringResult.reasoning : null,
+          reviewDecision: null,
+          rejectionReason: null,
           fileName: file.originalname,
           fileFormat: metadata.format,
           fileSizeBytes: file.size,
@@ -402,7 +386,7 @@ export const createFreelancerSubmission = async (
           wordCount: metadata.wordCount,
           dimensions: metadata.dimensions,
           submittedAt,
-          reviewedAt,
+          reviewedAt: null,
           activityLog: [
             {
               type: "submission.created",
@@ -417,29 +401,15 @@ export const createFreelancerSubmission = async (
         }
       });
 
-      await tx.gLMDecision.create({
-        data: {
-          jobId: milestone.jobId,
-          submissionId: submission.id,
-          decisionType: "MILESTONE_SCORING",
-          overallScore: scoringResult.overallScore,
-          passFail: scoringResult.passFail,
-          recommendation: isRevisionRequested ? "request_revision" : "release_funds",
-          requirementScores: scoringResult.requirementScores,
-          badFaithFlags: [],
-          reasoning: scoringResult.reasoning
-        }
-      });
-
       await tx.milestone.update({
         where: {
           id: milestone.id
         },
         data: {
-          status: isRevisionRequested ? "REVISION_REQUESTED" : "UNDER_REVIEW",
+          status: "UNDER_REVIEW",
           submittedAt,
-          reviewDueAt: isRevisionRequested ? null : reviewDueAt,
-          revisionRequestedAt: isRevisionRequested ? reviewedAt : null
+          reviewDueAt,
+          revisionRequestedAt: null
         }
       });
 
@@ -451,8 +421,6 @@ export const createFreelancerSubmission = async (
           eventType: "submission.created",
           payload: {
             revision: nextRevision,
-            passFail: scoringResult.passFail,
-            reviewDecision,
             fileFormat: metadata.format,
             fileHash: storedFile.fileHash
           }
