@@ -5,6 +5,8 @@ import React, { startTransition, useEffect, useState } from "react";
 import { ApiRequestError, profileApi } from "@/lib/api";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { WorkspaceLayout } from "./workspace-layout";
+import { FileUploadWidget } from "./file-upload-widget";
+import type { UploadResponse } from "./file-upload-widget";
 
 const companyAccent = "#1D4ED8";
 
@@ -14,6 +16,7 @@ export const CompanyProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [companyDocs, setCompanyDocs] = useState<UploadResponse[]>([]);
 
   useEffect(() => {
     if (session.status !== "ready") return;
@@ -151,6 +154,29 @@ export const CompanyProfilePage = () => {
                     />
                   </label>
                 </div>
+              </div>
+            </section>
+
+            {/* Company Documents (R2 Upload) */}
+            <section className="inline-panel">
+              <div style={{ marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, marginBottom: 16 }}>Company Documents</h2>
+                <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 16 }}>
+                  Upload certifications, credentials, or company documents to build credibility with freelancers.
+                </p>
+                <FileUploadWidget
+                  fileType="document"
+                  maxFileSize={15}
+                  label="Upload Documents"
+                  description="PDF, DOC, or image files up to 15MB"
+                  initialFiles={companyDocs}
+                  onUploadSuccess={(file) => {
+                    setCompanyDocs([...companyDocs, file]);
+                  }}
+                  onUploadError={(error) => {
+                    setError(error.message);
+                  }}
+                />
               </div>
             </section>
 

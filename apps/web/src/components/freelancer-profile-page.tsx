@@ -6,6 +6,8 @@ import { ApiRequestError, freelancerWorkspaceApi, healthApi, profileApi } from "
 import type { IncomeSummaryRecord } from "@gighub/shared";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { WorkspaceLayout } from "./workspace-layout";
+import { FileUploadWidget } from "./file-upload-widget";
+import type { UploadResponse } from "./file-upload-widget";
 
 // ── Design tokens ────────────────────────────────────────────────────────────
 const T = {
@@ -388,6 +390,7 @@ export const FreelancerProfilePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [portfolioFiles, setPortfolioFiles] = useState<UploadResponse[]>([]);
 
   const loadProfile = async () => {
     try {
@@ -819,6 +822,28 @@ export const FreelancerProfilePage = () => {
                         </span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Portfolio Files (R2 Upload) */}
+              <Card>
+                <div style={{ padding: "18px 20px" }}>
+                  <SectionLabel>Portfolio Files</SectionLabel>
+                  <div style={{ marginTop: 12 }}>
+                    <FileUploadWidget
+                      fileType="portfolio"
+                      maxFileSize={15}
+                      label="Upload Work Samples"
+                      description="Add design files, code snippets, or project documentation"
+                      initialFiles={portfolioFiles}
+                      onUploadSuccess={(file) => {
+                        setPortfolioFiles([...portfolioFiles, file]);
+                      }}
+                      onUploadError={(error) => {
+                        setError(error.message);
+                      }}
+                    />
                   </div>
                 </div>
               </Card>
