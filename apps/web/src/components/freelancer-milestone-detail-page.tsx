@@ -7,7 +7,6 @@ import { ApiRequestError, freelancerWorkspaceApi } from "@/lib/api";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { FreelancerSubmissionForm } from "./freelancer-submission-form";
 import { FreelancerWorkspaceShell } from "./freelancer-workspace-shell";
-import { DeliverableUploadSection } from "./deliverable-upload-section";
 
 type FreelancerMilestoneDetailPageProps = {
   milestoneId: string;
@@ -347,17 +346,6 @@ const FreelancerMilestoneDetailContent = ({
           />
         </section>
 
-        {!locked && (
-          <DeliverableUploadSection
-            milestoneId={milestone.id}
-            onDeliverableUploaded={(file) => {
-              console.log("Deliverable uploaded:", file);
-            }}
-            onUploadError={(error) => {
-              console.error("Deliverable upload error:", error);
-            }}
-          />
-        )}
 
         <SubmissionHistoryList milestone={milestone} />
       </div>
