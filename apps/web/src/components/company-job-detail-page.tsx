@@ -284,8 +284,9 @@ export const CompanyJobDetailPage = () => {
 
   const handleValidate = () => {
     setIsValidating(true);
+    setValidationError(null);
     startTransition(async () => {
-      try { const r = await jobsApi.validate(job.id); syncJob(r.job); } 
+      try { const r = await jobsApi.validate(job.id); syncJob(r.job); }
       catch (err: any) { setValidationError(err.message); } finally { setIsValidating(false); }
     });
   };
@@ -422,6 +423,11 @@ export const CompanyJobDetailPage = () => {
                     </button>
                   )}
                 </div>
+                {validationError && (
+                  <p style={{ fontSize: 12, color: "#DC2626", marginTop: 12, background: "#FEF2F2", padding: 10, borderRadius: 8 }}>
+                    Validation failed: {validationError}
+                  </p>
+                )}
                 {!validation.canPublish && isDraft && validation.score !== null && (
                   <p style={{ fontSize: 12, color: "#DC2626", marginTop: 12, background: "#FEF2F2", padding: 10, borderRadius: 8 }}>
                     Score must be at least 70% to publish. Address the gaps below.
