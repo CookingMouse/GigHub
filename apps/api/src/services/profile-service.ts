@@ -14,8 +14,6 @@ import {
   storeSubmissionFile
 } from "./file-storage-service";
 import { prisma } from "../lib/prisma";
-import { extractTextFromFile } from "../lib/text-extraction";
-import { selectedGLMProvider } from "./glm-provider";
 
 const prismaAny = prisma as any;
 
@@ -105,17 +103,6 @@ export const uploadFreelancerResume = async (
   try {
     const previousStorageKey = profile.resumeStorageKey;
 
-    // AI Resume Parsing
-    let aiParsedData = null;
-    try {
-      const extractedText = await extractTextFromFile(file.buffer, file.originalname);
-      if (extractedText.trim()) {
-        aiParsedData = await (selectedGLMProvider as any).parseResume(extractedText);
-      }
-    } catch (aiError) {
-      console.error("AI Resume Parsing failed, but continuing with upload:", aiError);
-    }
-
     await prismaAny.freelancerProfile.update({
       where: {
         userId
@@ -123,14 +110,7 @@ export const uploadFreelancerResume = async (
       data: {
         resumeFileName: file.originalname,
         resumeStorageKey: stored.storageKey,
-        resumeUploadedAt: new Date(),
-        // Update profile fields if AI parsing succeeded
-        ...(aiParsedData && {
-          skills: aiParsedData.skills.length > 0 ? aiParsedData.skills : profile.skills,
-          experienceYears: aiParsedData.experienceYears || profile.experienceYears,
-          headline: aiParsedData.headline || profile.headline,
-          bio: aiParsedData.bio || profile.bio
-        })
+        resumeUploadedAt: new Date()
       }
     });
 
