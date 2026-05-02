@@ -39,14 +39,6 @@ const freelancerJobInclude = {
                 }
               }
             }
-          },
-          glmDecisions: {
-            where: {
-              decisionType: "MILESTONE_SCORING"
-            },
-            orderBy: {
-              createdAt: "desc"
-            }
           }
         }
       }
@@ -83,14 +75,6 @@ const freelancerMilestoneInclude = {
               createdAt: "desc"
             }
           }
-        }
-      },
-      glmDecisions: {
-        where: {
-          decisionType: "MILESTONE_SCORING"
-        },
-        orderBy: {
-          createdAt: "desc"
         }
       }
     }
@@ -158,10 +142,7 @@ const reviewDecisionForPassFail = (passFail: "pass" | "partial" | "fail") => {
 };
 
 const toDecisionRecord = (
-  decision:
-    | FreelancerSubmission["glmDecisions"][number]
-    | NonNullable<NonNullable<FreelancerSubmission["dispute"]>["glmDecisions"]>[number]
-    | null
+  decision: NonNullable<NonNullable<FreelancerSubmission["dispute"]>["glmDecisions"]>[number] | null
 ): GLMDecisionRecord | null => {
   if (!decision) {
     return null;
@@ -273,7 +254,7 @@ const toFreelancerMilestoneDetailRecord = (
   },
   revisionCount: milestone.submissions.length,
   remainingRevisions: Math.max(submissionRevisionLimit - milestone.submissions.length, 0),
-  latestDecision: toDecisionRecord(latestSubmissionForMilestone(milestone)?.glmDecisions[0] ?? null),
+  latestDecision: null,
   activeDispute: toDisputeRecord(latestSubmissionForMilestone(milestone)?.dispute ?? null),
   submissionHistory: milestone.submissions.slice().reverse().map(toSubmissionRecord)
 });

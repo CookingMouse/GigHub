@@ -50,14 +50,6 @@ const companyJobInclude = {
                 }
               }
             }
-          },
-          glmDecisions: {
-            where: {
-              decisionType: "MILESTONE_SCORING"
-            },
-            orderBy: {
-              createdAt: "desc"
-            }
           }
         }
       }
@@ -152,10 +144,7 @@ const buildBriefData = (input: UpsertJobDraftInput) => ({
 });
 
 const toGLMDecisionRecord = (
-  decision:
-    | CompanySubmission["glmDecisions"][number]
-    | NonNullable<NonNullable<CompanySubmission["dispute"]>["glmDecisions"]>[number]
-    | null
+  decision: NonNullable<NonNullable<CompanySubmission["dispute"]>["glmDecisions"]>[number] | null
 ): GLMDecisionRecord | null => {
   if (!decision) {
     return null;
@@ -239,9 +228,6 @@ const toFreelancerDirectoryRecord = (
 
 const latestSubmissionForMilestone = (milestone: CompanyMilestone) => milestone.submissions[0] ?? null;
 
-const latestMilestoneDecision = (milestone: CompanyMilestone) =>
-  latestSubmissionForMilestone(milestone)?.glmDecisions[0] ?? null;
-
 const toMilestoneRecord = (milestone: CompanyMilestone): MilestoneRecord => ({
   id: milestone.id,
   sequence: milestone.sequence,
@@ -258,7 +244,7 @@ const toMilestoneRecord = (milestone: CompanyMilestone): MilestoneRecord => ({
   createdAt: milestone.createdAt.toISOString(),
   updatedAt: milestone.updatedAt.toISOString(),
   latestSubmission: toSubmissionRecord(latestSubmissionForMilestone(milestone)),
-  latestDecision: toGLMDecisionRecord(latestMilestoneDecision(milestone)),
+  latestDecision: null,
   activeDispute: toDisputeRecord(latestSubmissionForMilestone(milestone)?.dispute ?? null)
 });
 
@@ -1094,7 +1080,6 @@ export const rejectCompanyMilestone = async (
   }
 
   const reviewedAt = new Date();
-  const latestDecision = submission.glmDecisions[0] ?? null;
   const clientDisputeHistoryCount = await prisma.dispute.count({
     where: {
       raisedById: companyId
@@ -1102,8 +1087,8 @@ export const rejectCompanyMilestone = async (
   });
   const disputeAnalysis = await selectedGLMProvider.analyzeDispute({
     rejectionReason,
-    milestoneScore: latestDecision?.overallScore ?? null,
-    milestonePassFail: latestDecision?.passFail ?? null,
+    milestoneScore: null,
+    milestonePassFail: null,
     clientDisputeHistoryCount
   });
 
@@ -1122,10 +1107,10 @@ export const rejectCompanyMilestone = async (
         jobId: milestone.jobId,
         disputeId: dispute.id,
         decisionType: "DISPUTE_ANALYSIS",
-        overallScore: latestDecision?.overallScore ?? null,
-        passFail: latestDecision?.passFail ?? null,
+        overallScore: null,
+        passFail: null,
         recommendation: disputeAnalysis.recommendation,
-        requirementScores: latestDecision?.requirementScores ?? [],
+        requirementScores: [],
         badFaithFlags: disputeAnalysis.badFaithFlags,
         reasoning: disputeAnalysis.reasoning
       }
