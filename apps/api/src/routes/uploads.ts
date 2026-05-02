@@ -1,3 +1,4 @@
+import type { Request } from "express";
 import { Router } from "express";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -23,28 +24,43 @@ if (env.STORAGE_PROVIDER === "r2") {
   });
 }
 
+interface AuthRequest extends Request {
+  auth?: { userId: string; role: "freelancer" | "company" | "admin"; sessionId?: string };
+  file?: Express.Multer.File;
+}
+
 // Upload resume or deliverable
 uploadsRouter.post(
   "/upload",
   requireAuth,
   submissionUpload.single("file"),
-  asyncHandler(async (request, response) => {
+  asyncHandler(async (request: AuthRequest, response): Promise<void> => {
     if (!request.file) {
-      return response.status(400).json({
+      response.status(400).json({
         error: "No file provided"
       });
+      return;
     }
 
     if (env.STORAGE_PROVIDER !== "r2") {
-      return response.status(503).json({
+      response.status(503).json({
         error: "File storage is not configured for R2"
       });
+      return;
     }
 
     try {
-      const userId = request.auth.id;
-      const fileType = request.body.fileType || "document"; // "resume", "deliverable", etc.
-      const fileName = `${fileType}-${Date.now()}-${randomUUID()}.${request.file.originalname.split('.').pop()}`;
+      const userId = request.auth?.userId;
+      if (!userId) {
+        response.status(401).json({
+          error: "Authentication required"
+        });
+        return;
+      }
+
+      const fileType = (request.body?.fileType as string) || "document";
+      const extension = request.file.originalname.split('.').pop() || "bin";
+      const fileName = `${fileType}-${Date.now()}-${randomUUID()}.${extension}`;
       const storageKey = `user-uploads/${userId}/${fileType}/${fileName}`;
 
       console.log(`Uploading file to R2 at: ${storageKey}`);
@@ -79,28 +95,38 @@ uploadsRouter.post(
 uploadsRouter.get(
   "/download-url/:storageKey",
   requireAuth,
-  asyncHandler(async (request, response) => {
-    const storageKey = request.params.storageKey;
+  asyncHandler(async (request: AuthRequest, response): Promise<void> => {
+    const storageKey = request.params.storageKey as string;
 
     if (!storageKey) {
-      return response.status(400).json({
+      response.status(400).json({
         error: "Storage key is required"
       });
+      return;
     }
 
     if (env.STORAGE_PROVIDER !== "r2") {
-      return response.status(503).json({
+      response.status(503).json({
         error: "File storage is not configured for R2"
       });
+      return;
     }
 
     try {
+      const userId = request.auth?.userId;
+      if (!userId) {
+        response.status(401).json({
+          error: "Authentication required"
+        });
+        return;
+      }
+
       // Verify user owns this file (basic check)
-      const userId = request.auth.id;
       if (!storageKey.startsWith(`user-uploads/${userId}/`)) {
-        return response.status(403).json({
+        response.status(403).json({
           error: "You don't have permission to access this file"
         });
+        return;
       }
 
       // Generate pre-signed URL
@@ -130,28 +156,38 @@ uploadsRouter.get(
 uploadsRouter.delete(
   "/:storageKey",
   requireAuth,
-  asyncHandler(async (request, response) => {
-    const storageKey = request.params.storageKey;
+  asyncHandler(async (request: AuthRequest, response): Promise<void> => {
+    const storageKey = request.params.storageKey as string;
 
     if (!storageKey) {
-      return response.status(400).json({
+      response.status(400).json({
         error: "Storage key is required"
       });
+      return;
     }
 
     if (env.STORAGE_PROVIDER !== "r2") {
-      return response.status(503).json({
+      response.status(503).json({
         error: "File storage is not configured for R2"
       });
+      return;
     }
 
     try {
+      const userId = request.auth?.userId;
+      if (!userId) {
+        response.status(401).json({
+          error: "Authentication required"
+        });
+        return;
+      }
+
       // Verify user owns this file
-      const userId = request.auth.id;
       if (!storageKey.startsWith(`user-uploads/${userId}/`)) {
-        return response.status(403).json({
+        response.status(403).json({
           error: "You don't have permission to delete this file"
         });
+        return;
       }
 
       await s3Client!.send(new DeleteObjectCommand({
