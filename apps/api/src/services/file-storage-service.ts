@@ -49,6 +49,7 @@ export const getLocalStorageRoot = () => storageRoot;
 type StoreSubmissionFileInput = {
   fileBuffer: Buffer;
   format: SupportedSubmissionFormat;
+  encrypted?: boolean;
 };
 
 type StoreSubmissionFileResult = {
@@ -59,17 +60,25 @@ type StoreSubmissionFileResult = {
 
 export const storeSubmissionFile = async ({
   fileBuffer,
-  format
+  format,
+  encrypted = true
 }: StoreSubmissionFileInput): Promise<StoreSubmissionFileResult> => {
   await ensureStorageRoot();
 
   const storageKey = buildStorageKey(format);
-  const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", encryptionKey, iv);
-  const encryptedPayload = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
-  const authTag = cipher.getAuthTag();
   const fileHash = createHash("sha256").update(fileBuffer).digest("hex");
-  const finalBuffer = Buffer.concat([iv, authTag, encryptedPayload]);
+
+  let finalBuffer: Buffer;
+
+  if (encrypted) {
+    const iv = randomBytes(12);
+    const cipher = createCipheriv("aes-256-gcm", encryptionKey, iv);
+    const encryptedPayload = Buffer.concat([cipher.update(fileBuffer), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    finalBuffer = Buffer.concat([iv, authTag, encryptedPayload]);
+  } else {
+    finalBuffer = fileBuffer;
+  }
 
   if (env.STORAGE_PROVIDER === "r2") {
     console.log(`Storing file to R2 at: ${storageKey}`);
@@ -111,22 +120,27 @@ const streamToBuffer = async (stream: Readable | ReadableStream | Blob): Promise
 };
 
 export const retrieveSubmissionFile = async (storageKey: string): Promise<Buffer> => {
-  let encryptedPayloadWithHeader: Buffer;
+  let fileBuffer: Buffer;
 
   if (env.STORAGE_PROVIDER === "r2") {
     const response = await s3Client!.send(new GetObjectCommand({
       Bucket: env.R2_BUCKET!,
       Key: storageKey
     }));
-    encryptedPayloadWithHeader = await streamToBuffer(response.Body as Readable);
+    fileBuffer = await streamToBuffer(response.Body as Readable);
   } else {
     const destination = path.join(storageRoot, storageKey);
-    encryptedPayloadWithHeader = await readFile(destination);
+    fileBuffer = await readFile(destination);
   }
 
-  const iv = encryptedPayloadWithHeader.slice(0, 12);
-  const authTag = encryptedPayloadWithHeader.slice(12, 28);
-  const encryptedPayload = encryptedPayloadWithHeader.slice(28);
+  // If file ends with .enc, it's encrypted, otherwise it's plain
+  if (!storageKey.endsWith(".enc")) {
+    return fileBuffer;
+  }
+
+  const iv = fileBuffer.slice(0, 12);
+  const authTag = fileBuffer.slice(12, 28);
+  const encryptedPayload = fileBuffer.slice(28);
 
   const decipher = createDecipheriv("aes-256-gcm", encryptionKey, iv);
   decipher.setAuthTag(authTag);
