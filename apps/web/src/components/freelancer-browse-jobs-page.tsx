@@ -1,9 +1,9 @@
 "use client";
 
-import type { JobApplicationRecord, JobAvailabilityRecord } from "@gighub/shared";
+import type { JobApplicationRecord, JobAvailabilityRecord, JobMatchRecord } from "@gighub/shared";
 import Link from "next/link";
 import React, { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { ApiRequestError, requestsApi } from "@/lib/api";
+import { ApiRequestError, freelancerWorkspaceApi, requestsApi } from "@/lib/api";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { WorkspaceLayout } from "./workspace-layout";
 
@@ -41,6 +41,21 @@ const formatRequestError = (error: unknown, fallback: string) => {
 const accent = "#0F6E56";
 const accentLight = "#E1F5EE";
 
+const MatchBadge = ({ score }: { score: number }) => {
+  const bg = score >= 70 ? "#0F6E56" : score >= 40 ? "#B45309" : "#6B7280";
+  return (
+    <span style={{
+      position: "absolute", top: 14, right: 16,
+      fontSize: 10, fontWeight: 700, color: "#fff",
+      background: bg, borderRadius: 999,
+      padding: "2px 8px", letterSpacing: "0.04em",
+      pointerEvents: "none"
+    }}>
+      {score}% match
+    </span>
+  );
+};
+
 const StatusPill = ({ status }: { status: string }) => {
   const map: Record<string, { bg: string; color: string }> = {
     ACCEPTED:  { bg: "#E1F5EE", color: "#0F6E56" },
@@ -64,6 +79,7 @@ const StatusPill = ({ status }: { status: string }) => {
 export const FreelancerBrowseJobsPage = () => {
   const session = useProtectedUser("freelancer");
   const [state, setState] = useState<BrowseState>({ status: "loading" });
+  const [matchScores, setMatchScores] = useState<Map<string, number>>(new Map());
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,7 +102,12 @@ export const FreelancerBrowseJobsPage = () => {
   };
 
   useEffect(() => {
-    if (session.status === "ready") void reload();
+    if (session.status === "ready") {
+      void reload();
+      freelancerWorkspaceApi.listJobMatches()
+        .then(r => setMatchScores(new Map(r.matches.map((m: JobMatchRecord) => [m.jobId, m.matchScore]))))
+        .catch(() => {});
+    }
   }, [session.status]);
 
   const applicationByJobId = useMemo(() => {
@@ -319,6 +340,7 @@ export const FreelancerBrowseJobsPage = () => {
                 <article
                   key={job.id}
                   style={{
+                    position: "relative",
                     background: "#fff",
                     border: `1.5px solid ${isExpanded ? accent : "#E5E7EB"}`,
                     borderRadius: 18,
@@ -327,6 +349,7 @@ export const FreelancerBrowseJobsPage = () => {
                     transition: "border-color 150ms, box-shadow 150ms",
                   }}
                 >
+                  {matchScores.has(job.id) && <MatchBadge score={matchScores.get(job.id)!} />}
                   {/* Top row: company + status */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                     {/* Company avatar */}
