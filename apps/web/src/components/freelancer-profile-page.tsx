@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import type { FreelancerProfileRecord } from "@gighub/shared";
-import { ApiRequestError, healthApi, profileApi } from "@/lib/api";
+import { ApiRequestError, freelancerWorkspaceApi, healthApi, profileApi } from "@/lib/api";
+import type { IncomeSummaryRecord } from "@gighub/shared";
 import { useProtectedUser } from "@/hooks/use-protected-user";
 import { WorkspaceLayout } from "./workspace-layout";
 
@@ -382,6 +383,7 @@ const InputField = ({
 export const FreelancerProfilePage = () => {
   const session = useProtectedUser("freelancer");
   const [state, setState] = useState<ProfileState>({ status: "loading" });
+  const [income, setIncome] = useState<IncomeSummaryRecord | null>(null);
   const [modal, setModal] = useState<"bio" | "skills" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -427,6 +429,7 @@ export const FreelancerProfilePage = () => {
   useEffect(() => {
     if (session.status === "ready") {
       void loadProfile();
+      freelancerWorkspaceApi.getIncome().then(r => setIncome(r.summary)).catch(() => {});
     }
   }, [session.status]);
 
@@ -559,8 +562,8 @@ export const FreelancerProfilePage = () => {
               marginBottom: 24
             }}
           >
-            <StatCard label="Total Earned" value="—" sub="Lifetime on Gighub" />
-            <StatCard label="Jobs Completed" value="—" sub="Completion rate" />
+            <StatCard label="Total Earned" value={income ? `MYR ${income.totalEarned.toFixed(2)}` : "—"} sub="Lifetime on Gighub" />
+            <StatCard label="Jobs Completed" value={income ? String(income.completedJobs) : "—"} sub="Completion rate" />
             <StatCard label="Avg Rating" value="—" sub="Across all reviews" />
             <StatCard label="On-Time Rate" value="—" sub="Milestones on schedule" />
           </div>
