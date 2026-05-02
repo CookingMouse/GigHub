@@ -101,10 +101,7 @@ const callGLMJson = async (messages: ChatMessage[]) => {
     body: JSON.stringify({
       model: env.GLM_MODEL,
       messages,
-      temperature: 0.1,
-      response_format: {
-        type: "json_object"
-      }
+      temperature: 0.1
     })
   });
 
