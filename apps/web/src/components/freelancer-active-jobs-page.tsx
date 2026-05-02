@@ -77,7 +77,7 @@ export const FreelancerActiveJobsPage = () => {
       sequence: m.sequence,
       title: m.title,
       description: m.description,
-      amount: null,
+      amount: m.amount,
       dueAt: m.dueAt,
       status: m.status,
       rejection: m.lastRejection

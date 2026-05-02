@@ -348,6 +348,7 @@ export type FreelancerMilestoneSummaryRecord = {
   title: string;
   description: string;
   status: MilestoneStatus;
+  amount: number;
   dueAt: string | null;
   revisionCount: number;
   remainingRevisions: number;
@@ -369,6 +370,7 @@ export type FreelancerMilestoneDetailRecord = {
   title: string;
   description: string;
   status: MilestoneStatus;
+  amount: number;
   dueAt: string | null;
   reviewDueAt: string | null;
   job: {

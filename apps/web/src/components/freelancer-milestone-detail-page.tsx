@@ -283,6 +283,58 @@ const FreelancerMilestoneDetailContent = ({
             </div>
           </section>
 
+          <section className="inline-panel" style={{ borderTop: `4px solid ${freelancerAccent}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>Escrow Monitor</h2>
+              <span style={{
+                fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 6,
+                backgroundColor: milestone.status === "RELEASED" ? "#ECFDF5" : milestone.status === "APPROVED" ? "#E1F5EE" : "#FFFBEB",
+                color: milestone.status === "RELEASED" ? "#059669" : milestone.status === "APPROVED" ? "#0F6E56" : "#D97706"
+              }}>
+                {milestone.status === "RELEASED" ? "RELEASED" : milestone.status === "APPROVED" ? "APPROVED" : "LOCKED IN ESCROW"}
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 16, marginBottom: 20 }}>
+              <article>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Milestone Payment</span>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700 }}>
+                  RM {milestone.amount.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </article>
+              <article>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Locked in Escrow</span>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700, color: "#D97706" }}>
+                  {milestone.status === "RELEASED"
+                    ? "RM 0.00"
+                    : `RM ${milestone.amount.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </p>
+              </article>
+              <article>
+                <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", textTransform: "uppercase" }}>Released to You</span>
+                <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 700, color: "#059669" }}>
+                  {milestone.status === "RELEASED"
+                    ? `RM ${milestone.amount.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : "RM 0.00"}
+                </p>
+              </article>
+            </div>
+
+            <div style={{ height: 12, backgroundColor: "#F3F4F6", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                width: milestone.status === "RELEASED" ? "100%" : "0%",
+                backgroundColor: "#059669",
+                transition: "width 0.6s ease"
+              }} />
+            </div>
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6B7280" }}>
+              {milestone.status === "RELEASED"
+                ? "Payment has been released to your wallet."
+                : "Payment will be released once the company approves your submission."}
+            </p>
+          </section>
+
           <section className="inline-panel">
             <p className="eyebrow">Requirements</p>
             <h2>Milestone accepted brief</h2>

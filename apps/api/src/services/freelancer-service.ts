@@ -211,6 +211,7 @@ const toMilestoneSummaryRecord = (
     title: milestone.title,
     description: milestone.description ?? "",
     status: milestone.status,
+    amount: Number(milestone.amount),
     dueAt: milestone.dueAt?.toISOString() ?? null,
     revisionCount: milestone.submissions.length,
     remainingRevisions: Math.max(submissionRevisionLimit - milestone.submissions.length, 0),
@@ -240,6 +241,7 @@ const toFreelancerMilestoneDetailRecord = (
   title: milestone.title,
   description: milestone.description ?? "",
   status: milestone.status,
+  amount: Number(milestone.amount),
   dueAt: milestone.dueAt?.toISOString() ?? null,
   reviewDueAt: milestone.reviewDueAt?.toISOString() ?? null,
   job: {
