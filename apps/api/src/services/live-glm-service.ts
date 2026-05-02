@@ -111,6 +111,7 @@ const callGLMJson = async (messages: ChatMessage[]) => {
   const payload = (await response.json().catch(() => null)) as LiveGLMResponse | { error?: unknown } | null;
 
   if (!response.ok) {
+    console.error("GLM error body:", JSON.stringify(payload));
     throw new Error(`GLM request failed with ${response.status}.`);
   }
 
