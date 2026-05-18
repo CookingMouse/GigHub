@@ -21,9 +21,9 @@ type SectionState<T> =
 type JobsResponse = Awaited<ReturnType<typeof jobsApi.list>>;
 type RequestsResponse = Awaited<ReturnType<typeof requestsApi.listCompanyRequests>>;
 
-const hiringAccent = "#1D4ED8";
-const hiringAccentLight = "#EFF6FF";
-const hiringAccentText = "#1e40af";
+const hiringAccent = "var(--hiring)";
+const hiringAccentLight = "var(--hiring-light)";
+const hiringAccentText = "var(--hiring-text)";
 
 const formatCurrency = (value: number, compact = false) =>
   new Intl.NumberFormat("en-MY", {

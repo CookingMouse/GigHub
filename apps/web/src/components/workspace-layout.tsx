@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { type ReactNode, startTransition, useEffect, useState } from "react";
 import { authApi, freelancersApi, profileApi } from "@/lib/api";
+import { ThemeToggle } from "./theme-toggle";
 
 type DirectoryItem = { id: string; label: string; sub: string; href: string };
 
@@ -210,44 +211,44 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#F9FAFB", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ display: "flex", height: "100vh", background: "var(--bg)", fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* ── Sidebar ── */}
       <aside style={{
         width: 240, flexShrink: 0,
-        background: "#fff", borderRight: "1px solid #E5E7EB",
+        background: "var(--panel)", borderRight: "1px solid var(--border)",
         display: "flex", flexDirection: "column",
         height: "100vh", overflowY: "auto",
       }}>
 
         {/* Logo */}
-        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid #F3F4F6" }}>
+        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border-muted)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
               width: 34, height: 34, borderRadius: 10,
               background: cfg.accent, display: "flex",
               alignItems: "center", justifyContent: "center",
-              flexShrink: 0, color: "#fff",
+              flexShrink: 0, color: "var(--accent-ink)",
             }}>
               <Icon d={ICONS.shield} size={16} />
             </div>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.2px" }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)", margin: 0, letterSpacing: "-0.2px" }}>
                 GigHub
               </p>
-              <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Workspace</p>
+              <p style={{ fontSize: 11, color: "var(--stat-label)", margin: 0 }}>Workspace</p>
             </div>
           </div>
         </div>
 
         {/* Search */}
-        <div style={{ padding: "12px 14px", borderBottom: "1px solid #F3F4F6", position: "relative" }}>
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border-muted)", position: "relative" }}>
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
-            background: "#F9FAFB", border: "1px solid #E5E7EB",
+            background: "var(--bg)", border: "1px solid var(--border)",
             borderRadius: 9, padding: "7px 12px",
           }}>
-            <span style={{ color: "#9CA3AF", flexShrink: 0 }}>
+            <span style={{ color: "var(--stat-label)", flexShrink: 0 }}>
               <Icon d={ICONS.search} size={14} />
             </span>
             <input
@@ -257,13 +258,13 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
               onKeyDown={e => { if (e.key === "Escape") setSearchQuery(""); }}
               style={{
                 border: "none", background: "none", outline: "none",
-                fontSize: 13, color: "#374151", width: "100%",
+                fontSize: 13, color: "var(--ink)", width: "100%",
                 fontFamily: "'DM Sans', sans-serif",
               }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery("")} type="button"
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", padding: 0, fontSize: 13, lineHeight: 1, flexShrink: 0 }}>
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--stat-label)", padding: 0, fontSize: 13, lineHeight: 1, flexShrink: 0 }}>
                 ✕
               </button>
             )}
@@ -271,22 +272,22 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
           {showDropdown && (
             <div style={{
               position: "absolute", top: "calc(100% - 4px)", left: 14, right: 14, zIndex: 100,
-              background: "#fff", border: "1px solid #E5E7EB", borderRadius: 10,
-              boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxHeight: 260, overflowY: "auto",
+              background: "var(--panel)", border: "1px solid var(--border)", borderRadius: 10,
+              boxShadow: "var(--shadow)", maxHeight: 260, overflowY: "auto",
             }}>
               {searchResults.length === 0 ? (
-                <p style={{ padding: "12px 14px", margin: 0, fontSize: 12, color: "#9CA3AF" }}>No results found.</p>
+                <p style={{ padding: "12px 14px", margin: 0, fontSize: 12, color: "var(--stat-label)" }}>No results found.</p>
               ) : (
                 searchResults.map(item => (
                   <Link
                     key={item.id} href={item.href}
                     onClick={() => setSearchQuery("")}
-                    style={{ display: "flex", flexDirection: "column", padding: "10px 14px", textDecoration: "none", borderBottom: "1px solid #F3F4F6" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#F9FAFB"; }}
+                    style={{ display: "flex", flexDirection: "column", padding: "10px 14px", textDecoration: "none", borderBottom: "1px solid var(--border-muted)" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg)"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   >
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{item.label}</span>
-                    <span style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>{item.sub}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{item.label}</span>
+                    <span style={{ fontSize: 11, color: "var(--stat-label)", marginTop: 2 }}>{item.sub}</span>
                   </Link>
                 ))
               )}
@@ -300,7 +301,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
             <div key={si} style={{ marginBottom: 6 }}>
               {section.group && (
                 <p style={{
-                  fontSize: 10, fontWeight: 700, color: "#9CA3AF",
+                  fontSize: 10, fontWeight: 700, color: "var(--stat-label)",
                   margin: "14px 8px 4px", textTransform: "uppercase", letterSpacing: "0.1em",
                 }}>
                   {section.group}
@@ -317,19 +318,19 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
                       width: "100%", padding: "8px 10px", borderRadius: 9,
                       border: "none", textAlign: "left",
                       background: active ? cfg.accentLight : "transparent",
-                      color: active ? cfg.accentText : "#374151",
+                      color: active ? cfg.accentText : "var(--ink)",
                       fontWeight: active ? 600 : 400, fontSize: 13,
                       textDecoration: "none", marginBottom: 1,
                       transition: "background 0.12s, color 0.12s",
                     }}
                     onMouseEnter={e => {
-                      if (!active) (e.currentTarget as HTMLElement).style.background = "#F3F4F6";
+                      if (!active) (e.currentTarget as HTMLElement).style.background = "var(--border-muted)";
                     }}
                     onMouseLeave={e => {
                       if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
                     }}
                   >
-                    <span style={{ color: active ? cfg.accent : "#9CA3AF", flexShrink: 0 }}>
+                    <span style={{ color: active ? cfg.accent : "var(--stat-label)", flexShrink: 0 }}>
                       <Icon d={ICONS[item.icon]} size={16} />
                     </span>
                     <span style={{ flex: 1 }}>{item.label}</span>
@@ -342,7 +343,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
 
         {/* User profile */}
         <div style={{
-          padding: "14px", borderTop: "1px solid #F3F4F6",
+          padding: "14px", borderTop: "1px solid var(--border-muted)",
           display: "flex", alignItems: "center", gap: 10,
         }}>
           <div style={{
@@ -354,7 +355,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{
-              fontSize: 13, fontWeight: 600, color: "#111827", margin: 0,
+              fontSize: 13, fontWeight: 600, color: "var(--ink)", margin: 0,
               whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
             }}>
               {user.name}
@@ -370,7 +371,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
             type="button"
             style={{
               background: "none", border: "none", cursor: "pointer",
-              color: "#9CA3AF", padding: 4, flexShrink: 0,
+              color: "var(--stat-label)", padding: 4, flexShrink: 0,
             }}
           >
             <Icon d={ICONS.logOut} size={15} />
@@ -383,7 +384,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
 
         {/* Topbar */}
         <header style={{
-          height: 58, background: "#fff", borderBottom: "1px solid #E5E7EB",
+          height: 58, background: "var(--panel)", borderBottom: "1px solid var(--border)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 28px", flexShrink: 0,
         }}>
@@ -395,18 +396,19 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
             }}>
               {cfg.tagline}
             </span>
-            <span style={{ fontSize: 13, color: "#9CA3AF" }}>/ {title}</span>
+            <span style={{ fontSize: 13, color: "var(--stat-label)" }}>/ {title}</span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ThemeToggle />
             <button
               type="button"
               aria-label="Notifications"
               style={{
-                background: "#F9FAFB", border: "1px solid #E5E7EB",
+                background: "var(--bg)", border: "1px solid var(--border)",
                 borderRadius: 9, width: 36, height: 36,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", color: "#6B7280",
+                cursor: "pointer", color: "var(--muted)",
               }}
             >
               <Icon d={ICONS.bell} size={16} />
@@ -415,7 +417,7 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
               href={cfg.ctaHref}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                background: cfg.accent, color: "#fff",
+                background: cfg.accent, color: "var(--accent-ink)",
                 borderRadius: 9, padding: "0 16px", height: 36,
                 fontSize: 13, fontWeight: 600, textDecoration: "none",
                 letterSpacing: "-0.1px",
@@ -432,13 +434,13 @@ export const WorkspaceLayout = ({ user, title, subtitle, children }: WorkspaceLa
           {/* Page header */}
           <div style={{ marginBottom: 28 }}>
             <h1 style={{
-              fontSize: 24, fontWeight: 600, color: "#111827",
+              fontSize: 24, fontWeight: 600, color: "var(--ink)",
               margin: 0, letterSpacing: "-0.3px",
             }}>
               {title}
             </h1>
             {subtitle && (
-              <p style={{ fontSize: 14, color: "#6B7280", margin: "4px 0 0", fontWeight: 400 }}>
+              <p style={{ fontSize: 14, color: "var(--muted)", margin: "4px 0 0", fontWeight: 400 }}>
                 {subtitle}
               </p>
             )}
