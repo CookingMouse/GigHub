@@ -25,12 +25,13 @@ app.use((request, response, next) => {
   next();
 });
 
-const allowedOrigins = env.WEB_URL.split(",").map((o) => o.trim());
+const normalizeOrigin = (origin: string) => origin.trim().replace(/\/+$/, "");
+const allowedOrigins = env.WEB_URL.split(",").map(normalizeOrigin);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
         callback(null, true);
       } else {
         callback(new Error(`CORS: origin ${origin} not allowed`));

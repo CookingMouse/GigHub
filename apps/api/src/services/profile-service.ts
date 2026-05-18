@@ -96,8 +96,7 @@ export const uploadFreelancerResume = async (
   const metadata = await extractFileMetadata(file.buffer, file.originalname);
   const stored = await storeSubmissionFile({
     fileBuffer: file.buffer,
-    format: metadata.format,
-    encrypted: false
+    format: metadata.format
   });
 
   try {
