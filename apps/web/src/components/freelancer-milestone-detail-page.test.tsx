@@ -33,6 +33,7 @@ const baseMilestone = {
   sequence: 1,
   title: "Landing page delivery",
   description: "Deliver the approved design file",
+  amount: 1800,
   status: "IN_PROGRESS" as const,
   dueAt: "2026-05-02T00:00:00.000Z",
   reviewDueAt: null,
