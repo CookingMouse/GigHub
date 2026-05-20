@@ -142,6 +142,13 @@ export const liveBriefValidationProvider: BriefValidationProvider = {
             gaps: "string[]",
             clarifyingQuestions: "string[]"
           },
+          context: {
+            industry: input.industry ?? null,
+            department: input.department ?? null,
+            roleType: input.jobTitleTag ?? null,
+            workArrangement: input.workType ?? null,
+            location: input.workLocation ?? null
+          },
           brief: input
         })
       }

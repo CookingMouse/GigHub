@@ -43,6 +43,8 @@ export const disputeResolutionOutcomes = ["release_funds", "request_revision"] a
 export const statementStatuses = ["GENERATED", "VERIFIED", "REVOKED"] as const;
 export const submissionRevisionLimit = Infinity;
 export const jobValidationThreshold = 70;
+export const workTypes = ["remote", "on_site", "hybrid"] as const;
+export type WorkType = (typeof workTypes)[number];
 
 export type AppRole = (typeof appRoles)[number];
 export type RegistrationRole = (typeof registrationRoles)[number];
@@ -94,7 +96,12 @@ export const upsertJobDraftSchema = z.object({
   title: z.string().trim().min(5).max(160),
   budget: z.coerce.number().positive().max(10_000_000),
   milestoneCount: z.coerce.number().int().min(1).max(5),
-  brief: jobBriefSchema
+  brief: jobBriefSchema,
+  industry: z.string().trim().max(120).optional(),
+  department: z.string().trim().max(120).optional(),
+  jobTitleTag: z.string().trim().max(120).optional(),
+  workType: z.enum(workTypes).optional(),
+  workLocation: z.string().trim().max(240).optional()
 });
 
 export const assignFreelancerSchema = z.object({
@@ -408,6 +415,11 @@ export type JobRecord = {
   assignedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  industry: string | null;
+  department: string | null;
+  jobTitleTag: string | null;
+  workType: string | null;
+  workLocation: string | null;
   assignedFreelancer: FreelancerDirectoryRecord | null;
   escrow: EscrowRecord | null;
   milestones: MilestoneRecord[];
@@ -749,5 +761,6 @@ export type ApiErrorResponse = {
   requestId: string;
 };
 
+export * from "./taxonomy";
 export const isRegistrationRole = (value: string): value is RegistrationRole =>
   registrationRoles.includes(value as RegistrationRole);
