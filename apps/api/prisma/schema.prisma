@@ -157,6 +157,11 @@ model Job {
   budget       Decimal         @db.Decimal(12, 2)
   milestoneCount Int           @default(1)
   status       JobStatus       @default(DRAFT)
+  industry     String?
+  department   String?
+  jobTitleTag  String?
+  workType     String?
+  workLocation String?
   publishedAt  DateTime?
   assignedAt   DateTime?
   createdAt    DateTime        @default(now())

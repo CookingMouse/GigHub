@@ -1,5 +1,5 @@
-import { CompanyJobCreatePage } from "@/components/company-job-create-page";
+import { CompanyJobWizardPage } from "@/components/wizard/company-job-wizard-page";
 
 export default function NewJobPage() {
-  return <CompanyJobCreatePage />;
+  return <CompanyJobWizardPage />;
 }
