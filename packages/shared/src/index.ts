@@ -749,5 +749,6 @@ export type ApiErrorResponse = {
   requestId: string;
 };
 
+export * from "./taxonomy";
 export const isRegistrationRole = (value: string): value is RegistrationRole =>
   registrationRoles.includes(value as RegistrationRole);
