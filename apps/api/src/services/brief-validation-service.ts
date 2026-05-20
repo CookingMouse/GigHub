@@ -28,7 +28,12 @@ const collectText = (input: UpsertJobDraftInput) =>
     ...input.brief.acceptanceCriteria,
     input.brief.timeline.startDate,
     input.brief.timeline.endDate,
-    input.brief.timeline.notes
+    input.brief.timeline.notes,
+    input.industry,
+    input.department,
+    input.jobTitleTag,
+    input.workType,
+    input.workLocation
   ]
     .filter(Boolean)
     .join(" ");
@@ -106,6 +111,14 @@ export const deterministicBriefValidationProvider: BriefValidationProvider = {
       score -= 8;
       gaps.push("The brief includes vague language that may trigger later disputes.");
       clarifyingQuestions.push("Which placeholder terms can be replaced with measurable requirements?");
+    }
+
+    if (input.industry) {
+      score += 5;
+    }
+
+    if (input.workType) {
+      score += 3;
     }
 
     const finalScore = clampScore(score);

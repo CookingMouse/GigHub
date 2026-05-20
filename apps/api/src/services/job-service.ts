@@ -13,7 +13,8 @@ import {
   type MockPaymentIntentRecord,
   type MockPaymentWebhookInput,
   type SubmissionRecord,
-  type UpsertJobDraftInput
+  type UpsertJobDraftInput,
+  type WorkType
 } from "@gighub/shared";
 import { env } from "../lib/env";
 import { prisma } from "../lib/prisma";
@@ -284,6 +285,11 @@ const toJobRecord = (job: CompanyJob): JobRecord => ({
   assignedAt: job.assignedAt?.toISOString() ?? null,
   createdAt: job.createdAt.toISOString(),
   updatedAt: job.updatedAt.toISOString(),
+  industry: job.industry ?? null,
+  department: job.department ?? null,
+  jobTitleTag: job.jobTitleTag ?? null,
+  workType: job.workType ?? null,
+  workLocation: job.workLocation ?? null,
   assignedFreelancer: toFreelancerDirectoryRecord(job.freelancer),
   escrow: job.escrow
     ? {
@@ -452,6 +458,11 @@ export const createCompanyJob = async (companyId: string, input: UpsertJobDraftI
         title: input.title,
         budget: new Prisma.Decimal(input.budget),
         milestoneCount: input.milestoneCount,
+        industry: input.industry ?? null,
+        department: input.department ?? null,
+        jobTitleTag: input.jobTitleTag ?? null,
+        workType: input.workType ?? null,
+        workLocation: input.workLocation ?? null,
         brief: {
           create: {
             overview: input.brief.overview,
@@ -498,6 +509,11 @@ export const updateCompanyJob = async (companyId: string, jobId: string, input: 
         title: input.title,
         budget: new Prisma.Decimal(input.budget),
         milestoneCount: input.milestoneCount,
+        industry: input.industry ?? null,
+        department: input.department ?? null,
+        jobTitleTag: input.jobTitleTag ?? null,
+        workType: input.workType ?? null,
+        workLocation: input.workLocation ?? null,
         brief: {
           update: {
             overview: input.brief.overview,
@@ -552,7 +568,12 @@ export const validateCompanyJob = async (
       requirements: normalizeStringArray(job.brief?.requirements),
       acceptanceCriteria: normalizeStringArray(job.brief?.acceptanceCriteria),
       timeline: normalizeTimeline(job.brief?.timeline)
-    }
+    },
+    industry: job.industry ?? undefined,
+    department: job.department ?? undefined,
+    jobTitleTag: job.jobTitleTag ?? undefined,
+    workType: (job.workType as WorkType | null) ?? undefined,
+    workLocation: job.workLocation ?? undefined
   };
 
   return persistBriefValidation(companyId, job, input, validationProvider);

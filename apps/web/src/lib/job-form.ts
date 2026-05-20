@@ -12,6 +12,11 @@ export type JobFormValues = {
   timelineStartDate: string;
   timelineEndDate: string;
   timelineNotes: string;
+  industry?: string;
+  department?: string;
+  jobTitleTag?: string;
+  workType?: string;
+  workLocation?: string;
 };
 
 const joinLines = (items: string[]) => items.join("\n");
@@ -68,5 +73,10 @@ export const jobFormValuesToInput = (value: JobFormValues): UpsertJobDraftInput 
         endDate: value.timelineEndDate,
         notes: value.timelineNotes
       }
-    }
+    },
+    industry: value.industry,
+    department: value.department,
+    jobTitleTag: value.jobTitleTag,
+    workType: value.workType,
+    workLocation: value.workLocation
   });
